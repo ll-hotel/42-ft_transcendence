@@ -1,0 +1,8 @@
+services:
+  ft_transcendance:
+    container_name: ft_transcendance
+    restart: on-failure
+    build:
+      context: .
+    ports:
+      - "8080:8080"
