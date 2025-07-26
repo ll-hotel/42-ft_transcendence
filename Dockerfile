@@ -10,17 +10,9 @@ WORKDIR /srv
 COPY package.json tsconfig.json .
 COPY node_modules/ node_modules
 COPY src/ src
+COPY www/ www
 
 RUN mkdir -p www
-RUN echo >www/index.html <<EOF
-<html>
-<head>
-</head>
-<body>
-	<p>Welcome to the Internet!</p>
-</body>
-</html>
-EOF
 
 RUN tsc
 

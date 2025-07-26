@@ -19,6 +19,12 @@ const opts: RouteShorthandOptions = {
 	}
 }
 
+app.get('/', async (request, reply) => {
+	const file: string = fs.readFileSync('www/index.html', 'utf-8');
+	reply.header('Content-Type', 'text/html');
+	return file;
+});
+
 app.get('/ping', opts, async (request, reply) => {
 	return { pong: 'it worked!' }
 });
@@ -28,8 +34,6 @@ async function main() {
 		await app.listen({ port: 8080, host: '0.0.0.0' });
 
 		const address = app.server.address()
-		const port = typeof address === 'string' ? address : address?.port
-
 		console.log(address);
 	} catch (err) {
 		console.log(err);
