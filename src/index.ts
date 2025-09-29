@@ -10,22 +10,20 @@ const opts: RouteShorthandOptions = {
 			200: {
 				type: 'object',
 				properties: {
-					pong: {
-						type: 'string'
-					}
+					pong: { type: 'string' }
 				}
 			}
 		}
 	}
 }
 
-app.get('/', async (request, reply) => {
+app.get('/', async (req, res) => {
 	const file: string = fs.readFileSync('www/index.html', 'utf-8');
-	reply.header('Content-Type', 'text/html');
+	res.header('Content-Type', 'text/html');
 	return file;
 });
 
-app.get('/ping', opts, async (request, reply) => {
+app.get('/ping', opts, async (req, res) => {
 	return { pong: 'it worked!' }
 });
 

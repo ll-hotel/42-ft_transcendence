@@ -1,6 +1,8 @@
 services:
-  ft_transcendance:
-    container_name: ft_transcendance
+  transcendence:
+    container_name: transcendence
+    pull_policy: build
+    image: transcendence
     restart: on-failure
     build:
       context: .
