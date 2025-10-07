@@ -1,5 +1,5 @@
 {
-  "name": "ft_transcendance",
+  "name": "ft_transcendence",
   "version": "1.0.0",
   "description": "",
   "main": "build/index.js",
@@ -12,10 +12,15 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.1.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/formbody": "^8.0.2",
     "fastify": "^5.4.0",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^13.0.0"
   }
 }

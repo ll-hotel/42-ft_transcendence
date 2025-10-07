@@ -12,11 +12,6 @@ WORKDIR /srv
 COPY package.json tsconfig.json .
 COPY node_modules/ node_modules
 COPY src/ src
-COPY www/ www
-
-RUN mkdir -p www;
-
-RUN tsc;
 
 ENTRYPOINT [ "tini", "--" ]
 CMD [ "node", "." ]

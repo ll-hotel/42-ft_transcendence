@@ -8,3 +8,20 @@ services:
       context: .
     ports:
       - "8080:8080"
+    volumes:
+      - www:/srv/www
+      - build:/srv/build
+
+volumes:
+  www:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./www
+      o: bind
+  build:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./build
+      o: bind

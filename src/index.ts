@@ -1,42 +1,30 @@
-import Fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify'
-import { Server, IncomingMessage, ServerResponse } from 'http'
+import Fastify, { FastifyInstance } from 'fastify'
 import fs from 'fs'
+import { auth } from './auth';
+import { STATUS } from './shared';
 
 const app: FastifyInstance = Fastify({});
 
-const opts: RouteShorthandOptions = {
-	schema: {
-		response: {
-			200: {
-				type: 'object',
-				properties: {
-					pong: { type: 'string' }
-				}
-			}
-		}
-	}
-}
-
-app.get('/', async (req, res) => {
-	const file: string = fs.readFileSync('www/index.html', 'utf-8');
-	res.header('Content-Type', 'text/html');
-	return file;
+app.get('/', (req, res) => {
+    if (req.url === '/') {
+        const file: string = fs.readFileSync('www/index.html', 'utf-8');
+        res.header('content-type', 'text/html');
+        return file;
+    }
 });
 
-app.get('/ping', opts, async (req, res) => {
-	return { pong: 'it worked!' }
+app.get('/ping', (_req, res) => {
+    res.code(STATUS.success).send('pong');
 });
 
 async function main() {
-	try {
-		await app.listen({ port: 8080, host: '0.0.0.0' });
-
-		const address = app.server.address()
-		console.log(address);
-	} catch (err) {
-		console.log(err);
-		process.exit(1);
-	}
+    try {
+        auth.setup(app);
+        await app.listen({ port: 8080, host: '0.0.0.0' });
+    } catch (err: any) {
+        console.log('Unhandled error caught in main:', err);
+        process.exit(1);
+    }
 }
 
 main();

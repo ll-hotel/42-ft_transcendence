@@ -1,5 +1,9 @@
 .PHONY: all
-all: up
+all: tsc
+
+.PHONY: tsc
+tsc: up
+	tsc
 
 .PHONY: up
 up: build
