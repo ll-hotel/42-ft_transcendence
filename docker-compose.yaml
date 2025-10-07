@@ -1,27 +1,30 @@
 services:
-  transcendence:
-    container_name: transcendence
-    pull_policy: build
-    image: transcendence
+  frontend:
+    container_name: frontend
     restart: on-failure
     build:
-      context: .
+      context: frontend
     ports:
-      - "8080:8080"
+      - "443:443"
     volumes:
-      - www:/srv/www
-      - build:/srv/build
+      - public:/srv/app/public
+      - secrets:/srv/app/secrets:ro
+  backend:
+    container_name: backend
+    restart: on-failure
+    build:
+      context: backend
 
 volumes:
-  www:
+  public:
     driver: local
     driver_opts:
       type: none
-      device: ./www
+      device: ./frontend/public
       o: bind
-  build:
+  secrets:
     driver: local
     driver_opts:
       type: none
-      device: ./build
+      device: ./secrets
       o: bind
