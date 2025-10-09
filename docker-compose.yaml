@@ -8,23 +8,25 @@ services:
       - "443:443"
     volumes:
       - public:/srv/app/public
-      - secrets:/srv/app/secrets:ro
+      - secrets:/run/secrets:ro
   backend:
     container_name: backend
     restart: on-failure
     build:
       context: backend
+    volumes:
+      - secrets:/run/secrets:ro
 
 volumes:
   public:
     driver: local
     driver_opts:
-      type: none
       device: ./frontend/public
+      type: none
       o: bind
   secrets:
     driver: local
     driver_opts:
-      type: none
       device: ./secrets
+      type: none
       o: bind

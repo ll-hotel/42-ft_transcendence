@@ -2,7 +2,8 @@
 <head>
 	<meta charset='utf-8'>
 	<title>ft_transcendence</title>
-	<script src='/resources/front.js' defer></script>
+	<script src='request.js' defer></script>
+	<script src='auth.js' defer></script>
 </head>
 <body>
 	<h3>Register</h3>
@@ -16,7 +17,7 @@
 		<input type='submit'></input>
 	</form>
 	<h3>Login</h3>
-	<form id='login' method='POST' action='/api/login'>
+	<form id='login' action='javascript:/' onsubmit='login(this);'>
 		<label>
 			Name: <input name='username'/>
 		</label><br>
@@ -26,7 +27,7 @@
 		<input type='submit'></input>
 	</form>
 	<h3>Logout</h3>
-	<form id='logout' method='POST' action='/api/logout'>
+	<form id='logout' action='javascript:;' onsubmit='logout();'>
 		<input type='submit'></input>
 	</form>
 </body>
