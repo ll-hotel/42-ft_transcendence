@@ -1,23 +1,24 @@
+COMPOSE_FILE := docker-compose.yaml
+COMPOSE_PROJECT_NAME := ft_transcendence
+COMPOSE := docker compose
+
+export COMPOSE_FILE COMPOSE_PROJECT_NAME
+
 .PHONY: all
 all: up
 
 .PHONY: up
-up: build
-	docker compose up --detach
+up:
+	$(COMPOSE) up --build --detach
 
 .PHONY: build
 build:
-	docker compose build
+	$(COMPOSE) build
 
 .PHONY: down
 down:
-	docker compose down --timeout 2
+	$(COMPOSE) down --timeout 2
 
-.PHONY: ls
-ls:
-	docker compose ls --all
-
-.PHONY: re
-re: down
-	@$(MAKE) --no-print-directory up
-	@$(MAKE) --no-print-directory ls
+.PHONY: ps
+ps:
+	$(COMPOSE) ps
