@@ -11,6 +11,10 @@ all: up
 up:
 	$(COMPOSE) up --build --detach
 
+.PHONY: build
+build:
+	$(COMPOSE) build
+
 .PHONY: down
 down:
 	$(COMPOSE) down --timeout 2
