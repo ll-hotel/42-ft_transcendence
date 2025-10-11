@@ -9,6 +9,7 @@ all: up
 
 .PHONY: up
 up:
+	@mkdir -p database secrets
 	$(COMPOSE) up --build --detach
 
 .PHONY: build

@@ -3,8 +3,11 @@ import type { FastifyCookieOptions } from '@fastify/cookie';
 import cookie from '@fastify/cookie';
 import formbody from '@fastify/formbody';
 import jwt from 'jsonwebtoken';
-import { v4 as uiidv4 } from 'uuid';
-import { STATUS, MESSAGE } from './shared';
+import { v4 as uuidv4 } from 'uuid';
+import { STATUS, MESSAGE } from '../shared';
+import { Database } from '../db/database';
+import { users as table } from '../db/tables';
+import { eq as sql_eq } from 'drizzle-orm';
 
 const SCHEMA_REGISTER = {
     body: {
@@ -18,19 +21,19 @@ const SCHEMA_REGISTER = {
 };
 const SCHEMA_LOGIN = SCHEMA_REGISTER;
 
-type User = { uuid: string, username: string, password: string };
-
-let db: {
-    users: User[];
-} = { users: [] };
-
 /// Usernames are formed of alphanumerical characters ONLY.
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
 /// Passwords must contain at least 1 lowercase, 1 uppercase, 1 digit and a minima 8 characters.
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)()[a-zA-Z0-9#@]{8,64}$/;
 
-class AuthService {
-    setup(app: FastifyInstance) {
+export class Authentication {
+    private db: Database;
+
+    constructor(db: Database) {
+        this.db = db;
+    }
+
+    setup_routes(app: FastifyInstance) {
         app.register(cookie, { secret: 'my-secret', parseOptions: {} } as FastifyCookieOptions);
         app.register(formbody);
         app.post('/api/register', { schema: SCHEMA_REGISTER }, this.register);
@@ -43,35 +46,45 @@ class AuthService {
         const { username, password } = body;
 
         if (REGEX_USERNAME.test(username) === false) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
+            return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
         }
         if (REGEX_PASSWORD.test(password) === false) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
+            return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
         }
-		if (!db.users.find((e) => { e.username === username })) {
-			const user: User = { uuid: uiidv4(), username, password, };
-			db.users.push(user);
-		}
-        rep.code(STATUS.created).send({ message: MESSAGE.user_created, db });
+
+        const users = await this.db.select({ username: table.username }).from(table).where(sql_eq(table.username, username));
+        if (users.length !== 0) {
+            return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_created });
+        }
+        return await this.db.insert(table)
+            .values({ uuid: uuidv4(), username, password })
+            .then(res => {
+                console.log(res[0].serverStatus);
+                rep.code(STATUS.created).send({ message: MESSAGE.user_created });
+            })
+            .catch(err => {
+                console.log(err);
+                rep.code(STATUS.internal_server_error);
+            });
     }
 
-    login(req: FastifyRequest, rep: FastifyReply) {
+    async login(req: FastifyRequest, rep: FastifyReply) {
         const body = req.body as { username: string, password: string };
         const { username, password } = body;
-        const user: User | undefined = db.users.find((elt) => { elt.username === username });
-        if (!user) {
+        const users = await this.db.select().from(table).where(sql_eq(table.username, username));
+        if (users.length === 0) {
             rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
             return;
         }
-        if (user.password !== password) {
+        if (users[0].password !== password) {
             rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
             return;
         }
-		if (req.cookies['access_token']) {
+        if (req.cookies['access_token']) {
             rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
             return;
         }
-        const access_token = jwt.sign({ uuid: user.uuid }, 'secret-key', { expiresIn: '24h' });
+        const access_token = jwt.sign({ uuid: users[0].uuid }, 'secret-key', { expiresIn: '24h' });
         rep.setCookie('access_token', access_token, { httpOnly: true, secure: false, sameSite: 'lax', path: '/' });
         rep.code(STATUS.success).send({ message: MESSAGE.logged_in });
     };
@@ -85,10 +98,3 @@ class AuthService {
         rep.code(STATUS.success).send({ message: MESSAGE.logged_out });
     }
 };
-
-const service = new AuthService();
-
-interface Auth {
-    setup(app: FastifyInstance): void;
-}
-export const auth = service as Auth;

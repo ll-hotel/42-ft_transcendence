@@ -21,6 +21,7 @@ export const MESSAGE = {
     already_logged_in: 'Already logged in',
     missing_token: 'Missing token',
     logged_out: 'Logged out',
+    already_created: 'User already exists',
 };
 
 export const catch_errors = (fn: any) => async (req: FastifyRequest, rep: FastifyReply) => {

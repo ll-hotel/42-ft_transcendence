@@ -1,27 +1,71 @@
 services:
-  frontend:
-    container_name: frontend
-    restart: on-failure
+  nginx:
+    container_name: nginx
+    restart: always
+    depends_on:
+      fastify:
+        restart: false
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-k", "https://localhost/" ]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
     build:
-      context: frontend
+      context: nginx
     ports:
       - "443:443"
     volumes:
       - public:/srv/app/public
-      - secrets:/run/secrets:ro
-  backend:
-    container_name: backend
-    restart: on-failure
+      - secrets:/run/secrets
+    networks:
+      - api
+
+  fastify:
+    container_name: fastify
+    restart: always
+    depends_on:
+      mariadb:
+        restart: false
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
     build:
-      context: backend
+      context: fastify
+    environment: [ DB_HOST, DB_NAME, DB_USER_NAME, DB_USER_PASSWORD ]
     volumes:
-      - secrets:/run/secrets:ro
+      - secrets:/run/secrets:z
+    networks:
+      - api
+      - database
+
+  mariadb:
+    container_name: mariadb
+    restart: always
+    healthcheck:
+      test: [ "CMD", "mariadb-admin", "ping", "--silent", "--skip-ssl" ]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    build:
+      context: mariadb
+      args: [ DB_USER_HOST, DB_USER_NAME, DB_USER_PASSWORD, DB_NAME ]
+    volumes:
+      - database:/var/lib/mysql
+    networks:
+      - database
 
 volumes:
   public:
     driver: local
     driver_opts:
-      device: ./frontend/public
+      device: ./nginx/public
       type: none
       o: bind
   secrets:
@@ -30,3 +74,15 @@ volumes:
       device: ./secrets
       type: none
       o: bind
+  database:
+    driver: local
+    driver_opts:
+      device: ./database
+      type: none
+      o: bind
+
+networks:
+  api:
+    driver: bridge
+  database:
+    driver: bridge
