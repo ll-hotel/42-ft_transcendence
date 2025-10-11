@@ -9,7 +9,8 @@ all: up
 
 .PHONY: up
 up:
-	@mkdir -p database secrets
+	@mkdir -p secrets
+	@mkdir -p mariadb/data
 	$(COMPOSE) up --build --detach
 
 .PHONY: build
