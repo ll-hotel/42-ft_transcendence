@@ -22,17 +22,7 @@ export class AuthPage implements AppPage {
 		this.css = html.querySelector("link");
 		this.content = html.querySelector("#auth-content")!;
 		this.form = html.querySelector("form")!;
-		this.form.addEventListener("submit", function(event): boolean {
-			const form_data = new FormData(this.form);
-			const username = form_data.get("username") || "";
-			const password = form_data.get("password") || "";
-			if (event.submitter!.id == "register-submit") {
-				return this.register(username, password);
-			} else if (event.submitter!.id == "login-submit") {
-				return this.login(username, password);
-			}
-			return false;
-		});
+		this.form.addEventListener("submit", this.submitEventListener);
 	}
 
 	loadInto(container: HTMLElement) {
@@ -46,15 +36,28 @@ export class AuthPage implements AppPage {
 		this.content.remove();
 	}
 
-	register(username: string, password: string): boolean {
-		if (username.length < 3) {
-			alert("Username too short");
-			return false;
+	submitEventListener(event: SubmitEvent) {
+		event.preventDefault();
+		const data = new FormData(this.form);
+		const username = data.get("username");
+		const password = data.get("password");
+		const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
+		const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)()[a-zA-Z0-9#@]{8,64}$/;
+		if (username == null || REGEX_USERNAME.test(username.toString()) == false) {
+			return alert("Username must contain at least 3 letters or digits.");
 		}
-		if (password.length < 8) {
-			alert("Password too short");
-			return false;
+		if (password == null || REGEX_PASSWORD.test(password.toString()) == false) {
+			return alert("Password must contain at least 1 lowercase, 1 uppercase, 1 digit and 8 characters.");
 		}
+		if (event.submitter!.id == "register-submit") {
+			this.register(username.toString(), password.toString());
+		}
+		else if (event.submitter!.id == "login-submit") {
+			this.login(username.toString(), password.toString());
+		}
+	}
+
+	register(username: string, password: string) {
 		request_api("/api/register", { username, password })
 		.then(function (res) {
 			alert(res.message);
@@ -62,18 +65,9 @@ export class AuthPage implements AppPage {
 			alert("Failed to register");
 			console.log(err);
 		});
-		return true;
 	}
 
-	login(username: string, password: string): boolean {
-		if (username.length < 3) {
-			alert("Username too short");
-			return false;
-		}
-		if (password.length < 8) {
-			alert("Password too short");
-			return false;
-		}
+	login(username: string, password: string) {
 		request_api("/api/login", { username, password })
 		.then(function (res) {
 			alert(res.message);
@@ -81,6 +75,5 @@ export class AuthPage implements AppPage {
 			alert("Failed to log in");
 			console.log(err);
 		});
-		return true;
 	}
 };
