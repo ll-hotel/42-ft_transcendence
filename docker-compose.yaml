@@ -7,21 +7,27 @@ services:
     ports:
       - "443:443"
     volumes:
-      - public:/srv/app/public
+      - static:/srv/app/static
       - secrets:/run/secrets:ro
   backend:
     container_name: backend
     restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
     build:
       context: backend
     volumes:
       - secrets:/run/secrets:ro
 
 volumes:
-  public:
+  static:
     driver: local
     driver_opts:
-      device: ./frontend/public
+      device: ./frontend/static
       type: none
       o: bind
   secrets:
