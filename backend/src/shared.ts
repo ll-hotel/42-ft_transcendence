@@ -4,7 +4,7 @@ export const STATUS = {
     success: 200,
     created: 201,
     bad_request: 400,
-    unauthorizeD: 401,
+    unauthorized: 401,
     not_found: 404,
     internal_server_error: 500,
 };
@@ -21,6 +21,8 @@ export const MESSAGE = {
     already_logged_in: 'Already logged in',
     missing_token: 'Missing token',
     logged_out: 'Logged out',
+    already_created: 'User already exists',
+    database_error: "Database error",
 };
 
 export const catch_errors = (fn: any) => async (req: FastifyRequest, rep: FastifyReply) => {
