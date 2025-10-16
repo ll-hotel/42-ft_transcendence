@@ -42,18 +42,12 @@ export default class PageLoader {
 	}
 
 	async download(name: PageName) {
-		let newPage: (elt: HTMLElement) => AppPage | null;
+		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
-			case "home": {
-				newPage = newHomePage;
-				break;
-			}
-			case "auth": {
-				newPage = newAuthPage;
-				break;
-			}
+			case "home": newPage = newHomePage; break;
+            case "auth": newPage = newAuthPage; break;
 		}
-		const html = await get(Pages[name]);
+		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);
 		if (page === null) {
 			return alert("Could not load " + Pages[name]);
@@ -62,7 +56,7 @@ export default class PageLoader {
 	}
 };
 
-async function get(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
+async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
     return await fetch(`https://${window.location.hostname}/${encodeURI(path)}`, {
         method: "GET",
         headers: { "Accept": "text/html" },

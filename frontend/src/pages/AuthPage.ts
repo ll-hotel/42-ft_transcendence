@@ -1,10 +1,9 @@
-import { request_api } from "../api.js";
 import AppPage from "./AppPage.js";
 
 export default function newAuthPage(html: HTMLElement): AuthPage | null {
 	const content = html.querySelector("#auth-content");
-	const form = html.querySelector("form");
-	if (!form || !content) {
+	const form = html.querySelector("#auth-form");
+	if (form == null || content == null) {
 		console.log("AuthPage -- missing form or content");
 		return null;
 	}
@@ -21,8 +20,8 @@ export class AuthPage implements AppPage {
 		this.html = html;
 		this.css = html.querySelector("link");
 		this.content = html.querySelector("#auth-content")!;
-		this.form = html.querySelector("form")!;
-		this.form.addEventListener("submit", this.submitEventListener);
+		this.form = html.querySelector("#auth-form")! as HTMLFormElement;
+		this.form.addEventListener("submit", submitEventListener);
 	}
 
 	loadInto(container: HTMLElement) {
@@ -35,45 +34,38 @@ export class AuthPage implements AppPage {
 		if (this.css) this.css.remove();
 		this.content.remove();
 	}
+};
 
-	submitEventListener(event: SubmitEvent) {
+function submitEventListener(event: SubmitEvent) {
 		event.preventDefault();
-		const data = new FormData(this.form);
-		const username = data.get("username");
-		const password = data.get("password");
-		const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
+		const form = event.submitter?.parentElement! as HTMLFormElement;
+		const data = new FormData(form);
+		const username = data.get("username")?.toString() || "";
+		const password = data.get("password")?.toString() || "";
+		const REGEX_USERNAME = /^(?=^[a-zA-Z])\w{3,24}$/;
 		const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)()[a-zA-Z0-9#@]{8,64}$/;
-		if (username == null || REGEX_USERNAME.test(username.toString()) == false) {
-			return alert("Username must contain at least 3 letters or digits.");
+		if (REGEX_USERNAME.test(username.toString()) == false) {
+			alert("Username must contain at least 3 letters or digits and start with a letter.");
+			form.setAttribute("class", ":invalid");
+			return;
 		}
-		if (password == null || REGEX_PASSWORD.test(password.toString()) == false) {
-			return alert("Password must contain at least 1 lowercase, 1 uppercase, 1 digit and 8 characters.");
+		if (REGEX_PASSWORD.test(password.toString()) == false) {
+			alert("Password must contain at least 1 lowercase, 1 uppercase, 1 digit and 8 characters.");
+			form.setAttribute("class", ":invalid");
+			return;
 		}
 		if (event.submitter!.id == "register-submit") {
-			this.register(username.toString(), password.toString());
+			register(username.toString(), password.toString());
 		}
 		else if (event.submitter!.id == "login-submit") {
-			this.login(username.toString(), password.toString());
+			login(username.toString(), password.toString());
 		}
 	}
 
-	register(username: string, password: string) {
-		request_api("/api/register", { username, password })
-		.then(function (res) {
-			alert(res.message);
-		}).catch(function (err) {
-			alert("Failed to register");
-			console.log(err);
-		});
-	}
+function register(username: string, password: string) {
+    alert("Not implemented.");
+}
 
-	login(username: string, password: string) {
-		request_api("/api/login", { username, password })
-		.then(function (res) {
-			alert(res.message);
-		}).catch(function (err) {
-			alert("Failed to log in");
-			console.log(err);
-		});
-	}
-};
+function login(username: string, password: string) {
+    alert("Not implemented.");
+}
