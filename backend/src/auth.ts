@@ -5,6 +5,13 @@ import formbody from '@fastify/formbody';
 import jwt from 'jsonwebtoken';
 import { v4 as uiidv4 } from 'uuid';
 import { STATUS, MESSAGE } from './shared';
+import { users } from './db/tables';
+import { db } from './db/database';
+import { eq } from 'drizzle-orm';
+import { hashPassword, comparePassword } from './security/hash';
+import { generate2FASecret, generateQRCode, verify2FAToken } from './security/2fa';
+
+
 
 const SCHEMA_REGISTER = {
     body: {
@@ -18,11 +25,7 @@ const SCHEMA_REGISTER = {
 };
 const SCHEMA_LOGIN = SCHEMA_REGISTER;
 
-type User = { uuid: string, username: string, password: string };
 
-let db: {
-    users: User[];
-} = { users: [] };
 
 /// Usernames are formed of alphanumerical characters ONLY.
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
@@ -48,30 +51,54 @@ class AuthService {
         if (REGEX_PASSWORD.test(password) === false) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
         }
-		if (!db.users.find((e) => { e.username === username })) {
-			const user: User = { uuid: uiidv4(), username, password, };
-			db.users.push(user);
+		
+		const user_exists = await db.select().from(users).where(eq(users.username, username));
+
+		if (user_exists.length > 0) {
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_created });
 		}
-        rep.code(STATUS.created).send({ message: MESSAGE.user_created, db });
+
+		const hashedPass = await hashPassword(password);
+		const secret = generate2FASecret(username);
+		if (!secret.otpauth_url)
+  			return rep.code(STATUS.bad_request).send({ message: MESSAGE.fail_gen2FAurl});
+		const QRcode = await generateQRCode(secret.otpauth_url);
+
+		await db.insert(users).values({
+			uuid: uiidv4(),
+			username,
+			password: hashedPass,
+			twoFA_key: secret.base32,
+		});
+
+        rep.code(STATUS.created).send({ message: MESSAGE.user_created, qr: QRcode});		// QRCODE in base64 to convert to image & display in front
     }
 
-    login(req: FastifyRequest, rep: FastifyReply) {
-        const body = req.body as { username: string, password: string };
-        const { username, password } = body;
-        const user: User | undefined = db.users.find((elt) => { elt.username === username });
-        if (!user) {
-            rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
-            return;
+    async login(req: FastifyRequest, rep: FastifyReply) {
+        const body = req.body as { username: string, password: string, token: string};
+        const { username, password, token } = body;
+
+		const result = await db.select().from(users).where(eq(users.username, username));
+		if (result.length === 0) {
+			return rep.code(STATUS.bad_request).send({ message : MESSAGE.invalid_username});
+		}
+
+		const user = result[0];
+		const validPass = await comparePassword(password, user.password);
+        if (!validPass) {
+            return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });     
         }
-        if (user.password !== password) {
-            rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
-            return;
-        }
+
+		const valid2FA = verify2FAToken(user.twoFA_key, token); 
+		if (!valid2FA){
+			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA});
+		}
+
+		const access_token = jwt.sign({ uuid: user.uuid }, 'secret-key', { expiresIn: '24h' });
 		if (req.cookies['access_token']) {
-            rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
-            return;
+            return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
         }
-        const access_token = jwt.sign({ uuid: user.uuid }, 'secret-key', { expiresIn: '24h' });
+
         rep.setCookie('access_token', access_token, { httpOnly: true, secure: false, sameSite: 'lax', path: '/' });
         rep.code(STATUS.success).send({ message: MESSAGE.logged_in });
     };

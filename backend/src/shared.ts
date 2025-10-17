@@ -16,6 +16,8 @@ export const MESSAGE = {
     internal_server_error: 'Internal server error',
     invalid_username: 'Invalid username',
     invalid_password: 'Invalid password',
+	invalid_2FA: 'Invalid 2FA code',
+	fail_gen2FAurl: 'Failed to generate 2FA URL',
     user_created: 'User created',
     logged_in: 'Logged in',
     already_logged_in: 'Already logged in',

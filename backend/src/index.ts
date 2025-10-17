@@ -2,6 +2,11 @@ import Fastify, { FastifyInstance } from "fastify"
 import { auth } from "./auth";
 import { STATUS } from "./shared";
 import fs from "fs";
+import { createTable } from "./db/database"
+
+async function main(){
+
+await createTable();
 
 const app: FastifyInstance = Fastify({
 	logger: true,
@@ -23,3 +28,6 @@ app.listen({ port: 8080, host: "0.0.0.0" }, function (err, _address) {
 		process.exit(1);
 	}
 });
+}
+
+main ();
