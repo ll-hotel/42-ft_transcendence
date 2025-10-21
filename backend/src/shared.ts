@@ -17,6 +17,7 @@ export const MESSAGE = {
     invalid_username: 'Invalid username',
     invalid_password: 'Invalid password',
 	invalid_2FA: 'Invalid 2FA code',
+	missing_2FA: 'Missing 2FA code',
 	fail_gen2FAurl: 'Failed to generate 2FA URL',
     user_created: 'User created',
     logged_in: 'Logged in',

@@ -15,9 +15,11 @@ export async function createTable() {
       uuid TEXT UNIQUE NOT NULL,
       username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
-	  twoFA_key TEXT UNIQUE NOT NULL
-    );
-  `);
-}
-
-// email    TEXT UNIQUE NOT NULL
+	  twofaKey TEXT,
+	  twofaEnabled INTEGER DEFAULT 0
+	  );
+	  `);
+	}
+	
+	// email    TEXT UNIQUE NOT NULL
+	//twofaEnabled INTEGER NOT NULL DEFAULT 0

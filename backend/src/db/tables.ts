@@ -8,6 +8,7 @@ export const users = sqliteTable("users", {
 	uuid: text("uuid").notNull().unique(),
 	username: text("username").notNull().unique(),
 	password: text("password").notNull(),
-	twoFA_key: text("twoFA_key").notNull().unique(),
-//	email: text("email").notNull().unique(),
+	twofaKey: text("twofaKey"),
+	twofaEnabled: integer("twofaEnabled").default(0),
+	//	email: text("email").notNull().unique(),
 });
