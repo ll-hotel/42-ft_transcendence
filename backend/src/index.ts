@@ -2,6 +2,8 @@ import Fastify, { FastifyInstance } from "fastify"
 import { auth } from "./auth";
 import { STATUS } from "./shared";
 import fs from "fs";
+import fastifyWebsocket from "@fastify/websocket";
+import { liveChatModule } from "./livechat";
 
 const app: FastifyInstance = Fastify({
 	logger: true,
@@ -10,6 +12,9 @@ const app: FastifyInstance = Fastify({
 		cert: fs.readFileSync("/run/secrets/certificate.pem"),
 	}
 });
+
+app.register(fastifyWebsocket);
+app.register(liveChatModule);
 
 app.get("/ping", (_req, res) => {
     res.code(STATUS.success).send("pong");
