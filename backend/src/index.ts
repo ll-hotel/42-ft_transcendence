@@ -2,11 +2,13 @@ import Fastify, { FastifyInstance } from "fastify"
 import { auth } from "./auth";
 import { STATUS } from "./shared";
 import fs from "fs";
-import { createTable } from "./db/database"
+import { createTables } from "./db/database"
+import { userService } from "./user/user";
+import { friendService } from "./user/friend";
 
 async function main(){
 
-await createTable();
+await createTables();
 
 const app: FastifyInstance = Fastify({
 	logger: true,
@@ -21,6 +23,8 @@ app.get("/ping", (_req, res) => {
 });
 
 auth.setup(app);
+userService.setup(app);
+friendService.setup(app);
 
 app.listen({ port: 8080, host: "0.0.0.0" }, function (err, _address) {
 	if (err) {

@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+	"types": ["node"],
+    "typeRoots": ["./types", "./node_modules/@types"],
     "target": "es2020",
     "module": "commonjs",
     "esModuleInterop": true,
