@@ -11,6 +11,7 @@ import { eq } from 'drizzle-orm';
 import { hashPassword, comparePassword } from './security/hash';
 import { generate2FASecret, generateQRCode, verify2FAToken } from './security/2fa';
 import fs from "fs";
+import { authGuard } from './security/authGuard';
 
 
 
@@ -40,23 +41,28 @@ class AuthService {
         app.register(formbody);
         app.post('/api/register', { schema: SCHEMA_REGISTER }, this.register);
         app.post('/api/login', { schema: SCHEMA_LOGIN }, this.login);
-        app.post('/api/logout', {}, this.logout);
+        app.post('/api/logout', {preHandler: authGuard}, this.logout);
     }
 
     async register(req: FastifyRequest, rep: FastifyReply) {
-        const body = req.body as { username: string, password: string, twofa?: boolean};
-        const { username, password, twofa } = body;
+        const body = req.body as { username: string, password: string, displayName: string, twofa?: boolean};
+        const { username, password, displayName, twofa } = body;
 
         if (REGEX_USERNAME.test(username) === false)
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
 
         if (REGEX_PASSWORD.test(password) === false)
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
-		
-		const user_exists = await db.select().from(users).where(eq(users.username, username));
 
+		if (REGEX_USERNAME.test(displayName) === false)
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName });
+		
+		let user_exists = await db.select().from(users).where(eq(users.username, username));
 		if (user_exists.length > 0)
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_created });
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.username_taken });
+		user_exists = await db.select().from(users).where(eq(users.displayName, displayName));
+		if (user_exists.length > 0)
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.displayName_taken });
 
 		const hashedPass = await hashPassword(password);
 		let twofaKey = null;
@@ -75,12 +81,13 @@ class AuthService {
 		await db.insert(users).values({
 			uuid: uiidv4(),
 			username,
+			displayName,
 			password: hashedPass,
 			twofaKey,
 			twofaEnabled,
 		});
 
-        rep.code(STATUS.created).send({message: MESSAGE.user_created, qrCode});
+        rep.code(STATUS.created).send({message: MESSAGE.user_created, qrCode,});
     }
 
     async login(req: FastifyRequest, rep: FastifyReply) {
@@ -96,7 +103,7 @@ class AuthService {
         if (!validPass)
             return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });     
 
-		if (user.twofaEnabled == 1) {
+		if (user.twofaEnabled === 1) {
 			if(!token)
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_2FA});
 
@@ -108,7 +115,7 @@ class AuthService {
 		const cookie = req.cookies['access_token'];
 		if (cookie){
 			try {
-				jwt.verify(cookie, jwtSecret)
+				jwt.verify(cookie, jwtSecret);
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
 			}
 			catch {
@@ -120,14 +127,17 @@ class AuthService {
 		
 
         rep.setCookie('access_token', access_token, { httpOnly: true, secure: false, sameSite: 'lax', path: '/' });
+		await db.update(users).set({isOnline: 1}).where(eq(users.id, user.id));
         rep.code(STATUS.success).send({ message: MESSAGE.logged_in });
     };
 
-    logout(req: FastifyRequest, rep: FastifyReply) {
-        if (!req.cookies['access_token']) {
-            rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_token });
-            return;
-        }
+    async logout(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user;
+		if (!usr)
+			return rep.code(STATUS.unauthorized).send({message: MESSAGE.unauthorized});
+		
+		await db.update(users).set({isOnline: 0}).where(eq(users.id, usr.id));
+
         rep.clearCookie('access_token', { path: '/' });
         rep.code(STATUS.success).send({ message: MESSAGE.logged_out });
     }
