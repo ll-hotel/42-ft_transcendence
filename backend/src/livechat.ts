@@ -1,43 +1,39 @@
 import { v4 as uuidv4 } from "uuid";
-import { FastifyInstance, FastifyRequest } from "fastify";
+import { FastifyInstance } from "fastify";
 
-export function liveChatModule(fastify: FastifyInstance) {
+export function chatRoute(fastify: FastifyInstance) {
 	fastify.get("/api/chat", { websocket: true }, wsConnected);
 }
 
 class ChatUser {
 	readonly id: string;
 	readonly ws: WebSocket;
-	private lastPingMs: number;
+	lastPingMs: number;
 	room: ChatRoom;
 
 	constructor(uuid: string, ws: WebSocket, room: ChatRoom) {
 		this.id = uuid;
 		this.ws = ws;
-		this.lastPingMs = 0;
+		this.lastPingMs = Date.now();
 		this.room = room;
 
-		this.ws.onmessage = (message) => {
-			this.lastPingMs = new Date().getTime();
-			if (message.data == "/ping") {
-				ws.send("/pong");
-			} else {
-				chat.users.forEach((elt) => elt.ws.send(message.data));
+		this.ws.onmessage = (event: MessageEvent<string>) => {
+			if (event.data.length == 0 || event.data.length > 200) {
+				this.lastPingMs = 0;
+				return;
 			}
+			if (event.data == "pong") {
+				this.lastPingMs = Date.now();
+				return;
+			}
+			this.room.broadcast(this.id, event.data);
 		};
-		this.ws.onclose = () => {
-			const idx = chat.users.findIndex((elt) => elt.id == this.id);
-			chat.users = chat.users.splice(idx, 1);
-		};
-		this.startPing();
 	}
-	private startPing() {
-		const now = new Date().getTime();
-		if (now - this.lastPingMs < 120 * 1000) {
-			setTimeout(this.startPing, 40 * 1000);
-			return;
-		}
-		this.room.disconnectById(this.id);
+	isAlive(timeMs: number): boolean {
+		if (this.ws.readyState == WebSocket.CLOSED) return false;
+		if (this.ws.readyState == WebSocket.CLOSING) return false;
+		if (timeMs - this.lastPingMs >= 20 * 1000) return false;
+		return true;
 	}
 };
 
@@ -48,35 +44,47 @@ class ChatRoom {
 	constructor(id: string = uuidv4()) {
 		this.id = id;
 		this.users = [];
+		const pingLoop = () => {
+			this.pingUsers();
+			setTimeout(pingLoop, 5 * 1000);
+		};
+		pingLoop();
 	}
-	broadcast(msg: any) {
+	broadcast(origin: string, text: string) {
+		const message = {
+			origin,
+			text,
+		};
 		for (const user of this.users) {
-			user.ws.send(msg);
+			user.ws.send(JSON.stringify(message));
 		}
 	}
 	connectUser(ws: WebSocket): ChatUser {
 		const user = new ChatUser(uuidv4(), ws, this);
 		user.room = this;
-		this.broadcast(`${user.id} joined.`);
 		this.users.push(user);
+		this.broadcast(user.id, "Joined");
 
-		console.log({ origin: "gamechat", text: `${this.id} connected` });
+		console.log(JSON.stringify({ origin: "gamechat", text: `${this.id} connected` }));
 		return user;
 	}
-	disconnectById(id: string) {
-		const pos = this.users.findIndex((user) => user.id === id);
-		if (pos >= 0) {
-			const user = this.users.splice(pos, 1)[0];
-			user.ws.send("Disconnected");
-			user.ws.close();
+	private pingUsers() {
+		const now = Date.now();
 
-			console.log({ origin: "gamechat", text: `${this.id} disconnected` });
+		const alives = this.users.filter(user => user.isAlive(now));
+		const deads = this.users.filter(user => !user.isAlive(now));
+		for (const user of deads) {
+			if (user.ws.readyState == WebSocket.CLOSED) continue;
+			this.broadcast(user.id, "Disconnected");
+			user.ws.close();
 		}
+		this.users = alives;
+		this.broadcast("", "ping");
 	}
 };
 
 const chat = new ChatRoom();
 
-function wsConnected(ws: WebSocket, req: FastifyRequest) {
+function wsConnected(ws: WebSocket) {
 	chat.connectUser(ws);
 }

@@ -6,7 +6,6 @@ export class GameChat implements AppPage {
 	input: HTMLInputElement;
 
 	ws: WebSocket | null = null;
-	connecting: boolean = false;
 
 	constructor() {
 		this.body = document.createElement("div");
@@ -32,7 +31,7 @@ export class GameChat implements AppPage {
 		if (event.key == "Enter") {
 			event.preventDefault();
 			if (message.length == 0) return;
-			if (message.length > 100) {
+			if (message.length > 200) {
 				alert("Message too long");
 			} else {
 				this.send(message);
@@ -40,37 +39,43 @@ export class GameChat implements AppPage {
 			}
 		}
 	}
-	send(message: string) {
+	async send(message: string) {
 		if (this.ws == null) {
 			alert("Connecting to game room, please wait...");
-			this.connect();
+			await this.connect();
 		}
 		if (this.ws)
 			this.ws.send(message);
 	}
-	connect() {
-		if (this.ws != null || this.connecting) {
-			console.log("GameChat: connecting...");
+	async connect(): Promise<void> {
+		if (this.ws != null) {
 			return;
 		}
-		this.connecting = true;
-		this.ws = new WebSocket("/api/chat");
-		this.ws.onopen = () => {
-			this.connecting = false;
-			const pingRoutine = () => {
-				if (!this.ws) return;
-				this.ws.send("/ping");
-				setTimeout(pingRoutine, 10000);
-			};
-			pingRoutine();
-		};
-		this.ws.onmessage = (msg) => { this.onMessage(msg); };
-		this.ws.onclose = () => { this.ws = null; };
+		return new Promise<void>((res) => {
+			this.ws = new WebSocket("/api/chat");
+			this.ws.onopen = () => { res(); };
+			this.ws.onmessage = (e) => { this.onMessage(e); };
+			this.ws.onclose = () => { this.ws = null; };
+		});
 	}
-	onMessage(msg: MessageEvent) {
-		if (msg.data == "/pong") return;
-		const p = document.createElement("p");
-		p.innerHTML = new String(msg.data).toString();
-		this.content.appendChild(p);
+	onMessage(event: MessageEvent<string>) {
+		let origin: string, text: string;
+		try {
+			const msg = JSON.parse(event.data);
+			origin = msg.origin;
+			text = msg.text;
+		} catch (error) {
+			alert("Invalid game chat message. See the console for details.");
+			console.log(error);
+			return;
+		};
+		if (origin.length == 0 && text == "ping") {
+			this.send("pong");
+			return;
+		}
+		const message_box = document.createElement("div");
+		message_box.innerHTML = `<b>${origin}</b><br><i>${text}</i>`;
+		message_box.style = "flex-direction: column; align-items: left;";
+		this.content.appendChild(message_box);
 	}
 };

@@ -3,7 +3,7 @@ import { auth } from "./auth";
 import { STATUS } from "./shared";
 import fs from "fs";
 import fastifyWebsocket from "@fastify/websocket";
-import { liveChatModule } from "./livechat";
+import { chatRoute } from "./livechat";
 
 const app: FastifyInstance = Fastify({
 	logger: true,
@@ -14,7 +14,7 @@ const app: FastifyInstance = Fastify({
 });
 
 app.register(fastifyWebsocket);
-app.register(liveChatModule);
+app.register(chatRoute);
 
 app.get("/ping", (_req, res) => {
     res.code(STATUS.success).send("pong");

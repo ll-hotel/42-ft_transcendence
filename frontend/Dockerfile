@@ -7,9 +7,12 @@ WORKDIR /srv/app
 
 COPY nginx.conf /etc/nginx
 
+# COPY package.json ./
+# RUN npm install;
+
 COPY tsconfig.json ./
-COPY src/ src/
-RUN tsc;
+COPY init.sh /run/init.sh
+RUN chmod a+x /run/init.sh;
 
 ENTRYPOINT [ "tini", "--" ]
-CMD [ "nginx", "-g", "daemon off;" ]
+CMD [ "/run/init.sh" ]
