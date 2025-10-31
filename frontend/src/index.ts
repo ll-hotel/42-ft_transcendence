@@ -1,9 +1,11 @@
+import { GameChat } from "./GameChat.js";
 import PageLoader, { strToPageName } from "./PageLoader.js";
 
 var app: {
 	menu: HTMLElement,
 	content: HTMLElement,
 	loader: PageLoader,
+	chat: GameChat,
 };
 
 document.addEventListener("DOMContentLoaded", async function() {
@@ -19,7 +21,9 @@ document.addEventListener("DOMContentLoaded", async function() {
         menu,
 		content,
 		loader: pageLoader,
+		chat: new GameChat(),
 	};
+	app.chat.loadInto(app.content);
 	for (let key of pageLoader.list.keys()) {
 		console.log(key);
 		const li = document.createElement("li");
