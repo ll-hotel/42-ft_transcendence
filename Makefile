@@ -32,4 +32,4 @@ ps:
 
 .PHONY: tailwind
 tailwind: up
-	docker exec -it frontend npx tailwindcss -i src/input.css -o static/tailwind.css -m
+	docker exec -it frontend npx tailwindcss -i src/input.css -o static/tailwind.css
