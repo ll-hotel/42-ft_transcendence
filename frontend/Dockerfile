@@ -6,10 +6,9 @@ RUN apk add nginx;
 WORKDIR /srv/app
 
 COPY nginx.conf /etc/nginx
-
 COPY tsconfig.json ./
-COPY src/ src/
-RUN tsc;
+COPY init.sh ./
+RUN chmod a+x ./init.sh;
 
 ENTRYPOINT [ "tini", "--" ]
-CMD [ "nginx", "-g", "daemon off;" ]
+CMD [ "sh", "./init.sh" ]
