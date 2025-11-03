@@ -1,4 +1,6 @@
 import PageLoader, { strToPageName } from "./PageLoader.js";
+import newPongPage from "./pages/PongPage.js";
+import { PongCanvas } from "./pong.js";
 
 var app: {
 	menu: HTMLElement,

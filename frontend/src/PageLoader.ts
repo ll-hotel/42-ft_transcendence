@@ -1,10 +1,12 @@
 import AppPage from "./pages/AppPage.js";
 import newAuthPage from "./pages/AuthPage.js";
 import newHomePage from "./pages/HomePage.js";
+import newPongPage from "./pages/PongPage.js";
 
 enum Pages {
 	home = "home.html",
 	auth = "auth.html",
+	pong = "pong.html",
 };
 export type PageName = keyof typeof Pages;
 
@@ -12,6 +14,7 @@ export function strToPageName(str: string): PageName | null {
 	switch (str) {
 		case "home": return "home";
 		case "auth": return "auth";
+		case "pong": return "pong";
 	}
 	return null;
 }
@@ -30,6 +33,7 @@ export default class PageLoader {
 	async downloadPages() {
 		await this.download("home");
 		await this.download("auth");
+		await this.download("pong");
 	}
 
 	load(name: PageName) {
@@ -45,7 +49,8 @@ export default class PageLoader {
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
-            case "auth": newPage = newAuthPage; break;
+			case "auth": newPage = newAuthPage; break;
+			case "pong": newPage = newPongPage; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);
