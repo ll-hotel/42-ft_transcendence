@@ -22,7 +22,10 @@ services:
     build:
       context: backend
     volumes:
+      - ./backend/db:/srv/app/db
       - secrets:/run/secrets:ro
+    ports:              # back test
+      - "8080:8080"
 
 volumes:
   frontend-static:
