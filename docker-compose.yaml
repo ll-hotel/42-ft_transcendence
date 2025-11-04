@@ -7,7 +7,8 @@ services:
     ports:
       - "443:443"
     volumes:
-      - static:/srv/app/static
+      - frontend-static:/srv/app/static
+      - frontend-src:/srv/app/src
       - secrets:/run/secrets:ro
   backend:
     container_name: backend
@@ -27,10 +28,16 @@ services:
       - "8080:8080"
 
 volumes:
-  static:
+  frontend-static:
     driver: local
     driver_opts:
       device: ./frontend/static
+      type: none
+      o: bind
+  frontend-src:
+    driver: local
+    driver_opts:
+      device: ./frontend/src
       type: none
       o: bind
   secrets:
