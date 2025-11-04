@@ -35,7 +35,7 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply)
 		const payload = jwt.verify(token, jwtSecret) as {uuid : string};
 		const result = await db.select().from(users).where(eq(users.uuid, payload.uuid));
 		
-		if (result.length == 0)
+		if (result.length === 0)
 				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found});
 
 		const user = result[0];

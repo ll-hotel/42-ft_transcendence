@@ -123,7 +123,8 @@ class friend {
 		})
 		.from(friends).innerJoin(users, or(eq(users.id, friends.senderId), eq(users.id, friends.receiverId)))
 		.where(and(
-			or(eq(friends.senderId, usr.id), eq(friends.receiverId, usr.id)), eq(friends.status, "accepted")));
+			or(eq(friends.senderId, usr.id), eq(friends.receiverId, usr.id)), 
+			eq(friends.status, "accepted")));
 
 		const friendsList = result.filter(f => f.displayName !== usr.displayName);
 

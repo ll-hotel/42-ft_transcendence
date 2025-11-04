@@ -29,7 +29,6 @@ const SCHEMA_LOGIN = SCHEMA_REGISTER;
 
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 
-
 /// Usernames are formed of alphanumerical characters ONLY.
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
 /// Passwords must contain at least 1 lowercase, 1 uppercase, 1 digit and a minima 8 characters.
@@ -42,10 +41,14 @@ class AuthService {
         app.post('/api/register', { schema: SCHEMA_REGISTER }, this.register);
         app.post('/api/login', { schema: SCHEMA_LOGIN }, this.login);
         app.post('/api/logout', {preHandler: authGuard}, this.logout);
+
+
+		/* app.get('/api/auth42', this.redirectAuth42);
+		app.get('/api/auth42/callback', this.callback);  */
     }
 
     async register(req: FastifyRequest, rep: FastifyReply) {
-        const body = req.body as { username: string, password: string, displayName: string, twofa?: boolean};
+        const body = req.body as {username: string, password: string, displayName: string, twofa?: boolean};
         const { username, password, displayName, twofa } = body;
 
         if (REGEX_USERNAME.test(username) === false)
@@ -56,7 +59,6 @@ class AuthService {
 
 		if (REGEX_USERNAME.test(displayName) === false)
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName });
-		
 		let user_exists = await db.select().from(users).where(eq(users.username, username));
 		if (user_exists.length > 0)
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.username_taken });
@@ -126,7 +128,7 @@ class AuthService {
 		const access_token = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '24h' });
 		
 
-        rep.setCookie('access_token', access_token, { httpOnly: true, secure: false, sameSite: 'lax', path: '/' });
+        rep.setCookie('access_token', access_token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
 		await db.update(users).set({isOnline: 1}).where(eq(users.id, user.id));
         rep.code(STATUS.success).send({ message: MESSAGE.logged_in });
     };
@@ -142,6 +144,8 @@ class AuthService {
         rep.code(STATUS.success).send({ message: MESSAGE.logged_out });
     }
 };
+
+
 
 const service = new AuthService();
 
