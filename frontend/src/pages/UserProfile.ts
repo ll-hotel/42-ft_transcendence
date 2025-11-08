@@ -1,4 +1,4 @@
-import { request_api } from "../api.js";
+import { request_api, Status } from "../api.js";
 import AppPage from "./AppPage.js"
 
 export class UserProfile implements AppPage {
@@ -21,29 +21,32 @@ export class UserProfile implements AppPage {
 		return new UserProfile(content as HTMLElement);
 	}
 	loadInto(container: HTMLElement): void {
-	    container.appendChild(this.content);
-		window.cookieStore.get("access_token").then((token) => {
-			if (token == null) {
-				console.log("[userprofile] Redirecting to login page");
-				window.location.replace("#auth");
-			}
-		});
+		const token = localStorage.getItem("access_token");
+		if (!token) {
+			console.log("[userprofile] Redirecting to login page");
+			window.location.replace("#auth");
+			return;
+		}
+		container.appendChild(this.content);
 	}
 	unload(): void {
-	    this.content.remove();
+		this.content.remove();
 	}
 
 	async logoutClick() {
-		const accessToken = await window.cookieStore.get("access_token");
+		const accessToken = localStorage.getItem("access_token");
 		if (!accessToken) {
-			console.log("You are not logged in");
-			window.location.replace("#auth");
+			console.log("[userprofile] Not logged in. Redirecting.");
+			window.location.assign("#auth");
+			return;
 		}
 		const reply = await request_api("/api/auth/logout");
-		if (reply.status == 401) {
+		if (!reply) return;
+		if (reply.status == Status.unauthorized) {
 			// Unauthorized = not logged in or wrong user.
 			// Not doing anything for now.
 		}
-		window.location.replace("#auth");
+		localStorage.removeItem("access_token");
+		window.location.assign("#auth");
 	}
 };

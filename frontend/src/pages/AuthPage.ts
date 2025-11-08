@@ -36,6 +36,7 @@ export class AuthPage implements AppPage {
 	}
 
 	unload() {
+		this.error.innerHTML = "";
 		this.content.remove();
 	}
 
