@@ -75,7 +75,7 @@ export class AuthPage implements AppPage {
 	};
 
 	async apiRegister(username: string, password: string) {
-		const reply = await request_api("/api/register", {
+		const reply = await request_api("/api/auth/register", {
 			username,
 			password,
 			displayName: username,
@@ -90,7 +90,7 @@ export class AuthPage implements AppPage {
 	}
 
 	async apiLogin(username: string, password: string) {
-		const reply = await request_api("/api/login", {
+		const reply = await request_api("/api/auth/login", {
 			username,
 			password,
 		});
