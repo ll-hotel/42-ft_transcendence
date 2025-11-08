@@ -35,9 +35,9 @@ class AuthService {
 	setup(app: FastifyInstance) {
 		app.register(cookie);
 		app.register(formbody);
-		app.post('/api/register', { schema: SCHEMA_REGISTER }, this.register);
-		app.post('/api/login', { schema: SCHEMA_LOGIN }, this.login);
-		app.post('/api/logout', { preHandler: authGuard }, this.logout);
+		app.post('/api/auth/register', { schema: SCHEMA_REGISTER }, this.register);
+		app.post('/api/auth/login', { schema: SCHEMA_LOGIN }, this.login);
+		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
 
 
 		/* app.get('/api/auth42', this.redirectAuth42);
