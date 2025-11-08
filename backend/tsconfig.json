@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-	"types": ["node"],
-    "typeRoots": ["./types", "./node_modules/@types"],
     "target": "es2020",
-    "module": "commonjs",
+    "module": "nodeNext",
+    "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -11,6 +10,4 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules"]
 }

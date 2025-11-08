@@ -1,42 +1,54 @@
+import { request_api, Status } from "../api.js";
 import AppPage from "./AppPage.js";
 
-export default function newAuthPage(html: HTMLElement): AuthPage | null {
-	const content = html.querySelector("#auth-content");
-	const form = html.querySelector("#auth-form");
-	if (form == null || content == null) {
-		console.log("AuthPage -- missing form or content");
-		return null;
-	}
-	return new AuthPage(html);
-}
-
 export class AuthPage implements AppPage {
-	html: HTMLElement;
-	css: HTMLLinkElement | null;
 	content: HTMLElement;
+	error: HTMLElement;
 	form: HTMLFormElement;
 
-	constructor(html: HTMLElement) {
-		this.html = html;
-		this.css = html.querySelector("link");
+	private constructor(html: HTMLElement) {
 		this.content = html.querySelector("#auth-content")!;
-		this.form = html.querySelector("#auth-form")! as HTMLFormElement;
-		this.form.addEventListener("submit", submitEventListener);
+		this.error = this.content.querySelector("#auth-error")!;
+		this.form = this.content.querySelector("#auth-form")! as HTMLFormElement;
+		this.form.addEventListener("submit", (e) => this.onsubmit(e));
 	}
 
-	loadInto(container: HTMLElement) {
+	static new(html: HTMLElement): AuthPage | null {
+		const content = html.querySelector("#auth-content");
+		const error = content?.querySelector("#auth-error");
+		const form = content?.querySelector("#auth-form");
+		if (!content || !error || !form) {
+			console.log("[auth] Missing html");
+			return null;
+		}
+		return new AuthPage(html);
+	}
+
+	async loadInto(container: HTMLElement) {
+		const token = localStorage.getItem("access_token");
+		if (token != null) {
+			console.log("[auth] Already logged in, redirecting");
+			window.location.assign("#home");
+			return;
+		}
 		this.form.reset();
-		if (this.css) document.head.appendChild(this.css);
 		container.appendChild(this.content);
 	}
 
 	unload() {
-		if (this.css) this.css.remove();
 		this.content.remove();
 	}
-};
 
-function submitEventListener(event: SubmitEvent) {
+	setError(error: string) {
+		this.error.innerHTML = error;
+		if (this.error.innerHTML.length == 0) {
+			this.error.setAttribute("hidden", "");
+		} else {
+			this.error.removeAttribute("hidden");
+		}
+	}
+
+	onsubmit(event: SubmitEvent) {
 		event.preventDefault();
 		const form = event.submitter?.parentElement! as HTMLFormElement;
 		const data = new FormData(form);
@@ -45,27 +57,56 @@ function submitEventListener(event: SubmitEvent) {
 		const REGEX_USERNAME = /^(?=^[a-zA-Z])\w{3,24}$/;
 		const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)()[a-zA-Z0-9#@]{8,64}$/;
 		if (REGEX_USERNAME.test(username.toString()) == false) {
-			alert("Username must contain at least 3 letters or digits and start with a letter.");
+			this.setError("Username must contain at least 3 letters or digits and start with a letter.");
 			form.setAttribute("class", ":invalid");
 			return;
 		}
 		if (REGEX_PASSWORD.test(password.toString()) == false) {
-			alert("Password must contain at least 1 lowercase, 1 uppercase, 1 digit and 8 characters.");
+			this.setError("Password must contain at least 1 lowercase, 1 uppercase, 1 digit and 8 characters.");
 			form.setAttribute("class", ":invalid");
 			return;
 		}
 		if (event.submitter!.id == "register-submit") {
-			register(username.toString(), password.toString());
+			this.apiRegister(username.toString(), password.toString());
+		} else if (event.submitter!.id == "login-submit") {
+			this.apiLogin(username.toString(), password.toString());
 		}
-		else if (event.submitter!.id == "login-submit") {
-			login(username.toString(), password.toString());
+	};
+
+	async apiRegister(username: string, password: string) {
+		const reply = await request_api("/api/register", {
+			username,
+			password,
+			displayName: username,
+			twofa: false,
+		});
+		if (!reply) return;
+		const { status, payload } = reply;
+		if (status != Status.created) {
+			return this.setError(payload.message);
 		}
+		this.apiLogin(username, password);
 	}
 
-function register(username: string, password: string) {
-    alert("Not implemented.");
-}
-
-function login(username: string, password: string) {
-    alert("Not implemented.");
-}
+	async apiLogin(username: string, password: string) {
+		const reply = await request_api("/api/login", {
+			username,
+			password,
+		});
+		if (!reply) return;
+		const { status, payload } = reply;
+		if (status == Status.success) {
+			localStorage.setItem("access_token", payload.access_token);
+			window.location.assign("#home");
+			return;
+		}
+		if (status == Status.bad_request) {
+			if (!payload.logged_in) {
+				localStorage.removeItem("access_token");
+				return this.setError(payload.message);
+			}
+			localStorage.setItem("access_token", payload.access_token)
+			window.location.assign("#home");
+		}
+	}
+};

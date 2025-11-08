@@ -1,5 +1,5 @@
 import AppPage from "./pages/AppPage.js";
-import newAuthPage from "./pages/AuthPage.js";
+import { AuthPage } from "./pages/AuthPage.js";
 import newHomePage from "./pages/HomePage.js";
 import { UserProfile } from "./pages/UserProfile.js"
 
@@ -49,8 +49,8 @@ export default class PageLoader {
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
-            case "auth": newPage = newAuthPage; break;
             case "userprofile": newPage = UserProfile.new; break;
+            case "auth": newPage = AuthPage.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);
