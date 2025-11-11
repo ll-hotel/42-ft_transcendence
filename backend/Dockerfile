@@ -2,15 +2,14 @@ FROM node:22-alpine
 
 WORKDIR /srv/app
 
-RUN apk add --no-cache tini
+RUN apk add tini;
+RUN apk add typescript;
 
-COPY package*.json tsconfig.json ./
-RUN npm install
+COPY package.json ./
+RUN npm install;
 
-COPY src/ src/
-RUN npm run build
-
-
+COPY tsconfig.json ./
+COPY init.sh ./init.sh
 
 ENTRYPOINT [ "tini", "--" ]
-CMD [ "node", "dist/index.js" ]
+CMD [ "sh", "./init.sh" ]
