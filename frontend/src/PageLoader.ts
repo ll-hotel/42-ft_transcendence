@@ -16,14 +16,14 @@ export function strToPageName(str: string): PageName | null {
 	return null;
 }
 
-export default class PageLoader {
+class PageLoader {
 	list: Map<PageName, AppPage>;
-	loaded_page: AppPage | null;
+	loaded: PageName | null;
 	content: HTMLElement;
 
-	constructor(loadPlace: HTMLElement = document.body) {
+	constructor(loadPlace: HTMLElement) {
 		this.list = new Map();
-		this.loaded_page = null;
+		this.loaded = null;
 		this.content = loadPlace;
 	}
 
@@ -34,18 +34,20 @@ export default class PageLoader {
 
 	load(name: PageName) {
 		if (!this.list.has(name)) return;
-		if (this.loaded_page) {
-			this.loaded_page.unload();
+		if (this.loaded) {
+			this.list.get(this.loaded)!.unload();
 		}
-		this.loaded_page = this.list.get(name)!;
-		this.loaded_page.loadInto(this.content);
+		this.loaded = name;
+		this.list.get(this.loaded)!.loadInto(this.content);
+		document.title = name;
 	}
 
 	async download(name: PageName) {
+		if (this.list.has(name)) return;
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
-            case "auth": newPage = AuthPage.new; break;
+      case "auth": newPage = AuthPage.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);
@@ -57,10 +59,25 @@ export default class PageLoader {
 };
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-    return await fetch(`https://${window.location.hostname}/${encodeURI(path)}`, {
-        method: "GET",
-        headers: { "Accept": "text/html" },
-        credentials: "include",
-        cache,
-    }).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body));
+	return await fetch(`https://${window.location.hostname}/${encodeURI(path)}`, {
+		method: "GET",
+		headers: { "Accept": "text/html" },
+		credentials: "include",
+		cache,
+	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body));
+}
+
+const loader = new PageLoader(document.body.querySelector("#content")!);
+
+export async function gotoPage(name: PageName) {
+	history.pushState({ page: loader.loaded }, "", "/" + name);
+	await loader.downloadPages();
+	loader.load(name);
+}
+
+(window as any).gotoPage = gotoPage;
+
+window.onpopstate = function() {
+	const page = strToPageName(location.pathname.substring(1)) || "auth";
+	loader.load(page);
 }
