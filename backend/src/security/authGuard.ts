@@ -25,22 +25,27 @@ declare module "fastify" {
 
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 
-export async function authGuard(req: FastifyRequest, rep: FastifyReply)
-{
-	const token = req.cookies["access_token"];
-	if (!token)
-		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
-
+export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
+	let token: string | null = null;
+	const authorization = req.headers.authorization;
+	if (authorization) {
+		token = authorization.split(" ")[1];
+	} else if (req.cookies && req.cookies["access_token"]) {
+		token = req.cookies["access_token"];
+	} else {
+		rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
+		return;
+	}
 	try {
-		const payload = jwt.verify(token, jwtSecret) as {uuid : string};
+		const payload = jwt.verify(token, jwtSecret) as { uuid: string };
 		const result = await db.select().from(users).where(eq(users.uuid, payload.uuid));
-		
+
 		if (result.length === 0)
-				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found});
+			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
 
 		const user = result[0];
 		req.user = {
-			id:	  user.id,
+			id: user.id,
 			uuid: user.uuid,
 			username: user.username,
 			displayName: user.displayName,
@@ -50,6 +55,6 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply)
 		}
 	}
 	catch {
-		return rep.code(STATUS.unauthorized).send({message: MESSAGE.invalid_token});
+		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_token });
 	}
 }	

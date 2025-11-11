@@ -3,7 +3,7 @@ import auth from "./auth";
 import { STATUS } from "./shared";
 import fs from "fs";
 import { createTables } from "./db/database"
-import user from "./user/user";
+import { User } from "./user/user";
 import { friendService } from "./user/friend";
 
 async function main() {
@@ -16,9 +16,8 @@ async function main() {
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
 		}
 	});
-
 	app.register(auth);
-	app.register(user);
+	app.register(f => User.setup(f));
 	app.register(f => friendService.setup(f));
 
 	app.get("/ping", (_req, res) => {

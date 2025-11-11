@@ -9,25 +9,46 @@ export enum Status {
 
 export type ApiResponse = { status: Status, payload?: any };
 
-export async function request_api(path: string, body: object = {}): Promise<ApiResponse | null> {
-	return await fetch(`https://${window.location.hostname}${encodeURI(path)}`, {
-		method: "POST",
-		headers: {
-			"Accept": "application/json",
-			"Content-Type": "application/json"
-		},
-		credentials: "include",
-		body: JSON.stringify(body)
-	}).then(async function(response) {
-		try {
-			const json = (await response.json()) as any;
-			return {
-				status: response.status,
-				payload: json,
+export class api {
+	static async get(uri: string) {
+		return this.request("GET", uri);
+	}
+	static async post(uri: string, body?: any) {
+		return this.request("POST", uri, body);
+	}
+	private static async request(method: "GET" | "POST", uri: string, body?: any) {
+		const token = localStorage.getItem("access_token");
+		let headers;
+		let jsonBody: string | null = null;
+		if (method == "GET") {
+			headers = {
+				"Accept": "application/json",
+				"Authorization": "Bearer " + token,
 			};
-		} catch {
-			console.log("[api] JSON error while parsing response:", "");
-			return null;
+		} else {
+			headers = {
+				"Accept": "application/json",
+				"Authorization": "Bearer " + token,
+				"Content-Type": "application/json",
+			};
+			jsonBody = JSON.stringify(body);
 		}
-	});
+		return fetch(`https://${window.location.hostname}${encodeURI(uri)}`, {
+			method,
+			headers,
+			body: jsonBody,
+		}
+		).then(async function(response) {
+			try {
+				const json = (await response.json()) as any;
+				return {
+					status: response.status,
+					payload: json,
+				};
+			} catch {
+				console.log("[api] JSON error while parsing response:", "");
+				return null;
+			}
+		})
+	}
 }

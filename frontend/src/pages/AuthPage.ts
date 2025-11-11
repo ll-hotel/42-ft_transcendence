@@ -1,4 +1,4 @@
-import { request_api, Status } from "../api.js";
+import { api, Status } from "../api.js";
 import AppPage from "./AppPage.js";
 
 export class AuthPage implements AppPage {
@@ -75,7 +75,7 @@ export class AuthPage implements AppPage {
 	};
 
 	async apiRegister(username: string, password: string) {
-		const reply = await request_api("/api/auth/register", {
+		const reply = await api.post("/api/auth/register", {
 			username,
 			password,
 			displayName: username,
@@ -90,7 +90,7 @@ export class AuthPage implements AppPage {
 	}
 
 	async apiLogin(username: string, password: string) {
-		const reply = await request_api("/api/auth/login", {
+		const reply = await api.post("/api/auth/login", {
 			username,
 			password,
 		});

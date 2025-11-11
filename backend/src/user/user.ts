@@ -10,7 +10,7 @@ import { generate2FASecret, generateQRCode } from "../security/2fa";
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
-class User {
+export class User {
 	static setup(app: FastifyInstance) {
 		app.get("/api/me", { preHandler: authGuard }, User.getMe);
 		app.get("/api/users", { preHandler: authGuard }, User.getUser);
@@ -24,9 +24,13 @@ class User {
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
-		if (!req.user)
+		if (!req.user) {
 			return (rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized }));
-		rep.send(req.user);
+		}
+		rep.code(STATUS.success).send({
+			displayName: req.user.displayName,
+			avatar: req.user.avatar
+		});
 	}
 
 	static async getUser(req: FastifyRequest, rep: FastifyReply) {
@@ -119,8 +123,4 @@ class User {
 			return rep.code(STATUS.success).send({ message: "2FA disabled" });
 		}
 	}
-}
-
-export default function(fastify: FastifyInstance) {
-	User.setup(fastify);
 }

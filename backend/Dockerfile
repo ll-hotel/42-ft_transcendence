@@ -3,6 +3,7 @@ FROM node:22-alpine
 WORKDIR /srv/app
 
 RUN apk add tini;
+RUN apk add curl;
 RUN apk add typescript;
 
 COPY package.json ./
