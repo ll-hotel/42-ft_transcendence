@@ -1,4 +1,5 @@
 import { api, Status } from "../api.js";
+import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js"
 
 export class UserProfile implements AppPage {
@@ -64,7 +65,7 @@ export class UserProfile implements AppPage {
 		const accessToken = localStorage.getItem("access_token");
 		if (!accessToken) {
 			console.log("[userprofile] Not logged in. Redirecting.");
-			window.location.assign("#auth");
+			gotoPage("auth");
 			return;
 		}
 		const reply = await api.post("/api/auth/logout");
@@ -73,6 +74,6 @@ export class UserProfile implements AppPage {
 			// Unauthorized = not logged in or wrong user.
 			// Not doing anything for now.
 		}
-		window.location.assign("#auth");
+		gotoPage("auth");
 	}
 };
