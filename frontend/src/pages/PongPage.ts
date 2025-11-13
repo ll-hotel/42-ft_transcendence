@@ -33,6 +33,7 @@ export class PongPage implements AppPage
 		if (this.css)
 			document.head.appendChild(this.css);
 		container.appendChild(this.content);
+		this.start();
 	}
 
 	unload(): void {
