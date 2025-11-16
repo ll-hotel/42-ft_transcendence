@@ -19,6 +19,8 @@ services:
       timeout: 2s
       retries: 3
       start_period: 2s
+    ports:
+      - "8080:8080"
     build:
       context: backend
     volumes:
