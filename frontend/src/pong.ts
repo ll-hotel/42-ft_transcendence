@@ -91,22 +91,23 @@ export class Game
 {
 	private canvas: PongCanvas;
 	private ball: PongBall;
-	private paddle_p1: PongPaddle;
-	private paddle_p2: PongPaddle;
+	public paddle_p1: PongPaddle;
+	public paddle_p2: PongPaddle;
 	private is_running: Boolean;
 	private last_timestamp: number;
 	private buffer: number;
 	private tick_interval: number;
 	private tick_rate: number;
 	private score: Score;
+	static	angle:number = 0;
 
 	constructor(html: HTMLElement)
 	{
 		this.canvas = new PongCanvas(html.querySelector("#pong-canvas")!);
 		this.score= {p1: 0, p2: 0};
-		this.ball = new PongBall(this.canvas, this.score);
 		this.paddle_p1 = new PongPaddle({x: 0, y: this.canvas.canvas.height / 2});
 		this.paddle_p2 = new PongPaddle({x: this.canvas.canvas.width, y: this.canvas.canvas.height / 2});
+		this.ball = new PongBall(this.canvas, this.score, this.paddle_p1, this.paddle_p2);
 		this.is_running = false;
 		this.last_timestamp = performance.now();
 		this.buffer = 0;
@@ -116,19 +117,29 @@ export class Game
 
 	summon_ball() : void
 	{
-		this.canvas.getContext().drawImage(this.ball.getTexture(), this.canvas.canvas.width / 2, this.canvas.canvas.height / 2, 20, 20);
+		this.canvas.getContext().drawImage(this.ball.getTexture(), this.canvas.canvas.width / 2, this.canvas.canvas.height / 2, 15, 15);
 	}
 
 	summon_paddle() : void
 	{
 		this.canvas.getContext().drawImage(this.paddle_p1.getTexture(), this.paddle_p1.pos.x, (this.paddle_p1.pos.y - (this.paddle_p2.size as Size).h / 2), 20, 50);
 		this.canvas.getContext().drawImage(this.paddle_p2.getTexture(), this.paddle_p2.pos.x - (this.paddle_p2.size as Size).w, this.paddle_p2.pos.y - ((this.paddle_p2.size as Size).h / 2), 20, 50);
-
 	}
 
 	start() : void
 	{
-		console.log("BAAAAAAALLL");
+		window.addEventListener("keydown", (event) => {
+			console.log(event.key);
+			if (event.key === "ArrowDown")
+				this.paddle_p2.pos.y = this.paddle_p2.pos.y + 10;
+			if (event.key === "ArrowUp")
+				this.paddle_p2.pos.y = this.paddle_p2.pos.y - 10;
+			if (event.key === "s")
+				this.paddle_p1.pos.y = this.paddle_p1.pos.y + 10;
+			if (event.key === "w")
+				this.paddle_p1.pos.y = this.paddle_p1.pos.y - 10;
+			}
+		);
 		this.summon_ball();
 		this.summon_paddle();
 		this.is_running = true;
@@ -152,12 +163,22 @@ export class Game
 
 	update(t: number) : void
 	{
+		if (Game.angle > 359)
+			Game.angle = 0;
+		else
+			Game.angle = Game.angle + 0.1	;
 		this.canvas.getContext().reset();
-	//	console.log("Tick ", t, "ms");
+		// this.canvas.getContext().translate(this.canvas.canvas.width / 2, this.canvas.canvas.height / 2);
+		// this.canvas.getContext().rotate(Game.angle);
+		// this.canvas.getContext().scale(0.5,0.5);
+		// this.canvas.getContext().translate(-(this.canvas.canvas.width / 2), -(this.canvas.canvas.height / 2));
+		//	console.log("Tick ", t, "ms");
 		this.ball.updatePos();
 		this.summon_paddle();
-		this.canvas.getContext().drawImage(this.ball.getTexture(), this.ball.pos.x - 10, this.ball.pos.y - 10);
+		this.canvas.getContext().drawImage(this.ball.getTexture(), this.ball.pos.x - 5, this.ball.pos.y - 5,  10, 10);
+		// console.log("Angle:",Game.angle);
 	}
+
 }
 
 export class PongCanvas
@@ -201,6 +222,7 @@ export class PongPaddle extends PhysicObject
 		return (this.texture);
 	}
 
+
 }
 
 export class PongBall extends PhysicObject
@@ -208,14 +230,18 @@ export class PongBall extends PhysicObject
 	private texture: HTMLImageElement;
 	private canvas: PongCanvas;
 	private score: Score;
+	readonly paddle_p1:PongPaddle;
+	readonly paddle_p2:PongPaddle;
 
-	constructor(canvas: PongCanvas, score: Score)
+	constructor(canvas: PongCanvas, score: Score, paddle_p1: PongPaddle, paddle_p2: PongPaddle)
 	{
-		super({x:50, y: 50}, 20, new Vector2D(3,1));
+		super({x:50, y: 50}, 10, new Vector2D(1,1));
 		this.texture = new Image();
 		this.texture.src = "/pong_ball.png";
 		this.canvas = canvas;
 		this.score = score;
+		this.paddle_p1 = paddle_p1;
+		this.paddle_p2 = paddle_p2;
 	}
 
 	getTexture() : HTMLImageElement
@@ -266,11 +292,8 @@ export class PongBall extends PhysicObject
 			this.pos.x = this.canvas.canvas.width / 2;
 			this.pos.y = this.canvas.canvas.height / 2;
 			let new_dir:number = Math.random() * 5 * ((Math.random() * 2) - 1);
-			console.log("angle",new_dir);
-			console.log("Score",this.score);
 			this.speed.setX = (3 * next_side);
 			this.speed.setY = (new_dir);
-			console.log("speed", this.speed);
 		}
 	}
 
@@ -295,8 +318,8 @@ export class PongBall extends PhysicObject
 	{
 		this.test_collide({x: 0, y: 0}, this.canvas.top_normal);
 		this.test_collide({x: 0, y: this.canvas.canvas.height}, this.canvas.bottom_normal);
-		this.test_collide_paddle({x: this.canvas.canvas.width - 20, y: this.canvas.canvas.height / 2}, this.canvas.right_normal);
-		this.test_collide_paddle({x: 20, y: this.canvas.canvas.height / 2}, this.canvas.left_normal);
+		this.test_collide_paddle({x: this.paddle_p2.pos.x - 20, y: this.paddle_p2.pos.y}, this.canvas.right_normal);
+		this.test_collide_paddle({x: 20, y:this.paddle_p1.pos.y}, this.canvas.left_normal);
 		this.test_collide_score({x: 0, y: 0}, this.canvas.left_normal);
 		this.test_collide_score({x: this.canvas.canvas.width, y: 0}, this.canvas.right_normal);
 		this.position.x += this.speed.getX();
