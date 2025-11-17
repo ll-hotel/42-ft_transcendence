@@ -1,11 +1,11 @@
 import AppPage from "./pages/AppPage.js";
-import { AuthPage } from "./pages/AuthPage.js";
 import newHomePage from "./pages/HomePage.js";
+import { Login } from "./pages/login.js";
 import { UserProfile } from "./pages/UserProfile.js"
 
 enum Pages {
 	home = "home.html",
-	auth = "auth.html",
+	login = "login.html",
 	userprofile = "userprofile.html",
 };
 export type PageName = keyof typeof Pages;
@@ -13,7 +13,7 @@ export type PageName = keyof typeof Pages;
 export function strToPageName(str: string): PageName | null {
 	switch (str) {
 		case "home": return "home";
-		case "auth": return "auth";
+		case "login": return "login";
 		case "userprofile": return "userprofile";
 	}
 	return null;
@@ -32,7 +32,7 @@ class PageLoader {
 
 	async downloadPages() {
 		await this.download("home");
-		await this.download("auth");
+		await this.download("login");
 		await this.download("userprofile");
 	}
 
@@ -51,7 +51,7 @@ class PageLoader {
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
-			case "auth": newPage = AuthPage.new; break;
+			case "login": newPage = Login.new; break;
 			case "userprofile": newPage = UserProfile.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
@@ -83,6 +83,6 @@ export async function gotoPage(name: PageName) {
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {
-	const page = strToPageName(location.pathname.substring(1)) || "auth";
+	const page = strToPageName(location.pathname.substring(1)) || "login";
 	loader.load(page);
 }

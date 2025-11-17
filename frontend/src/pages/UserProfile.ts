@@ -21,7 +21,6 @@ export class UserProfile implements AppPage {
 		const displayname = content?.querySelector("#profile-displayname");
 		const username = content?.querySelector("#profile-username")!;
 		if (!content || !profile || !logout || !displayname || !username) {
-			console.log("[user profile]: Missing html element!");
 			return null;
 		}
 		return new UserProfile(content! as HTMLElement);
@@ -30,12 +29,17 @@ export class UserProfile implements AppPage {
 	async loadInto(container: HTMLElement) {
 		const token = localStorage.getItem("access_token");
 		if (!token) {
-			console.log("[userprofile] Redirecting to login page");
-			gotoPage("auth");
-			return;
+			return gotoPage("login");
 		}
 		container.appendChild(this.content);
+		return this.loadUserInfo();
+	}
 
+	unload(): void {
+		this.content.remove();
+	}
+
+	async loadUserInfo() {
 		let localUserInfo = localStorage.getItem("userinfo");
 		if (!localUserInfo) {
 			const res = await api.get("/api/me");
@@ -52,27 +56,18 @@ export class UserProfile implements AppPage {
 		} catch {
 			// If JSON.parse throws then our local user info is corrupted.
 			localStorage.removeItem("userinfo");
-			return;
+			await this.logoutClick();
 		}
-	}
-
-	unload(): void {
-		this.content.remove();
 	}
 
 	async logoutClick() {
-		const accessToken = localStorage.getItem("access_token");
-		if (!accessToken) {
-			console.log("[userprofile] Not logged in. Redirecting.");
-			gotoPage("auth");
-			return;
-		}
 		const reply = await api.post("/api/auth/logout");
 		if (!reply || reply.status == Status.unauthorized) {
 			// Unauthorized = not logged in or wrong user.
 			// Not doing anything for now.
 		}
 		localStorage.removeItem("access_token");
-		gotoPage("auth");
+		localStorage.removeItem("userinfo");
+		await gotoPage("login");
 	}
 };
