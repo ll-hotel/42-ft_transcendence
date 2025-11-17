@@ -1,10 +1,12 @@
 import AppPage from "./pages/AppPage.js";
 import newHomePage from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
+import { Register } from "./pages/register.js";
 import { UserProfile } from "./pages/UserProfile.js"
 
 enum Pages {
 	home = "home.html",
+	register = "register.html",
 	login = "login.html",
 	userprofile = "userprofile.html",
 };
@@ -13,6 +15,7 @@ export type PageName = keyof typeof Pages;
 export function strToPageName(str: string): PageName | null {
 	switch (str) {
 		case "home": return "home";
+		case "register": return "register";
 		case "login": return "login";
 		case "userprofile": return "userprofile";
 	}
@@ -32,6 +35,7 @@ class PageLoader {
 
 	async downloadPages() {
 		await this.download("home");
+		await this.download("register");
 		await this.download("login");
 		await this.download("userprofile");
 	}
@@ -51,6 +55,7 @@ class PageLoader {
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
+			case "register": newPage = Register.new; break;
 			case "login": newPage = Login.new; break;
 			case "userprofile": newPage = UserProfile.new; break;
 		}
