@@ -34,10 +34,15 @@ class PageLoader {
 	}
 
 	async downloadPages() {
-		await this.download("home");
-		await this.download("register");
-		await this.download("login");
-		await this.download("userprofile");
+		const downloads = [
+			this.download("home"),
+			this.download("register"),
+			this.download("login"),
+			this.download("userprofile"),
+		];
+		for (const download of downloads) {
+			await download;
+		}
 	}
 
 	load(name: PageName) {
