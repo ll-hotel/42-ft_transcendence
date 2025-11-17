@@ -31,7 +31,7 @@ export class UserProfile implements AppPage {
 		const token = localStorage.getItem("access_token");
 		if (!token) {
 			console.log("[userprofile] Redirecting to login page");
-			window.location.replace("#auth");
+			gotoPage("auth");
 			return;
 		}
 		container.appendChild(this.content);
@@ -61,7 +61,6 @@ export class UserProfile implements AppPage {
 	}
 
 	async logoutClick() {
-		localStorage.clear();
 		const accessToken = localStorage.getItem("access_token");
 		if (!accessToken) {
 			console.log("[userprofile] Not logged in. Redirecting.");
@@ -69,11 +68,11 @@ export class UserProfile implements AppPage {
 			return;
 		}
 		const reply = await api.post("/api/auth/logout");
-		if (!reply) return;
-		if (reply.status == Status.unauthorized) {
+		if (!reply || reply.status == Status.unauthorized) {
 			// Unauthorized = not logged in or wrong user.
 			// Not doing anything for now.
 		}
+		localStorage.removeItem("access_token");
 		gotoPage("auth");
 	}
 };

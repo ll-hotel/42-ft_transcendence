@@ -29,7 +29,7 @@ export class AuthPage implements AppPage {
 		const token = localStorage.getItem("access_token");
 		if (token != null) {
 			console.log("[auth] Already logged in, redirecting");
-			gotoPage("home");
+			gotoPage("userprofile");
 			return;
 		}
 		this.form.reset();
@@ -99,7 +99,7 @@ export class AuthPage implements AppPage {
 		const { status, payload } = reply;
 		if (status == Status.success) {
 			localStorage.setItem("access_token", payload.access_token);
-			gotoPage("home");
+			gotoPage("userprofile");
 			return;
 		}
 		if (status == Status.bad_request) {
@@ -108,7 +108,7 @@ export class AuthPage implements AppPage {
 				return this.setError(payload.message);
 			}
 			localStorage.setItem("access_token", payload.access_token)
-			gotoPage("home");
+			gotoPage("userprofile");
 		}
 	}
 };
