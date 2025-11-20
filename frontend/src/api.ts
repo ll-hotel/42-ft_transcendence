@@ -13,11 +13,11 @@ export class api {
 	static async get(uri: string) {
 		return this.request("GET", uri);
 	}
-	static async post(uri: string, body?: any) {
+	static async post(uri: string, body: object = {}) {
 		return this.request("POST", uri, body);
 	}
-	private static async request(method: "GET" | "POST", uri: string, body?: any) {
-		const token = localStorage.getItem("access_token");
+	private static async request(method: "GET" | "POST", uri: string, body: string | object = "") {
+		const token = localStorage.getItem("accessToken");
 		let headers;
 		let jsonBody: string | null = null;
 		if (method == "GET") {

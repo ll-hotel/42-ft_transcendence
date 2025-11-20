@@ -8,6 +8,7 @@ RUN apk add typescript;
 
 COPY package.json ./
 RUN npm install;
+RUN npm install -g nodemon;
 
 COPY tsconfig.json ./
 COPY init.sh ./init.sh

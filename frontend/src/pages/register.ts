@@ -23,7 +23,7 @@ export class Register implements AppPage {
 	}
 
 	loadInto(container: HTMLElement): void {
-		if (localStorage.getItem("access_token")) {
+		if (localStorage.getItem("accessToken")) {
 			// Already connected. Redirecting to user profile page.
 			gotoPage("userprofile");
 			return;
@@ -37,15 +37,19 @@ export class Register implements AppPage {
 	}
 	async submitForm() {
 		const data = new FormData(this.form);
-		const username = data.get("username");
-		const password = data.get("password");
+		const username = data.get("username")?.toString() || "";
+		const password = data.get("password")?.toString() || "";
+		const twofa = data.get("twofa")?.valueOf() || false;
 
-		const res = await api.post("/api/auth/register", { username, password, displayName: username })
+		const res = await api.post("/api/auth/register", { username, password, displayName: username, twofa })
 		if (!res) {
 			return alert("Invalid API response.");
 		}
 		if (res.status != Status.created) {
 			return alert("Error: " + res.payload.message);
+		}
+		if (res.payload.qrCode) {
+			window.open(res.payload.qrCode);
 		}
 		await gotoPage("login");
 	}

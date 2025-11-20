@@ -26,35 +26,35 @@ declare module "fastify" {
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 
 export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
-	let token: string | null = null;
-	const authorization = req.headers.authorization;
-	if (authorization) {
-		token = authorization.split(" ")[1];
-	} else if (req.cookies && req.cookies["access_token"]) {
-		token = req.cookies["access_token"];
-	} else {
-		rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
+	const cookie = req.cookies ? req.cookies.accessToken : undefined;
+	let token = cookie;
+	if (token == undefined) {
+		// Try to get the accessToken from Authorization header.
+		const keyValue = req.headers.authorization?.split(" ");
+		if (!keyValue || keyValue.length < 2) {
+			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
+		}
+		token = keyValue[1];
+	}
+	let payload: { uuid: string };
+	try {
+		payload = jwt.verify(token, jwtSecret, {}) as { uuid: string };
+	} catch {
+		rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_token });
 		return;
 	}
-	try {
-		const payload = jwt.verify(token, jwtSecret) as { uuid: string };
-		const result = await db.select().from(users).where(eq(users.uuid, payload.uuid));
-
-		if (result.length === 0)
-			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
-
-		const user = result[0];
-		req.user = {
-			id: user.id,
-			uuid: user.uuid,
-			username: user.username,
-			displayName: user.displayName,
-			twofaEnabled: user.twofaEnabled,
-			isOnline: user.isOnline,
-			avatar: user.avatar,
-		}
+	const dbUsers = await db.select().from(users).where(eq(users.uuid, payload.uuid));
+	if (dbUsers.length === 0) {
+		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
 	}
-	catch {
-		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_token });
+	const user = dbUsers[0];
+	req.user = {
+		id: user.id,
+		uuid: user.uuid,
+		username: user.username,
+		displayName: user.displayName,
+		twofaEnabled: user.twofaEnabled,
+		isOnline: user.isOnline,
+		avatar: user.avatar,
 	}
 }	

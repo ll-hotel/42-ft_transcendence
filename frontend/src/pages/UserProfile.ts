@@ -14,12 +14,11 @@ export class UserProfile implements AppPage {
 		const logout = content.querySelector("#logout") as HTMLElement;
 		logout.onclick = () => this.logoutClick();
 	}
-	static new(html: HTMLElement) {
-		const content = html.querySelector("#user-profile-content");
-		const profile = content?.querySelector("#profile");
-		const logout = content?.querySelector("#logout");
-		const displayname = content?.querySelector("#profile-displayname");
-		const username = content?.querySelector("#profile-username")!;
+	static new(content: HTMLElement) {
+		const profile = content.querySelector("#profile");
+		const logout = content.querySelector("#logout");
+		const displayname = content.querySelector("#profile-displayname");
+		const username = content.querySelector("#profile-username")!;
 		if (!content || !profile || !logout || !displayname || !username) {
 			return null;
 		}
@@ -27,7 +26,7 @@ export class UserProfile implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement) {
-		const token = localStorage.getItem("access_token");
+		const token = localStorage.getItem("accessToken");
 		if (!token) {
 			return gotoPage("login");
 		}
@@ -64,9 +63,8 @@ export class UserProfile implements AppPage {
 		const reply = await api.post("/api/auth/logout");
 		if (!reply || reply.status == Status.unauthorized) {
 			// Unauthorized = not logged in or wrong user.
-			// Not doing anything for now.
 		}
-		localStorage.removeItem("access_token");
+		localStorage.removeItem("accessToken");
 		localStorage.removeItem("userinfo");
 		await gotoPage("login");
 	}
