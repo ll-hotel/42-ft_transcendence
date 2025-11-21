@@ -15,11 +15,10 @@ export class UserProfile implements AppPage {
 		logout.onclick = () => this.logoutClick();
 	}
 	static new(content: HTMLElement) {
-		const profile = content.querySelector("#profile");
 		const logout = content.querySelector("#logout");
 		const displayname = content.querySelector("#profile-displayname");
 		const username = content.querySelector("#profile-username")!;
-		if (!content || !profile || !logout || !displayname || !username) {
+		if (!content || !logout || !displayname || !username) {
 			return null;
 		}
 		return new UserProfile(content! as HTMLElement);
