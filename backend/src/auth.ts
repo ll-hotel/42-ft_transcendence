@@ -24,6 +24,9 @@ const SCHEMA_REGISTER = {
 const SCHEMA_LOGIN = SCHEMA_REGISTER;
 
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
+const UID = fs.readFileSync("/run/secrets/uid_42", "utf-8").trim();
+const clientSecret = fs.readFileSync("/run/secrets/client42_secret", "utf-8").trim();
+const redirectURI = `https://localhost:8080/api/auth42/callback`
 
 /// Usernames are formed of alphanumerical characters ONLY.
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
@@ -36,6 +39,8 @@ class AuthService {
 		app.post('/api/auth/register', { schema: SCHEMA_REGISTER }, this.register);
 		app.post('/api/auth/login', { schema: SCHEMA_LOGIN }, this.login);
 		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
+		app.get('/api/auth42', this.redirectAuth42);
+		app.get('/api/auth42/callback', this.callback); 
 	}
 
 	async register(req: FastifyRequest, rep: FastifyReply) {
@@ -139,6 +144,65 @@ class AuthService {
 
 		rep.clearCookie('accessToken', { path: "/api" });
 		rep.code(STATUS.success).send({ message: MESSAGE.logged_out });
+	}
+
+	async redirectAuth42(req: FastifyRequest, rep: FastifyReply) {
+		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${UID}&redirect_uri=${encodeURI(redirectURI)}&response_type=code`
+		rep.redirect(redirectURL);
+	}
+
+	async callback(req: FastifyRequest, rep: FastifyReply) {
+		const {code} = req.query as {code?: string};
+		if (!code)
+			return rep.code(STATUS.bad_request).send({ message: "Missing code "});
+
+		const tokenResponse = await fetch('https://api.intra.42.fr/oauth/token',{
+			method: 'POST',
+			headers: {'Content-type': "application/json"},
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: UID,
+				client_secret: clientSecret,
+				code,
+				redirect_uri: redirectURI,
+
+			})
+		});
+		const token = await tokenResponse.json();
+		if (!token.access_token)
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_token });
+		const response = await fetch('https://api.intra.42.fr/v2/me',{
+			headers: {Authorization: "Bearer " + token.access_token}
+		});
+		const userData = await response.json();
+
+		const [userExists] = await db.select().from(users).where(eq(users.username, userData.login));
+		let user;
+		if (userExists)
+			user = userExists;
+		else {
+			const uuid = uiidv4();
+			user = {uuid};
+			const pass = await hashPassword("42AuthUser____" + uuid);
+			await db.insert(users).values({
+				uuid,
+				username: userData.login,
+				displayName: userData.login,
+				password: pass,
+				// avatar = image?
+			});
+		}
+		console.log(userData);
+		const access_token = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '24h' });
+		rep.setCookie('access_token', access_token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));
+
+		
+		rep.code(STATUS.success).send({
+		  	message: MESSAGE.logged_in,
+		  	logged_in: true,
+		  	access_token,
+		});
 	}
 };
 
