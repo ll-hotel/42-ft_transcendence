@@ -2,7 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js";
 
-export class Register implements AppPage {
+export class RegisterPage implements AppPage {
 	content: HTMLElement;
 	form: HTMLFormElement;
 
@@ -19,13 +19,13 @@ export class Register implements AppPage {
 		if (!content.querySelector("form")) {
 			return null;
 		}
-		return new Register(content);
+		return new RegisterPage(content);
 	}
 
 	loadInto(container: HTMLElement): void {
 		if (localStorage.getItem("accessToken")) {
 			// Already connected. Redirecting to user profile page.
-			gotoPage("userprofile");
+			gotoPage("profile");
 			return;
 		}
 		container.appendChild(this.content);

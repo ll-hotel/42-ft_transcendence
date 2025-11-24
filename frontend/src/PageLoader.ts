@@ -1,14 +1,14 @@
 import AppPage from "./pages/AppPage.js";
 import newHomePage from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
-import { Register } from "./pages/register.js";
-import { UserProfile } from "./pages/UserProfile.js"
+import { RegisterPage } from "./pages/register.js";
+import { ProfilePage } from "./pages/profile.js"
 
 enum Pages {
 	home = "home.html",
 	register = "register.html",
 	login = "login.html",
-	userprofile = "userprofile.html",
+	profile = "profile.html",
 };
 export type PageName = keyof typeof Pages;
 
@@ -17,7 +17,7 @@ export function strToPageName(str: string): PageName | null {
 		case "home": return "home";
 		case "register": return "register";
 		case "login": return "login";
-		case "userprofile": return "userprofile";
+		case "profile": return "profile";
 	}
 	return null;
 }
@@ -38,7 +38,7 @@ class PageLoader {
 			this.download("home"),
 			this.download("register"),
 			this.download("login"),
-			this.download("userprofile"),
+			this.download("profile"),
 		];
 		for (const download of downloads) {
 			await download;
@@ -60,9 +60,9 @@ class PageLoader {
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
-			case "register": newPage = Register.new; break;
+			case "register": newPage = RegisterPage.new; break;
 			case "login": newPage = Login.new; break;
-			case "userprofile": newPage = UserProfile.new; break;
+			case "profile": newPage = ProfilePage.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);
@@ -74,7 +74,7 @@ class PageLoader {
 };
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	return await fetch(`https://${window.location.hostname}/${encodeURI(path)}`, {
+	return await fetch(`/${encodeURI(path)}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
@@ -85,6 +85,13 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
 export async function gotoPage(name: PageName) {
+	const token = localStorage.getItem("accessToken");
+	if (!token && name != "login" && name != "register") {
+		name = "login";
+	}
+	if (loader.loaded && loader.loaded == name) {
+		return;
+	}
 	history.pushState({ page: loader.loaded }, "", "/" + name);
 	await loader.downloadPages();
 	loader.load(name);
