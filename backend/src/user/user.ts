@@ -24,9 +24,13 @@ class User {
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
-		if (!req.user)
+		if (!req.user) {
 			return (rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized }));
-		rep.send(req.user);
+		}
+		rep.code(STATUS.success).send({
+			displayName: req.user.displayName,
+			avatar: req.user.avatar
+		});
 	}
 
 	static async getUser(req: FastifyRequest, rep: FastifyReply) {

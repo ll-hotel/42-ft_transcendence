@@ -4,4 +4,4 @@ set -e
 tsc
 tsc --watch &
 
-exec node dist/index.js --watch
+exec nodemon dist/index.js --watch dist

@@ -1,6 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import cookie from '@fastify/cookie';
-import formbody from '@fastify/formbody';
+import fastifyCookie from '@fastify/cookie';
 import jwt from 'jsonwebtoken';
 import { v4 as uiidv4 } from 'uuid';
 import { STATUS, MESSAGE } from './shared';
@@ -36,8 +35,7 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class AuthService {
 	setup(app: FastifyInstance) {
-		app.register(cookie);
-		app.register(formbody);
+		app.register(fastifyCookie);
 		app.post('/api/auth/register', { schema: SCHEMA_REGISTER }, this.register);
 		app.post('/api/auth/login', { schema: SCHEMA_LOGIN }, this.login);
 		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
@@ -91,50 +89,49 @@ class AuthService {
 	}
 
 	async login(req: FastifyRequest, rep: FastifyReply) {
-		const body = req.body as { username: string, password: string, token?: string };
-		const { username, password, token } = body;
+		const body = req.body as { username: string, password: string, twoFACode?: string };
+		const { username, password, twoFACode } = body;
 
-		const result = await db.select().from(users).where(eq(users.username, username));
-		if (result.length === 0)
+		const dbQueryResult = await db.select().from(users).where(eq(users.username, username));
+		const user = dbQueryResult.length === 0 ? null : dbQueryResult[0];
+		if (!user) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
-
-		const user = result[0];
-		const validPass = await comparePassword(password, user.password);
-		if (!validPass)
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
-
-		if (user.twofaEnabled === 1) {
-			if (!token)
-				return rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_2FA });
-
-			const valid2FA = verify2FAToken(user.twofaKey!, token);
-			if (!valid2FA)
-				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA });
 		}
-
-		const tokenCookie = req.cookies['access_token'];
+		if (await comparePassword(password, user.password) == false) {
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
+		}
+		if (user.twofaEnabled) {
+			if (!twoFACode) {
+				return rep.code(STATUS.bad_request)
+					.send({ message: MESSAGE.missing_2FA, twoFAEnabled: true });
+			}
+			if (!verify2FAToken(user.twofaKey!, twoFACode)) {
+				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA });
+			}
+		}
+		const tokenCookie = req.cookies['accessToken'];
 		if (tokenCookie) {
 			try {
 				jwt.verify(tokenCookie, jwtSecret);
-				rep.code(STATUS.bad_request).send({
+				return rep.code(STATUS.bad_request).send({
 					message: MESSAGE.already_logged_in,
-					logged_in: true,
-					access_token: tokenCookie,
+					loggedIn: true,
+					accessToken: tokenCookie,
 				});
-				return;
 			} catch {
 				// token expired, process reconnection
 			}
 		}
-
-		const access_token = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '24h' });
-
-		rep.setCookie('access_token', access_token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		await db.update(users).set({ isOnline: 1 }).where(eq(users.id, user.id));
+		rep.setCookie('accessToken', accessToken, {
+			httpOnly: true, secure: true, sameSite: 'strict',
+			path: "/api"
+		});
 		rep.code(STATUS.success).send({
 			message: MESSAGE.logged_in,
-			logged_in: true,
-			access_token,
+			loggedIn: true,
+			accessToken,
 		});
 	};
 
@@ -145,7 +142,7 @@ class AuthService {
 
 		await db.update(users).set({ isOnline: 0 }).where(eq(users.id, user.id));
 
-		rep.clearCookie('access_token', { path: '/' });
+		rep.clearCookie('accessToken', { path: "/api" });
 		rep.code(STATUS.success).send({ message: MESSAGE.logged_out });
 	}
 
@@ -211,6 +208,6 @@ class AuthService {
 
 const service = new AuthService();
 
-export default function(fastify:FastifyInstance) {
+export default function(fastify: FastifyInstance) {
 	service.setup(fastify);
 }
