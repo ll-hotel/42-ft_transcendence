@@ -108,13 +108,18 @@ export class Game
 	private tick_interval: number;
 	private tick_rate: number;
 	private score: Score;
+	private score_viewer: HTMLElement;
+
 	static	angle:number = 0;
 	public input: Map<string, boolean>;
+
+
 
 	constructor(html: HTMLElement)
 	{
 		// window.addEventListener("",);
 		this.canvas = new PongCanvas(html.querySelector("#pong-canvas")!);
+		this.score_viewer = html.querySelector("#score_viewer")!;
 		this.score= {p1: 0, p2: 0};
 		this.paddle_p1 = new PongPaddle({x: 0, y: this.canvas.canvas.height / 2});
 		this.paddle_p2 = new PongPaddle({x: this.canvas.canvas.width, y: this.canvas.canvas.height / 2});
@@ -127,19 +132,26 @@ export class Game
 		this.input = new Map([["w", false], ["s", false], ["ArrowUp", false], ["ArrowDown", false]]);
 	}
 
-	summon_ball() : void
-	{
-		this.canvas.getContext().drawImage(this.ball.getTexture(), this.canvas.canvas.width / 2, this.canvas.canvas.height / 2, 15, 15);
-	}
-
-	summon_paddle() : void
+	update_paddle_texture() : void
 	{
 		this.canvas.getContext().drawImage(this.paddle_p1.getTexture(), this.paddle_p1.pos.x, (this.paddle_p1.pos.y - (this.paddle_p2.size as Size).h / 2), 20, 50);
 		this.canvas.getContext().drawImage(this.paddle_p2.getTexture(), this.paddle_p2.pos.x - (this.paddle_p2.size as Size).w, this.paddle_p2.pos.y - ((this.paddle_p2.size as Size).h / 2), 20, 50);
 	}
 
-	start() : void
+	update_ball_texture() : void
 	{
+		this.canvas.getContext().drawImage(this.ball.getTexture(), this.ball.pos.x - 5, this.ball.pos.y - 5,  10, 10);
+	}
+
+	update_texture_pos()
+	{
+		this.update_paddle_texture();
+		this.update_ball_texture();
+	}
+
+	game_init() : void
+	{
+		this.is_running = false;
 		window.addEventListener("keydown", (event) => {
 			console.log(event.key);
 			if (event.key === "ArrowDown")
@@ -150,7 +162,16 @@ export class Game
 				this.input.set("s", true);
 			if (event.key === "w")
 				this.input.set("w", true);
+			if (event.key === " ")
+			{
+				if (!this.is_running)
+				{
+					this.is_running = true;
+					console.log("isrunning :", this.is_running);
+					this.start();
+				}
 			}
+		}
 		);
 		window.addEventListener("keyup", (event) => {
 			console.log(event.key);
@@ -164,9 +185,15 @@ export class Game
 				this.input.set("w", false);
 			}
 		);
-		this.summon_ball();
-		this.summon_paddle();
-		this.is_running = true;
+		this.update_texture_pos();
+	}
+
+	start() : void
+	{
+		console.log("start");
+		this.ball.spawn_ball((Math.random() < 0.5 ? -1 : 1));
+		this.score.p1 = 0;
+		this.score.p2 = 0;
 		this.loop(this.last_timestamp);
 	}
 
@@ -188,6 +215,9 @@ export class Game
 	update(t: number) : void
 	{
 		this.canvas.getContext().reset();
+		// Game.angle = Game.angle + 0.02;
+		// if (Game.angle == 360)
+		// 	Game.angle = 0;
 		// this.canvas.getContext().translate(this.canvas.canvas.width / 2, this.canvas.canvas.height / 2);
 		// this.canvas.getContext().rotate(Game.angle);
 		// this.canvas.getContext().scale(0.5,0.5);
@@ -201,20 +231,20 @@ export class Game
 		if (this.input.get("ArrowDown") && this.paddle_p2.pos.y < this.canvas.canvas.height - (5 +  (this.paddle_p1.size as Size).h / 2))
 			this.paddle_p2.pos.y = this.paddle_p2.pos.y + 5;
 		this.ball.updatePos();
-		this.summon_paddle();
-		this.canvas.getContext().drawImage(this.ball.getTexture(), this.ball.pos.x - 5, this.ball.pos.y - 5,  10, 10);
+		console.log("score:", this.score);
+		this.score_viewer.innerHTML = this.score.p1.toString() + " - " + this.score.p2.toString();
+		this.update_texture_pos();
 	}
-
 }
 
 export class PongCanvas
 {
-	readonly canvas : HTMLCanvasElement;
-	private context : CanvasRenderingContext2D;
-	readonly top_normal : Vector2D;
-	readonly bottom_normal : Vector2D;
-	readonly left_normal : Vector2D;
-	readonly right_normal : Vector2D;
+	readonly	canvas : HTMLCanvasElement;
+	private		context : CanvasRenderingContext2D;
+	readonly	top_normal : Vector2D;
+	readonly	bottom_normal : Vector2D;
+	readonly	left_normal : Vector2D;
+	readonly	right_normal : Vector2D;
 
 	constructor(canvas: HTMLCanvasElement)
 	{
@@ -261,13 +291,14 @@ export class PongBall extends PhysicObject
 
 	constructor(canvas: PongCanvas, score: Score, paddle_p1: PongPaddle, paddle_p2: PongPaddle)
 	{
-		super({x:50, y: 50}, 10, new Vector2D(1,1));
+		super({x: canvas.canvas.width / 2, y: canvas.canvas.height / 2}, 10, new Vector2D(0,0));
+		this.canvas = canvas;
 		this.texture = new Image();
 		this.texture.src = "/pong_ball.png";
-		this.canvas = canvas;
 		this.score = score;
 		this.paddle_p1 = paddle_p1;
 		this.paddle_p2 = paddle_p2;
+
 	}
 
 	getTexture() : HTMLImageElement
@@ -296,6 +327,13 @@ export class PongBall extends PhysicObject
 		}
 	}
 
+	spawn_ball(side:number)
+	{
+		let new_dir:number = Math.random() * 5 * ((Math.random() * 2) - 1);
+		this.speed.setX = (3 * side);
+		this.speed.setY = (new_dir);
+	}
+
 	test_collide_score(line_position: Position,normal: Vector2D)
 	{
 		var distance_from_line = dot_product(
@@ -317,9 +355,7 @@ export class PongBall extends PhysicObject
 			}
 			this.pos.x = this.canvas.canvas.width / 2;
 			this.pos.y = this.canvas.canvas.height / 2;
-			let new_dir:number = Math.random() * 5 * ((Math.random() * 2) - 1);
-			this.speed.setX = (3 * next_side);
-			this.speed.setY = (new_dir);
+			this.spawn_ball(next_side);
 		}
 	}
 
@@ -331,13 +367,12 @@ export class PongBall extends PhysicObject
 			normal.getX(), normal.getY()
 		);
 
-		if ((distance_from_line < (this.size as number) / 2) && ((paddle_position.y - this.position.y) > -25 && (paddle_position.y - this.position.y) < 25))
+		if ((distance_from_line < (this.size as number) / 2) && ((paddle_position.y - this.position.y) > -((this.paddle_p1.size as Size).h / 2) && (paddle_position.y - this.position.y) < (this.paddle_p1.size as Size).h / 2))
 		{
-			let new_angle:number = -(paddle_position.y - this.position.y);
 			let new_normal = normal;
 			new_normal.setY = new_normal.getY();
 			new_normal.unit_himself();
-			console.log(new_angle);
+			this.position.x = paddle_position.x + (((this.size as number) / 2) * normal.getX());
 			let speed_normal:number = dot_product(this.speed.getX(), this.speed.getY(), new_normal.getX(), new_normal.getY());
 			let speed_tangent:number = dot_product(this.speed.getX(), this.speed.getY(), new_normal.getY(), -new_normal.getX());
 			this.speed.setX = -(speed_normal * new_normal.getX()) + (speed_tangent * (new_normal.getY()));

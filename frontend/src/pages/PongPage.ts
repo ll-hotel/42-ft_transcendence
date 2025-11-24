@@ -11,7 +11,6 @@ export default function newPongPage(html: HTMLElement): PongPage | null
 		return (null);
 	}
 	return new PongPage(html);
-
 }
 
 export class PongPage implements AppPage
@@ -44,7 +43,7 @@ export class PongPage implements AppPage
 
 	start()
 	{
-		this.game.start();
+		this.game.game_init();
 	}
 }
 
