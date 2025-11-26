@@ -1,5 +1,6 @@
 import AppPage from "./pages/AppPage.js";
 import newHomePage from "./pages/HomePage.js";
+import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
 import { Register } from "./pages/register.js";
 import { UserProfile } from "./pages/UserProfile.js"
@@ -9,6 +10,7 @@ enum Pages {
 	register = "register.html",
 	login = "login.html",
 	userprofile = "userprofile.html",
+	friend ="friend.html",
 };
 export type PageName = keyof typeof Pages;
 
@@ -18,6 +20,7 @@ export function strToPageName(str: string): PageName | null {
 		case "register": return "register";
 		case "login": return "login";
 		case "userprofile": return "userprofile";
+		case "friend": return "friend";
 	}
 	return null;
 }
@@ -39,6 +42,7 @@ class PageLoader {
 			this.download("register"),
 			this.download("login"),
 			this.download("userprofile"),
+			this.download("friend"),
 		];
 		for (const download of downloads) {
 			await download;
@@ -63,6 +67,7 @@ class PageLoader {
 			case "register": newPage = Register.new; break;
 			case "login": newPage = Login.new; break;
 			case "userprofile": newPage = UserProfile.new; break;
+			case "friend": newPage = FriendPage.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);

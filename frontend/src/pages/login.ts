@@ -27,7 +27,7 @@ export class Login implements AppPage {
 	loadInto(container: HTMLElement): void {
 		if (localStorage.getItem("accessToken")) {
 			// Already connected. Redirecting to user profile page.
-			gotoPage("userprofile");
+			gotoPage("home");
 			return;
 		}
 		container.appendChild(this.content);

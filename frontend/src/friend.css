@@ -1,0 +1,27 @@
+.friend-card {
+	@apply w-full h-20 bg-white flex justify-between items-center px-4;
+}
+
+.friend-avatar {
+	@apply w-12 h-12 rounded-full;
+}
+
+.friend-status {
+	@apply flex items-center gap-2 px-2 border rounded-full;
+}
+
+.friend-round-online {
+	@apply h-3 w-3 rounded-full bg-green-500;
+}
+
+.friend-round-offline {
+	@apply h-3 w-3 rounded-full bg-red-400;
+}
+
+.friend-text-online {
+	@apply font-semibold text-green-600;
+}
+
+.friend-text-offline {
+	@apply font-semibold text-gray-500;
+}
