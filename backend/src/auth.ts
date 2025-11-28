@@ -26,7 +26,7 @@ const SCHEMA_LOGIN = SCHEMA_REGISTER;
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 const UID = fs.readFileSync("/run/secrets/uid_42", "utf-8").trim();
 const clientSecret = fs.readFileSync("/run/secrets/client42_secret", "utf-8").trim();
-const redirectURI = `https://localhost:8080/api/auth42/callback`
+const redirectURI = `https://localhost:8443/login`
 
 /// Usernames are formed of alphanumerical characters ONLY.
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
@@ -193,15 +193,15 @@ class AuthService {
 			});
 		}
 		console.log(userData);
-		const access_token = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '24h' });
-		rep.setCookie('access_token', access_token, { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
+		rep.setCookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'strict', path: '/api' });
 		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));
 
 		
 		rep.code(STATUS.success).send({
 		  	message: MESSAGE.logged_in,
-		  	logged_in: true,
-		  	access_token,
+		  	loggedIn: true,
+		  	accessToken,
 		});
 	}
 };
