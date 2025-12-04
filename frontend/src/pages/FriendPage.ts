@@ -25,6 +25,7 @@ export class FriendPage implements AppPage {
 	content: HTMLElement;
 	listContainer: HTMLElement;
 	chatContainer: HTMLElement;
+	selectedCard: HTMLElement | null = null;
 
 	constructor(content: HTMLElement)
 	{
@@ -40,8 +41,8 @@ export class FriendPage implements AppPage {
 		if (!content)
 			return null;
 
-		const list = content.querySelector("#friend-list-content")!;
-		const chat = content.querySelector("#friend-chat")!;
+		const list = content.querySelector<HTMLElement>("#friend-list-content")!;
+		const chat = content.querySelector<HTMLElement>("#friend-chat")!;
 
 		if (!list || !chat)
 			return null;
@@ -77,7 +78,7 @@ export class FriendPage implements AppPage {
 
 		const friends = res.payload
 		this.listContainer.innerHTML = "";
-
+		
 		const card = document.createElement("div");
 		card.className = "friend-card";
 
@@ -96,12 +97,25 @@ export class FriendPage implements AppPage {
 		`;
 		this.listContainer.appendChild(card);
 		
-		if(!friends.value)
+		if(!friends || friends.lenght == 0)
 			console.log("No Friend"); //Afficher une div qui dit que t'as pas de potes
 
 		friends.forEach((friend: any) => {
-			const card = FriendPage.createFriendCard(friend)
-			card.onclick = () => this.loadChat(friend.id);
+			const card :HTMLElement= FriendPage.createFriendCard(friend)
+			card.onclick = () => {
+
+				if(this.selectedCard)
+				{
+					this.selectedCard.classList.remove("select-card");
+					this.selectedCard.classList.add("unselected-card");
+				}
+
+				card.classList.remove("unselected-card");
+				card.classList.add("select-card");
+
+				this.selectedCard = card;
+				this.loadChat(friend.id);
+			}
 			this.listContainer.appendChild(card);
 		});
 	}

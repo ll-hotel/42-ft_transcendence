@@ -95,6 +95,12 @@ export async function gotoPage(name: PageName) {
 	loader.load(name);
 }
 
+export async function gotoUserPage( displayName : any)
+{
+	history.pushState({ page: loader.loaded }, "", "/user/" + displayName);
+	await loader.downloadPages();
+}
+
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {

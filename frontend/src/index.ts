@@ -1,4 +1,6 @@
+import { api } from "./api.js";
 import { gotoPage, strToPageName, PageName } from "./PageLoader.js";
+import { FriendPage } from "./pages/FriendPage.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -6,6 +8,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 		alert("Missing content div");
 		return;
 	}
+	initSearchBar();
 	const uri = window.location.pathname;
 	const name = strToPageName(uri.substring(1)) || "login";
 
@@ -25,3 +28,67 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 });
 });
+
+function initSearchBar() {
+	const search = document.getElementById("user-search") as HTMLInputElement | null;
+	const result = document.getElementById("user-results");
+
+	if (!search || !result)
+		return;
+
+	search.addEventListener("input", async () => {
+		const searchName = search.value.trim().toLowerCase();
+
+		if (searchName.length == 0) {
+			result.innerHTML = "";
+			return;
+		}
+
+		const allUsers = await api.get("/api/users/all");
+
+		if (!allUsers || ! allUsers.payload || !allUsers.payload.users)
+		{
+			result.innerHTML = "<div>Pas d'utilisateurs chargés</div>";
+			return;
+		}
+
+		const selectedUsers = allUsers.payload.users.filter((user: any) =>{
+			return user.displayName.toLowerCase().includes(searchName);
+		}
+	);
+
+	displayResultSearch(selectedUsers);
+	});
+}
+
+function displayResultSearch(selectedUsers :any) {
+	const results = document.getElementById("user-results");
+	if (!results)
+		return;
+
+	results.innerHTML = "";
+
+	selectedUsers.forEach((user:any) => {
+		const card = document.createElement("div");
+		card.className = "user-result";
+
+		const avatar = document.createElement("img");
+		avatar.src =  "/default_pp.png";
+		avatar.className = "result-avatar";
+
+		const name = document.createElement("span");
+		name.textContent = user.displayName;
+		name.className = "result-name";
+
+		card.appendChild(avatar);
+		card.appendChild(name);
+
+		card.onclick = async () => {
+			await gotoPage("userprofile");
+		}
+
+		results.appendChild(card);
+
+	}
+	)
+}

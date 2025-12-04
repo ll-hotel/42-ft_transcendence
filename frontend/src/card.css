@@ -2,6 +2,15 @@
 	@apply w-full h-20 bg-white flex justify-between items-center px-4;
 }
 
+.friend-card-select {
+	@apply bg-sky-200;
+}
+
+.friend-card-unselect 
+{
+	@apply bg-white;
+}
+
 .friend-avatar {
 	@apply w-12 h-12 rounded-full;
 }
@@ -24,4 +33,16 @@
 
 .friend-text-offline {
 	@apply font-semibold text-gray-500;
+}
+
+.user-result {
+	@apply flex items-center p-2 bg-white rounded shadow hover:bg-gray-50 cursor-pointer
+}
+
+.result-avatar{
+	@apply w-10 h-10 rounded-full border border-gray-300
+}
+
+.result-name{
+	@apply ml-3 font-medium text-gray-800
 }

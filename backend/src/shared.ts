@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import { users } from "./db/tables";
 
 export const STATUS = {
     success: 200,
@@ -29,6 +30,7 @@ export const MESSAGE = {
     username_taken: 'Username already taken',
     displayName_taken: 'Display name aleready taken',
     user_notfound: 'User not found',
+    no_users: 'There is no users',
     database_error: "Database error",
     missing_fields: "Missing fields",
 };

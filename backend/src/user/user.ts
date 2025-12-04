@@ -14,6 +14,7 @@ class User {
 	static setup(app: FastifyInstance) {
 		app.get("/api/me", { preHandler: authGuard }, User.getMe);
 		app.get("/api/users", { preHandler: authGuard }, User.getUser);
+		app.get("/api/users/all", { preHandler: authGuard }, User.getallUsers);
 
 		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
 		app.patch("/api/user/password", { preHandler: authGuard }, User.updatePassword);
@@ -53,6 +54,25 @@ class User {
 
 		return rep.code(STATUS.success).send({ user: usr[0] });
 	}
+
+	static async getallUsers(req: FastifyRequest, rep: FastifyReply) {
+
+		const allUsers = await db.select({
+			uuid: users.uuid,
+			displayName: users.displayName,
+			avatar: users.avatar,
+			isOnline: users.isOnline,
+
+		})
+			.from(users);
+
+		if (allUsers.length === 0)
+			return rep.code(STATUS.not_found).send({ message: MESSAGE.no_users });
+
+		return rep.code(STATUS.success).send({ users: allUsers });
+	}
+
+
 
 	static async updateProfile(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user;
