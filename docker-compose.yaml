@@ -5,7 +5,7 @@ services:
     build:
       context: frontend
     ports:
-      - "443:443"
+      - "8443:443"
     volumes:
       - frontend-static:/srv/app/static
       - frontend-src:/srv/app/src
@@ -19,6 +19,8 @@ services:
       timeout: 2s
       retries: 3
       start_period: 2s
+    ports:
+      - "8080:8080"
     build:
       context: backend
     volumes:

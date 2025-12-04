@@ -4,6 +4,9 @@ import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
 import { Register } from "./pages/register.js";
 import { UserProfile } from "./pages/UserProfile.js"
+import { Login } from "./pages/login.js";
+import { RegisterPage } from "./pages/register.js";
+import { ProfilePage } from "./pages/profile.js"
 
 enum Pages {
 	home = "home.html",
@@ -79,7 +82,7 @@ class PageLoader {
 };
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	return await fetch(`https://${window.location.hostname}/${encodeURI(path)}`, {
+	return await fetch(`/${encodeURI(path)}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
@@ -90,6 +93,13 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
 export async function gotoPage(name: PageName) {
+	const token = localStorage.getItem("accessToken");
+	if (!token && name != "login" && name != "register") {
+		name = "login";
+	}
+	if (loader.loaded && loader.loaded == name) {
+		return;
+	}
 	history.pushState({ page: loader.loaded }, "", "/" + name);
 	await loader.downloadPages();
 	loader.load(name);

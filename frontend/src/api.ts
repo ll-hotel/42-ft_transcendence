@@ -33,7 +33,7 @@ export class api {
 			};
 			jsonBody = JSON.stringify(body);
 		}
-		return fetch(`https://${window.location.hostname}${encodeURI(uri)}`, {
+		return fetch(`${encodeURI(uri)}`, {
 			method,
 			headers,
 			body: jsonBody,
@@ -49,6 +49,12 @@ export class api {
 				console.log("[api] JSON error while parsing response:", "");
 				return null;
 			}
-		})
+		}).catch(function(reason) {
+			if (reason) {
+				console.log("[api]: Request rejected with :", reason);
+			} else {
+				console.log("[api]: Request rejected");
+			}
+		});
 	}
 }
