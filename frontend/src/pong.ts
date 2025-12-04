@@ -109,15 +109,11 @@ export class Game
 	private tick_rate: number;
 	private score: Score;
 	private score_viewer: HTMLElement;
-
 	static	angle:number = 0;
 	public input: Map<string, boolean>;
 
-
-
 	constructor(html: HTMLElement)
 	{
-		// window.addEventListener("",);
 		this.canvas = new PongCanvas(html.querySelector("#pong-canvas")!);
 		this.score_viewer = html.querySelector("#score_viewer")!;
 		this.score= {p1: 0, p2: 0};
@@ -125,7 +121,7 @@ export class Game
 		this.paddle_p2 = new PongPaddle({x: this.canvas.canvas.width, y: this.canvas.canvas.height / 2});
 		this.ball = new PongBall(this.canvas, this.score, this.paddle_p1, this.paddle_p2);
 		this.is_running = false;
-		this.last_timestamp = performance.now();
+		this.last_timestamp = 0;
 		this.buffer = 0;
 		this.tick_rate = 60;
 		this.tick_interval = 1000 / this.tick_rate;
@@ -152,39 +148,7 @@ export class Game
 	game_init() : void
 	{
 		this.is_running = false;
-		window.addEventListener("keydown", (event) => {
-			console.log(event.key);
-			if (event.key === "ArrowDown")
-				this.input.set("ArrowDown", true);
-			if (event.key === "ArrowUp")
-				this.input.set("ArrowUp", true);
-			if (event.key === "s")
-				this.input.set("s", true);
-			if (event.key === "w")
-				this.input.set("w", true);
-			if (event.key === " ")
-			{
-				if (!this.is_running)
-				{
-					this.is_running = true;
-					console.log("isrunning :", this.is_running);
-					this.start();
-				}
-			}
-		}
-		);
-		window.addEventListener("keyup", (event) => {
-			console.log(event.key);
-			if (event.key === "ArrowDown")
-				this.input.set("ArrowDown", false);
-			if (event.key === "ArrowUp")
-				this.input.set("ArrowUp", false);
-			if (event.key === "s")
-				this.input.set("s", false);
-			if (event.key === "w")
-				this.input.set("w", false);
-			}
-		);
+
 		this.update_texture_pos();
 	}
 
@@ -215,13 +179,6 @@ export class Game
 	update(t: number) : void
 	{
 		this.canvas.getContext().reset();
-		// Game.angle = Game.angle + 0.02;
-		// if (Game.angle == 360)
-		// 	Game.angle = 0;
-		// this.canvas.getContext().translate(this.canvas.canvas.width / 2, this.canvas.canvas.height / 2);
-		// this.canvas.getContext().rotate(Game.angle);
-		// this.canvas.getContext().scale(0.5,0.5);
-		// this.canvas.getContext().translate(-(this.canvas.canvas.width / 2), -(this.canvas.canvas.height / 2));
 		if (this.input.get("w") && this.paddle_p1.pos.y > ( 5 + (this.paddle_p1.size as Size).h / 2))
 			this.paddle_p1.pos.y = this.paddle_p1.pos.y - 5;
 		if (this.input.get("s")  && this.paddle_p1.pos.y < this.canvas.canvas.height - (5 +  (this.paddle_p1.size as Size).h / 2))
@@ -298,7 +255,6 @@ export class PongBall extends PhysicObject
 		this.score = score;
 		this.paddle_p1 = paddle_p1;
 		this.paddle_p2 = paddle_p2;
-
 	}
 
 	getTexture() : HTMLImageElement
