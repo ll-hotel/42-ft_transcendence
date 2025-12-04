@@ -5,11 +5,11 @@ WORKDIR /srv/app
 RUN apk add tini;
 RUN apk add typescript;
 
-COPY package.json tsconfig.json ./
+COPY package.json ./
 RUN npm install;
 
-COPY src/ src/
-RUN tsc;
+COPY tsconfig.json ./
+COPY init.sh ./init.sh
 
 ENTRYPOINT [ "tini", "--" ]
-CMD [ "node", "." ]
+CMD [ "sh", "./init.sh" ]

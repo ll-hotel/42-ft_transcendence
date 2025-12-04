@@ -19,9 +19,13 @@ services:
       timeout: 2s
       retries: 3
       start_period: 2s
+    ports:
+      - "8080:8080"
     build:
       context: backend
     volumes:
+      - backend-src:/srv/app/src
+      - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
 
 volumes:
@@ -35,6 +39,18 @@ volumes:
     driver: local
     driver_opts:
       device: ./frontend/src
+      type: none
+      o: bind
+  backend-src:
+    driver: local
+    driver_opts:
+      device: ./backend/src
+      type: none
+      o: bind
+  backend-db:
+    driver: local
+    driver_opts:
+      device: ./backend/db
       type: none
       o: bind
   secrets:
