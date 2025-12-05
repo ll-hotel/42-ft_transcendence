@@ -85,14 +85,20 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
 export async function gotoPage(name: PageName) {
-	const token = localStorage.getItem("accessToken");
-	if (!token && name != "login" && name != "register") {
-		name = "login";
+	if (name != "login" && name != "register") {
+		const token = localStorage.getItem("accessToken");
+		if (!token) {
+			name = "login";
+		}
 	}
 	if (loader.loaded && loader.loaded == name) {
 		return;
 	}
-	history.pushState({ page: loader.loaded }, "", "/" + name);
+	if (name == "login") {
+		history.pushState(null, "", "/" + name + location.search);
+	} else {
+		history.pushState(null, "", "/" + name);
+	}
 	await loader.downloadPages();
 	loader.load(name);
 }

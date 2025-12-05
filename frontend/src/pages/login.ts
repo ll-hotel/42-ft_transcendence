@@ -16,15 +16,40 @@ export class Login implements AppPage {
 			return false;
 		});
 		this.twoFAHidden = true;
+		const intraButton: HTMLButtonElement = this.content.querySelector("button#button-intra")!;
+		intraButton.onclick = async function() {
+			const res = await api.get("/api/auth42");
+			if (!res || !res.payload.redirect) {
+				return;
+			}
+			location.assign(res.payload.redirect);
+		};
 	}
 	static new(content: HTMLElement) {
-		if (!content.querySelector("form")) {
+		if (!content.querySelector("form") ||
+			!content.querySelector("button#button-intra")) {
 			return null;
 		}
 		return new Login(content);
 	}
 
-	loadInto(container: HTMLElement): void {
+	async loadInto(container: HTMLElement) {
+		const searchKey = "?code=";
+		if (location.search.startsWith(searchKey)) {
+			const logging = document.createElement("p");
+			logging.className = "font-bold text-xl";
+			logging.innerText = "Logging in...";
+			container.appendChild(logging);
+
+			const searchArgs = location.search.substring(1).split("&");
+			const searchCode = searchArgs.find(s => s.startsWith("code="))!;
+			const code = searchCode.split("=")[1];
+			const res = await api.get("/api/auth42/callback?code=" + code);
+			if (res && res.payload.accessToken) {
+				localStorage.setItem("accessToken", res.payload.accessToken);
+			}
+			logging.remove();
+		}
 		if (localStorage.getItem("accessToken")) {
 			// Already connected. Redirecting to user profile page.
 			gotoPage("profile");
