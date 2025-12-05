@@ -1,6 +1,5 @@
 import { Game } from "../pong.js";
 import AppPage from "./AppPage";
-import { gotoPage } from "../PageLoader.js";
 
 // export default function newPongPage(html: HTMLElement): PongPage | null
 // {
@@ -20,20 +19,45 @@ export class PongPage implements AppPage
 	content: HTMLElement;
 	game: Game;
 
-	private constructor(html: HTMLElement) {
+	private constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement) {
 		this.content = html.querySelector("#pong-content")!;
 		this.error = this.content.querySelector("#pong-error")!;
-		this.game = new Game(html);
+
+		this.game = new Game(html, ball, paddle);
 	}
 
-	static new(html: HTMLElement): PongPage | null {
+	static async new(html: HTMLElement): Promise<PongPage | null> {
 		const content = html.querySelector("#pong-content");
 		const error = content?.querySelector("#pong-error");
 		if (!content || !error) {
 			console.log("[pong] Missing html");
 			return null;
 		}
-		return new PongPage(html);
+		const ballPromise: Promise<HTMLImageElement> = new Promise((resolve, reject) => {
+			const img = new Image();
+			img.onload = () => resolve(img);
+			img.onerror = reject;
+			img.src = "/pong_ball.png";
+		});
+		const paddlePromise: Promise<HTMLImageElement> = new Promise((resolve, reject) => {
+			const img = new Image();
+			img.onload = () => resolve(img);
+			img.onerror = reject;
+			img.src = "/pong_paddle.png";
+		});
+		const ball = await ballPromise.catch(reason => {
+			console.log(reason);
+			return null;
+		});
+		const paddle = await paddlePromise.catch(reason => {
+			console.log(reason);
+			return null;
+		});
+		if (!ball || !paddle) {
+			alert("Could not fetch sprites.");
+			return null;
+		}
+		return new PongPage(html, ball, paddle);
 	}
 
 	async loadInto(container: HTMLElement) {

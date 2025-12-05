@@ -111,8 +111,10 @@ export class Game
 	private score_viewer: HTMLElement;
 	static	angle:number = 0;
 	public input: Map<string, boolean>;
+	paddle_texture: HTMLImageElement;
+	ball_texture: HTMLImageElement;
 
-	constructor(html: HTMLElement)
+	constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement)
 	{
 		this.canvas = new PongCanvas(html.querySelector("#pong-canvas")!);
 		this.score_viewer = html.querySelector("#score_viewer")!;
@@ -126,17 +128,19 @@ export class Game
 		this.tick_rate = 60;
 		this.tick_interval = 1000 / this.tick_rate;
 		this.input = new Map([["w", false], ["s", false], ["ArrowUp", false], ["ArrowDown", false]]);
+		this.ball_texture = ball;
+		this.paddle_texture = paddle;
 	}
 
 	update_paddle_texture() : void
 	{
-		this.canvas.getContext().drawImage(this.paddle_p1.getTexture(), this.paddle_p1.pos.x, (this.paddle_p1.pos.y - (this.paddle_p2.size as Size).h / 2), 20, 50);
-		this.canvas.getContext().drawImage(this.paddle_p2.getTexture(), this.paddle_p2.pos.x - (this.paddle_p2.size as Size).w, this.paddle_p2.pos.y - ((this.paddle_p2.size as Size).h / 2), 20, 50);
+		this.canvas.getContext().drawImage(this.paddle_texture, this.paddle_p1.pos.x, (this.paddle_p1.pos.y - (this.paddle_p2.size as Size).h / 2), 20, 50);
+		this.canvas.getContext().drawImage(this.paddle_texture, this.paddle_p2.pos.x - (this.paddle_p2.size as Size).w, this.paddle_p2.pos.y - ((this.paddle_p2.size as Size).h / 2), 20, 50);
 	}
 
 	update_ball_texture() : void
 	{
-		this.canvas.getContext().drawImage(this.ball.getTexture(), this.ball.pos.x - 5, this.ball.pos.y - 5,  10, 10);
+		this.canvas.getContext().drawImage(this.ball_texture, this.ball.pos.x - 5, this.ball.pos.y - 5,  10, 10);
 	}
 
 	update_texture_pos()
@@ -221,26 +225,26 @@ export class PongCanvas
 
 export class PongPaddle extends PhysicObject
 {
-	private texture: HTMLImageElement;
+	// private texture: HTMLImageElement;
 
 	constructor(position: Position)
 	{
 		super(position, {w: 20, h: 50},new Vector2D(0,0));
-		this.texture = new Image();
-		this.texture.src = "/pong_bar.png";
+		// this.texture = new Image();
+		// this.texture.src = "/pong_bar.png";
 	}
 
-	getTexture() : HTMLImageElement
-	{
-		return (this.texture);
-	}
+	// getTexture() : HTMLImageElement
+	// {
+	// 	return (this.texture);
+	// }
 
 
 }
 
 export class PongBall extends PhysicObject
 {
-	private texture: HTMLImageElement;
+	// private texture: HTMLImageElement;
 	private canvas: PongCanvas;
 	private score: Score;
 	readonly paddle_p1:PongPaddle;
@@ -250,17 +254,17 @@ export class PongBall extends PhysicObject
 	{
 		super({x: canvas.canvas.width / 2, y: canvas.canvas.height / 2}, 10, new Vector2D(0,0));
 		this.canvas = canvas;
-		this.texture = new Image();
-		this.texture.src = "/pong_ball.png";
+		// this.texture = new Image();
+		// this.texture.src = "/pong_ball.png";
 		this.score = score;
 		this.paddle_p1 = paddle_p1;
 		this.paddle_p2 = paddle_p2;
 	}
 
-	getTexture() : HTMLImageElement
-	{
-		return (this.texture);
-	}
+	// getTexture() : HTMLImageElement
+	// {
+	// 	return (this.texture);
+	// }
 
 	addSpeed(new_vec: Vector2D) : void
 	{

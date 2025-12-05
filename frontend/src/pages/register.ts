@@ -15,7 +15,7 @@ export class RegisterPage implements AppPage {
 			return false;
 		});
 	}
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement) {
 		if (!content.querySelector("form")) {
 			return null;
 		}

@@ -1,5 +1,5 @@
 import AppPage from "./pages/AppPage.js";
-import newHomePage from "./pages/HomePage.js";
+import { HomePage } from "./pages/HomePage.js";
 import { PongPage } from "./pages/PongPage.js";
 import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
@@ -61,16 +61,16 @@ class PageLoader {
 
 	async download(name: PageName) {
 		if (this.list.has(name)) return;
-		let newPage: (html: HTMLElement) => AppPage | null;
+		let newPage: (html: HTMLElement) => Promise<AppPage | null>;
 		switch (name) {
-			case "home": newPage = newHomePage; break;
+			case "home": newPage = HomePage.new; break;
 			case "pong": newPage = PongPage.new; break;
 			case "register": newPage = RegisterPage.new; break;
 			case "login": newPage = Login.new; break;
 			case "profile": newPage = ProfilePage.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
-		const page = newPage(html);
+		const page = await newPage(html);
 		if (page === null) {
 			return alert("Could not load " + Pages[name]);
 		}

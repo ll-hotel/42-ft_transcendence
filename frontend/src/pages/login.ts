@@ -17,7 +17,7 @@ export class Login implements AppPage {
 		});
 		this.twoFAHidden = true;
 	}
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement) {
 		if (!content.querySelector("form")) {
 			return null;
 		}
