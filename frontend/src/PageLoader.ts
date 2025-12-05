@@ -1,20 +1,26 @@
 import AppPage from "./pages/AppPage.js";
-import { AuthPage } from "./pages/AuthPage.js";
 import newHomePage from "./pages/HomePage.js";
 import { PongPage } from "./pages/PongPage.js";
+import { Login } from "./pages/login.js";
+import { RegisterPage } from "./pages/register.js";
+import { ProfilePage } from "./pages/profile.js"
 
 enum Pages {
 	home = "home.html",
-	auth = "auth.html",
 	pong = "pong.html",
+	register = "register.html",
+	login = "login.html",
+	profile = "profile.html",
 };
 export type PageName = keyof typeof Pages;
 
 export function strToPageName(str: string): PageName | null {
 	switch (str) {
 		case "home": return "home";
-		case "auth": return "auth";
 		case "pong": return "pong";
+		case "register": return "register";
+		case "login": return "login";
+		case "profile": return "profile";
 	}
 	return null;
 }
@@ -31,9 +37,16 @@ class PageLoader {
 	}
 
 	async downloadPages() {
-		await this.download("home");
-		await this.download("auth");
-		await this.download("pong");
+		const downloads = [
+			this.download("home"),
+			this.download("register"),
+			this.download("login"),
+			this.download("profile"),
+			this.download("pong"),
+		];
+		for (const download of downloads) {
+			await download;
+		}
 	}
 
 	load(name: PageName) {
@@ -51,8 +64,10 @@ class PageLoader {
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
-			case "auth": newPage = AuthPage.new; break;
 			case "pong": newPage = PongPage.new; break;
+			case "register": newPage = RegisterPage.new; break;
+			case "login": newPage = Login.new; break;
+			case "profile": newPage = ProfilePage.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);
@@ -64,7 +79,7 @@ class PageLoader {
 };
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	return await fetch(`https://${window.location.hostname}/${encodeURI(path)}`, {
+	return await fetch(`/${encodeURI(path)}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
@@ -75,6 +90,13 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
 export async function gotoPage(name: PageName) {
+	const token = localStorage.getItem("accessToken");
+	if (!token && name != "login" && name != "register") {
+		name = "login";
+	}
+	if (loader.loaded && loader.loaded == name) {
+		return;
+	}
 	history.pushState({ page: loader.loaded }, "", "/" + name);
 	await loader.downloadPages();
 	loader.load(name);
@@ -83,6 +105,6 @@ export async function gotoPage(name: PageName) {
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {
-	const page = strToPageName(location.pathname.substring(1)) || "auth";
+	const page = strToPageName(location.pathname.substring(1)) || "login";
 	loader.load(page);
 }
