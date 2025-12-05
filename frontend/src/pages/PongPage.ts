@@ -21,8 +21,8 @@ export class PongPage implements AppPage
 	game: Game;
 
 	private constructor(html: HTMLElement) {
-		this.content = html.querySelector("#auth-content")!;
-		this.error = this.content.querySelector("#auth-error")!;
+		this.content = html.querySelector("#pong-content")!;
+		this.error = this.content.querySelector("#pong-error")!;
 		this.game = new Game(html);
 	}
 
