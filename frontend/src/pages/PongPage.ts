@@ -20,16 +20,15 @@ export class PongPage implements AppPage
 	game: Game;
 
 	private constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement) {
-		this.content = html.querySelector("#pong-content")!;
+		this.content = html;
 		this.error = this.content.querySelector("#pong-error")!;
 
 		this.game = new Game(html, ball, paddle);
 	}
 
 	static async new(html: HTMLElement): Promise<PongPage | null> {
-		const content = html.querySelector("#pong-content");
-		const error = content?.querySelector("#pong-error");
-		if (!content || !error) {
+		const error = html.querySelector("#pong-error");
+		if (!error) {
 			console.log("[pong] Missing html");
 			return null;
 		}
