@@ -148,7 +148,7 @@ class AuthService {
 
 	async redirectAuth42(req: FastifyRequest, rep: FastifyReply) {
 		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${UID}&redirect_uri=${encodeURI(redirectURI)}&response_type=code`
-		rep.redirect(redirectURL);
+		rep.send({ redirect: redirectURL });
 	}
 
 	async callback(req: FastifyRequest, rep: FastifyReply) {
@@ -192,7 +192,7 @@ class AuthService {
 				// avatar = image?
 			});
 		}
-		console.log(userData);
+		// console.log(userData);
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		rep.setCookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'strict', path: '/api' });
 		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));

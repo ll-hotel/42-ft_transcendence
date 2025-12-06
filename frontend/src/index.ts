@@ -8,7 +8,5 @@ document.addEventListener("DOMContentLoaded", async function() {
 	}
 	const uri = window.location.pathname;
 	const name = strToPageName(uri.substring(1)) || "login";
-
-	window.history.pushState({ page: name }, "", "/" + name);
 	await gotoPage(name);
 });

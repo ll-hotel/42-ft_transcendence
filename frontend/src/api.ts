@@ -17,7 +17,7 @@ export class api {
 		return this.request("POST", uri, body);
 	}
 	private static async request(method: "GET" | "POST", uri: string, body: string | object = "") {
-		const token = localStorage.getItem("accessToken");
+		const token = localStorage.getItem("accessToken") || "";
 		let headers;
 		let jsonBody: string | null = null;
 		if (method == "GET") {
@@ -51,7 +51,7 @@ export class api {
 			}
 		}).catch(function(reason) {
 			if (reason) {
-				console.log("[api]: Request rejected with :", reason);
+				console.log("[api]: Request rejected with:", reason);
 			} else {
 				console.log("[api]: Request rejected");
 			}
