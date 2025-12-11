@@ -2,8 +2,24 @@
 	@apply w-full h-20 bg-white flex justify-between items-center px-4;
 }
 
+.request-card {
+	@apply w-full h-20 text-white bg-[#04809F] flex justify-between items-center px-4 ;
+}
+
+.request-buttons {
+	@apply flex justify-between items-center
+}
+
+.request-decline {
+	@apply px-2 py-1 bg-red-500 border-white rounded
+}
+
+.request-accept {
+	@apply px-2 py-1 bg-green-500 border-white rounded
+}
+
 .friend-card-select {
-	@apply bg-sky-200;
+	@apply bg-[#04809F];
 }
 
 .friend-card-unselect 
@@ -16,7 +32,7 @@
 }
 
 .friend-status {
-	@apply flex items-center gap-2 px-2 border rounded-full;
+	@apply flex items-center gap-2 px-2 bg-white border rounded-full;
 }
 
 .friend-round-online {

@@ -21,7 +21,8 @@ type Friend = {
 	isOnline: number,
 };
 
-export class FriendPage implements AppPage {
+export class FriendPage implements AppPage
+{
 	content: HTMLElement;
 	listContainer: HTMLElement;
 	chatContainer: HTMLElement;
@@ -37,7 +38,8 @@ export class FriendPage implements AppPage {
 				throw new Error("Friend page HTML incorrect");
 	}
 
-	static new(content:HTMLElement) {
+	static new(content:HTMLElement)
+	{
 		if (!content)
 			return null;
 
@@ -60,26 +62,30 @@ export class FriendPage implements AppPage {
 		return this.loadFriends();
 	}
 
-	unload(): void {
+	unload(): void
+	{
 		this.content.remove();
 	}
 
 
-	async loadFriends(){
+	async loadFriends() 
+	{
 		this.listContainer.innerHTML = "<div>En recherche d'amis</div>";
 
-		const res = await api.get("/api/friends");
-		console.log("API Response:", res);
+		const friendRes = await api.get("/api/friends");
+		const requestRes = await api.get("/api/friend/requests")
+		console.log("API Response:", friendRes);
 
-		if (!res || res.status !== Status.success) {
+		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success ) {
 			this.listContainer.innerHTML = "<div>Erreur lors de la recherche</div>";
 			return;
 		}
 
-		const friends = res.payload
+		const friends = friendRes.payload.friends
+		const requests = requestRes.payload.requests
 		this.listContainer.innerHTML = "";
 		
-		const card = document.createElement("div");
+/*		const card = document.createElement("div");
 		card.className = "friend-card";
 
 		card.innerHTML = `
@@ -95,54 +101,119 @@ export class FriendPage implements AppPage {
 				</span>
 			</div>
 		`;
-		this.listContainer.appendChild(card);
+		this.listContainer.appendChild(card); */
 		
-		if(!friends || friends.lenght == 0)
+		if(!friends || friends.length == 0)
 			console.log("No Friend"); //Afficher une div qui dit que t'as pas de potes
 
+		if(!requests || requests.length == 0)
+			console.log("No Requests");
+
+		requests.forEach((request: any) => {
+			const card:HTMLElement = FriendPage.createRequestCard(request)
+			this.listContainer.appendChild(card);
+		}
+	)
+
 		friends.forEach((friend: any) => {
-			const card :HTMLElement= FriendPage.createFriendCard(friend)
+			const card :HTMLElement = FriendPage.createFriendCard(friend)
 			card.onclick = () => {
 
 				if(this.selectedCard)
 				{
-					this.selectedCard.classList.remove("select-card");
-					this.selectedCard.classList.add("unselected-card");
+					this.selectedCard.classList.remove("friend-card-select");
+					this.selectedCard.classList.add("friend-card-unselect");
 				}
 
-				card.classList.remove("unselected-card");
-				card.classList.add("select-card");
+				card.classList.remove("friend-card-unselect");
+				card.classList.add("friend-card-select");
 
 				this.selectedCard = card;
-				this.loadChat(friend.id);
+				this.loadChat(friend.displayName);
 			}
 			this.listContainer.appendChild(card);
 		});
 	}
 
-	async loadChat(friendId : number) {
+	async loadChat(friendName : string)
+	{
 		this.chatContainer.innerHTML = "<div>Besoin de creer le chat...</div>"
 		return;
 	}
 
-		static createFriendCard(friend: any): HTMLElement {
-	const card = document.createElement("div");
-	card.className = "friend-card";
+	static createFriendCard(friend: any): HTMLElement
+	{
+		const card = document.createElement("div");
+		card.className = "friend-card";
 
-	card.innerHTML = `
-		<img src="${friend.avatar}" alt="${friend.displayName}" class="friend-card">
-		<div class="friend-avatar">
-			${friend.displayName}
-		</div>
-		<div class="friend-status">
-			<div class="${friend.isOnline ? "friend-status-online" : "friend-status-offline"}">
-			</div>
-			<span class="${friend.isOnline ? "friend-round-online" : "friend-round-offline"}">
-				${friend.isOnline ? "Online" : "Offline"}
-			</span>
-		</div>
-	`;
+		card.innerHTML = `
+			<img src="/default_pp.png" alt="${friend.displayName}" class="friend-avatar">
+				<div class="text-m font-semibold">
+					${friend.displayName}
+				</div>
+				<div class="friend-status">
+					<div class="${friend.isOnline ? "friend-round-online" : "friend-round-offline"}">
+				</div>
+				<span class="${friend.isOnline ? "friend-text-online" : "friend-text-offline"}">
+					${friend.isOnline ? "Online" : "Offline"}
+				</span>
+				</div>
+		`;
 
 	return card;
-}
+	}
+
+
+	static createRequestCard(request: any): HTMLElement
+	{
+		const card = document.createElement("div");
+		card.className = "request-card";
+
+		card.innerHTML = `
+			<img src="/default_pp.png" alt="${request.requestFrom}" class="friend-avatar">
+				<div class="text-m font-semibold">
+					${request.requestFrom}
+				</div>
+				<div class="request-buttons">
+				</div>
+		`;
+
+		const requestsBtn = card.querySelector(".request-buttons")
+
+		const accept = document.createElement("button")
+		accept.className = "request-accept";
+		accept.textContent = "Yes";
+
+		accept.onclick = async () => {
+			const acceptRes = await api.patch("/api/friend/accept", {displayName : request.requestFrom});
+
+			if (acceptRes && acceptRes.status == Status.success)
+			{
+				console.log(`Tu es ami avec ${request.requestFrom}`);
+				card.remove();
+			}
+			else
+				console.error("AcceptRes didn't work");
+		}
+
+		const decline = document.createElement("button")
+		decline.className = "request-decline";
+		decline.textContent = "No";
+
+		decline.onclick = async () => {
+			const declineRes = await api.post("/api/friend/decline", {displayName : request.requestFrom});
+
+			if (declineRes && declineRes.status == Status.success)
+			{
+				console.log(`Tu n'es pas ami avec ${request.requestFrom}`);
+				card.remove();
+			}
+			else
+				console.error("declineRes didn't work");
+		}
+
+		requestsBtn?.appendChild(accept);
+		requestsBtn?.appendChild(decline);
+	return card;
+	}
 }

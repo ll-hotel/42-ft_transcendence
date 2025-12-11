@@ -53,7 +53,7 @@ export class Login implements AppPage {
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
 			localStorage.setItem("accessToken", res.payload.accessToken);
-			return gotoPage("userprofile");
+			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {
 			this.toggleTwoFA();

@@ -1,6 +1,5 @@
-import { api } from "./api.js";
-import { gotoPage, strToPageName, PageName } from "./PageLoader.js";
-import { FriendPage } from "./pages/FriendPage.js";
+import { api, Status } from "./api.js";
+import { gotoPage, gotoUserPage, strToPageName, PageName } from "./PageLoader.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -84,7 +83,15 @@ function displayResultSearch(selectedUsers :any) {
 		card.appendChild(name);
 
 		card.onclick = async () => {
-			await gotoPage("userprofile");
+			const me = await api.get("/api/me");
+			if (!me || !me.payload)
+				return;
+			if (me.status != Status.success)
+				return alert("Error: " + me.payload.message);
+			if (me.payload.displayName == user.displayName)
+				await gotoPage("profile");
+			else
+				await gotoUserPage(user.displayName);
 		}
 
 		results.appendChild(card);

@@ -2,17 +2,16 @@ import AppPage from "./pages/AppPage.js";
 import newHomePage from "./pages/HomePage.js";
 import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
-import { Register } from "./pages/register.js";
-import { UserProfile } from "./pages/UserProfile.js"
-import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
 import { ProfilePage } from "./pages/profile.js"
+import { OtherProfilePage } from "./pages/otherProfile.js";
 
 enum Pages {
 	home = "home.html",
 	register = "register.html",
 	login = "login.html",
-	userprofile = "userprofile.html",
+	profile = "profile.html",
+	otherProfile="otherProfile.html",
 	friend ="friend.html",
 };
 export type PageName = keyof typeof Pages;
@@ -22,7 +21,8 @@ export function strToPageName(str: string): PageName | null {
 		case "home": return "home";
 		case "register": return "register";
 		case "login": return "login";
-		case "userprofile": return "userprofile";
+		case "profile": return "profile";
+		case "otherProfile" : return "otherProfile";
 		case "friend": return "friend";
 	}
 	return null;
@@ -44,7 +44,8 @@ class PageLoader {
 			this.download("home"),
 			this.download("register"),
 			this.download("login"),
-			this.download("userprofile"),
+			this.download("profile"),
+			this.download("otherProfile"),
 			this.download("friend"),
 		];
 		for (const download of downloads) {
@@ -67,12 +68,13 @@ class PageLoader {
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
-			case "register": newPage = Register.new; break;
+			case "register": newPage = RegisterPage.new; break;
 			case "login": newPage = Login.new; break;
-			case "userprofile": newPage = UserProfile.new; break;
+			case "profile": newPage = ProfilePage.new; break;
+			case "otherProfile": newPage = OtherProfilePage.new; break;
 			case "friend": newPage = FriendPage.new; break;
 		}
-		const html = await downloadHtmlBody(Pages[name]);
+		const html = await downloadHtml(Pages[name]);
 		const page = newPage(html);
 		if (page === null) {
 			return alert("Could not load " + Pages[name]);
@@ -81,39 +83,62 @@ class PageLoader {
 	}
 };
 
-async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	return await fetch(`/${encodeURI(path)}`, {
+async function downloadHtml(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
+	const element = await fetch(`/${encodeURI(path)}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
 		cache,
-	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body));
+	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body.firstElementChild));
+
+	if (!element)
+		throw new Error(`No elements fond at ${path}`);
+	return element as HTMLElement;
+
 }
 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
-export async function gotoPage(name: PageName) {
+export async function gotoPage(name: PageName, params?: any) {
 	const token = localStorage.getItem("accessToken");
+
 	if (!token && name != "login" && name != "register") {
 		name = "login";
 	}
 	if (loader.loaded && loader.loaded == name) {
+		const current = loader.list.get(name);
+		if (current && current.setParams)
+			current.setParams(params);
 		return;
 	}
-	history.pushState({ page: loader.loaded }, "", "/" + name);
-	await loader.downloadPages();
+	if (name != "otherProfile")
+		history.pushState({ page: name}, "", "/" + name);
+	await loader.download(name);
 	loader.load(name);
+
+	const page = loader.list.get(name);
+	if (page && page.setParams)
+	{
+		page.setParams(params);
+	}
 }
 
 export async function gotoUserPage( displayName : any)
 {
-	history.pushState({ page: loader.loaded }, "", "/user/" + displayName);
-	await loader.downloadPages();
+	history.pushState({ page: "otherProfile", params : {displayName}}, "", "/user/" + displayName);
+	await gotoPage("otherProfile", {displayName});
 }
 
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {
-	const page = strToPageName(location.pathname.substring(1)) || "login";
-	loader.load(page);
+	const path = location.pathname.substring(1);
+	if (path.startsWith("user/"))
+	{
+		const displayName = path.split("/")[1];
+		gotoPage("otherProfile", {displayName});
+		return;
+	}
+	const page = strToPageName(path) || "login";
+	gotoPage(page);
 }
