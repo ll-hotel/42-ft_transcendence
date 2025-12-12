@@ -15,6 +15,7 @@ class friend {
 
 		app.get("/api/friends", {preHandler: authGuard}, this.getFriends);
 		app.get("/api/friend/requests", {preHandler: authGuard}, this.getPendingRequests);
+		app.get("/api/friends/status", {preHandler: authGuard}, this.getFriendStatus);
 		app.delete("/api/friend/remove", {preHandler: authGuard}, this.removeFriend);
 
 	}
@@ -171,6 +172,27 @@ class friend {
 		));
 
 		return rep.code(STATUS.success).send({message: "Friend removed"});
+	}
+
+	async getFriendStatus(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+		const {displayName} = req.body as {displayName: string};
+		let status = "not sent";
+
+		if (!displayName)
+			return rep.code(STATUS.bad_request).send({message: "Missing displayName"})
+		const [target] = await db.select().from(users).where(eq(users.displayName, displayName));
+		if (!target)
+			return rep.code(STATUS.not_found).send({message: MESSAGE.user_notfound});
+
+		const [friendExists] =  await db.select().from(friends).where(or(
+			and(eq(friends.senderId, usr.id), eq(friends.receiverId, target.id)),
+			and(eq(friends.senderId, target.id), eq(friends.receiverId, usr.id))));
+		
+		if (friendExists)
+			status = friendExists.status;
+		
+		return rep.code(STATUS.success).send({status: status});
 	}
 }
 
