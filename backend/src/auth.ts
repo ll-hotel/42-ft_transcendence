@@ -109,6 +109,8 @@ class AuthService {
 				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA });
 			}
 		}
+		/* if (user.isOnline === 1)
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in }); */
 		const tokenCookie = req.cookies['accessToken'];
 		if (tokenCookie) {
 			try {
@@ -192,7 +194,7 @@ class AuthService {
 				// avatar = image?
 			});
 		}
-		// console.log(userData);
+		
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		rep.setCookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'strict', path: '/api' });
 		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));

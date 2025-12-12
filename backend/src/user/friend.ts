@@ -17,7 +17,6 @@ class friend {
 		app.get("/api/friend/requests", {preHandler: authGuard}, this.getPendingRequests);
 		app.delete("/api/friend/remove", {preHandler: authGuard}, this.removeFriend);
 
-		//block?
 	}
 
 	async sendRequest(req: FastifyRequest, rep: FastifyReply)
