@@ -1,4 +1,3 @@
-import { uuid } from "drizzle-orm/gel-core";
 import { sqliteTable, text, integer} from "drizzle-orm/sqlite-core";
 
 
@@ -23,3 +22,23 @@ export const friends = sqliteTable("friends", {
 	receiverId: integer("receiverId").notNull().references(() => users.id, {onDelete: "cascade"}),
 	status: text("status").notNull().default("pending"),
 });
+
+export const matchmakingQueue = sqliteTable("matchmakingQueue", {
+	id: integer("id").primaryKey({autoIncrement : true}),
+	userId: integer("userId").notNull().references(() => users.id, {onDelete: "cascade"}),
+});
+
+export const matches = sqliteTable("matches", {
+	id: integer("id").primaryKey({autoIncrement : true}),
+	player1Id: integer("player1Id").notNull().references(() => users.id, {onDelete: "cascade"}),
+	player2Id: integer("player2Id").notNull().references(() => users.id, {onDelete: "cascade"}),
+	
+	status: text("status").notNull().default("pending"),
+
+	scoreP1: integer("scoreP1").notNull().default(0),
+	scoreP2: integer("scoreP2").notNull().default(0),
+	winnerId: integer("winnerId").references(() => users.id),
+	endedAt: integer("endedAt", {mode : "timestamp"}),
+
+});
+

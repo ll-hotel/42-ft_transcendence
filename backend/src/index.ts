@@ -1,10 +1,16 @@
 import Fastify, { FastifyInstance } from "fastify"
-import authModule from "./auth";
-import { STATUS } from "./shared";
+import auth from "./auth";
 import fs from "fs";
 import { createTables } from "./db/database"
-import userModule from "./user/user";
-import { friendService } from "./user/friend";
+import user from "./user/user";
+import { friendService } from "./user/friend"
+import matchmaking from "./game/matchmaking";
+import websocketPlugin from "@fastify/websocket";
+import matchmakingWS from "./websocket/matchmaking.ws";
+import match from "./game/match";
+
+
+
 
 async function main() {
 	await createTables();
@@ -16,13 +22,17 @@ async function main() {
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
 		}
 	});
-	app.register(authModule);
-	app.register(userModule);
-	app.register(f => friendService.setup(f));
 
-	app.get("/ping", (_req, res) => {
-		res.code(STATUS.success).send("pong");
-	});
+
+	app.register(websocketPlugin);
+	app.register(matchmakingWS); 	
+	
+	
+	app.register(auth);
+	app.register(user);
+	app.register(f => friendService.setup(f));
+	app.register(matchmaking);
+	app.register(match);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
 		if (err) {

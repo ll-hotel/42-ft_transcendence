@@ -11,6 +11,8 @@ export const db = drizzle(sqlite);
 export async function createTables() {
 	createUserTable();
 	createFriendsTable();
+	createMatchmakingQueueTable();
+	createMatchesTable();
 }
 
 async function createUserTable() {
@@ -40,4 +42,34 @@ async function createFriendsTable() {
 	  FOREIGN KEY (receiverId) REFERENCES users(id) ON DELETE CASCADE
 	  );
 	  `);
+}
+
+
+async function createMatchmakingQueueTable() {
+		await db.run(sql`
+		CREATE TABLE IF NOT EXISTS matchmakingQueue (
+		 id INTEGER PRIMARY KEY AUTOINCREMENT,
+		 userId INTEGER NOT NULL,
+		 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+		);
+		`);
+}
+
+
+async function createMatchesTable() {
+	await db.run(sql`
+	CREATE TABLE IF NOT EXISTS matches (
+	 id INTEGER PRIMARY KEY AUTOINCREMENT,
+	 player1Id INTEGER NOT NULL, 
+	 player2Id INTEGER NOT NULL,
+	 winnerId INTEGER,
+	 scoreP1 INTEGER DEFAULT 0,
+	 scoreP2 INTEGER DEFAULT 0,
+	 status TEXT NOT NULL DEFAULT 'pending',
+	 endedAt INTEGER,
+	 FOREIGN KEY (player1Id) REFERENCES users(id) ON DELETE CASCADE,
+	 FOREIGN KEY (player2Id) REFERENCES users(id) ON DELETE CASCADE,
+	 FOREIGN KEY (winnerId) REFERENCES users(id) ON DELETE SET NULL
+	 );
+		`);
 }
