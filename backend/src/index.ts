@@ -5,6 +5,8 @@ import fs from "fs";
 import { createTables } from "./db/database"
 import userModule from "./user/user";
 import { friendService } from "./user/friend";
+import fastifyWebsocket from "@fastify/websocket";
+import { chatRoute } from "./livechat";
 
 async function main() {
 	await createTables();
@@ -19,6 +21,12 @@ async function main() {
 	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
+  app.register(fastifyWebsocket);
+  app.register(chatRoute);
+
+  app.get("/ping", (_req, res) => {
+    res.code(STATUS.success).send("pong");
+  });
 
 	app.get("/ping", (_req, res) => {
 		res.code(STATUS.success).send("pong");
