@@ -3,13 +3,15 @@ FROM node:22-alpine
 WORKDIR /srv/app
 
 RUN apk add tini;
+RUN apk add curl;
 RUN apk add typescript;
 
-COPY package.json tsconfig.json ./
+COPY package.json ./
 RUN npm install;
+RUN npm install -g nodemon;
 
-COPY src/ src/
-RUN tsc;
+COPY tsconfig.json ./
+COPY init.sh ./init.sh
 
 ENTRYPOINT [ "tini", "--" ]
-CMD [ "node", "." ]
+CMD [ "sh", "./init.sh" ]

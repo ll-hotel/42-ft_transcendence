@@ -5,9 +5,10 @@ services:
     build:
       context: frontend
     ports:
-      - "443:443"
+      - "8443:443"
     volumes:
-      - static:/srv/app/static
+      - frontend-static:/srv/app/static
+      - frontend-src:/srv/app/src
       - secrets:/run/secrets:ro
       - frontend-src:/srv/app/src:ro
     networks:
@@ -22,18 +23,40 @@ services:
       timeout: 2s
       retries: 3
       start_period: 2s
+    ports:
+      - "8080:8080"
     build:
       context: backend
     volumes:
+      - backend-src:/srv/app/src
+      - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
     networks:
       - api
 
 volumes:
-  static:
+  frontend-static:
     driver: local
     driver_opts:
       device: ./frontend/static
+      type: none
+      o: bind
+  frontend-src:
+    driver: local
+    driver_opts:
+      device: ./frontend/src
+      type: none
+      o: bind
+  backend-src:
+    driver: local
+    driver_opts:
+      device: ./backend/src
+      type: none
+      o: bind
+  backend-db:
+    driver: local
+    driver_opts:
+      device: ./backend/db
       type: none
       o: bind
   secrets:

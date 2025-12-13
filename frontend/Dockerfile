@@ -6,13 +6,11 @@ RUN apk add nginx;
 WORKDIR /srv/app
 
 COPY nginx.conf /etc/nginx
-
-# COPY package.json ./
-# RUN npm install;
-
+COPY package.json ./
+RUN npm install;
 COPY tsconfig.json ./
-COPY init.sh /run/init.sh
-RUN chmod a+x /run/init.sh;
+COPY init.sh ./
+RUN chmod a+x ./init.sh;
 
 ENTRYPOINT [ "tini", "--" ]
-CMD [ "/run/init.sh" ]
+CMD [ "sh", "./init.sh" ]

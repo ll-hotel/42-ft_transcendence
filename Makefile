@@ -8,7 +8,7 @@ export COMPOSE_FILE COMPOSE_PROJECT_NAME
 all: up
 
 .PHONY: up
-up:
+up: secrets
 	$(COMPOSE) up --build --detach
 
 .PHONY: secrets
@@ -29,3 +29,7 @@ down:
 .PHONY: ps
 ps:
 	$(COMPOSE) ps
+
+.PHONY: tailwind
+tailwind: up
+	docker exec -it frontend npx tailwindcss -i src/input.css -o static/tailwind.css

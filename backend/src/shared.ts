@@ -16,13 +16,21 @@ export const MESSAGE = {
     internal_server_error: 'Internal server error',
     invalid_username: 'Invalid username',
     invalid_password: 'Invalid password',
+    invalid_displayName: 'Invalid display name',
+    invalid_2FA: 'Invalid 2FA code',
+    missing_2FA: 'Missing 2FA code',
+    fail_gen2FAurl: 'Failed to generate 2FA URL',
     user_created: 'User created',
     logged_in: 'Logged in',
     already_logged_in: 'Already logged in',
     missing_token: 'Missing token',
+    invalid_token: 'Invalid or expired token',
     logged_out: 'Logged out',
-    already_created: 'User already exists',
+    username_taken: 'Username already taken',
+    displayName_taken: 'Display name aleready taken',
+    user_notfound: 'User not found',
     database_error: "Database error",
+    missing_fields: "Missing fields",
 };
 
 export const catch_errors = (fn: any) => async (req: FastifyRequest, rep: FastifyReply) => {

@@ -1,6 +1,3 @@
-#!/bin/sh
-
 set -e
-
 tsc --watch &
-nginx -g "daemon off;"
+exec nginx -g "daemon off;"

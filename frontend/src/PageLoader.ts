@@ -1,51 +1,68 @@
 import AppPage from "./pages/AppPage.js";
-import newAuthPage from "./pages/AuthPage.js";
 import newHomePage from "./pages/HomePage.js";
+import { Login } from "./pages/login.js";
+import { RegisterPage } from "./pages/register.js";
+import { ProfilePage } from "./pages/profile.js"
 
 enum Pages {
 	home = "home.html",
-	auth = "auth.html",
+	register = "register.html",
+	login = "login.html",
+	profile = "profile.html",
 };
 export type PageName = keyof typeof Pages;
 
 export function strToPageName(str: string): PageName | null {
 	switch (str) {
 		case "home": return "home";
-		case "auth": return "auth";
+		case "register": return "register";
+		case "login": return "login";
+		case "profile": return "profile";
 	}
 	return null;
 }
 
-export default class PageLoader {
+class PageLoader {
 	list: Map<PageName, AppPage>;
-	loaded_page: AppPage | null;
+	loaded: PageName | null;
 	content: HTMLElement;
 
-	constructor(loadPlace: HTMLElement = document.body) {
+	constructor(loadPlace: HTMLElement) {
 		this.list = new Map();
-		this.loaded_page = null;
+		this.loaded = null;
 		this.content = loadPlace;
 	}
 
 	async downloadPages() {
-		await this.download("home");
-		await this.download("auth");
+		const downloads = [
+			this.download("home"),
+			this.download("register"),
+			this.download("login"),
+			this.download("profile"),
+		];
+		for (const download of downloads) {
+			await download;
+		}
 	}
 
 	load(name: PageName) {
 		if (!this.list.has(name)) return;
-		if (this.loaded_page) {
-			this.loaded_page.unload();
+		if (this.loaded) {
+			this.list.get(this.loaded)!.unload();
 		}
-		this.loaded_page = this.list.get(name)!;
-		this.loaded_page.loadInto(this.content);
+		this.loaded = name;
+		this.list.get(this.loaded)!.loadInto(this.content);
+		document.title = name;
 	}
 
 	async download(name: PageName) {
+		if (this.list.has(name)) return;
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
-            case "auth": newPage = newAuthPage; break;
+			case "register": newPage = RegisterPage.new; break;
+			case "login": newPage = Login.new; break;
+			case "profile": newPage = ProfilePage.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);
@@ -57,10 +74,38 @@ export default class PageLoader {
 };
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-    return await fetch(`https://${window.location.hostname}/${encodeURI(path)}`, {
-        method: "GET",
-        headers: { "Accept": "text/html" },
-        credentials: "include",
-        cache,
-    }).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body));
+	return await fetch(`/${encodeURI(path)}`, {
+		method: "GET",
+		headers: { "Accept": "text/html" },
+		credentials: "include",
+		cache,
+	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body));
+}
+
+const loader = new PageLoader(document.body.querySelector("#content")!);
+
+export async function gotoPage(name: PageName) {
+	if (name != "login" && name != "register") {
+		const token = localStorage.getItem("accessToken");
+		if (!token) {
+			name = "login";
+		}
+	}
+	if (loader.loaded && loader.loaded == name) {
+		return;
+	}
+	if (name == "login") {
+		history.pushState(null, "", "/" + name + location.search);
+	} else {
+		history.pushState(null, "", "/" + name);
+	}
+	await loader.downloadPages();
+	loader.load(name);
+}
+
+(window as any).gotoPage = gotoPage;
+
+window.onpopstate = function() {
+	const page = strToPageName(location.pathname.substring(1)) || "login";
+	loader.load(page);
 }
