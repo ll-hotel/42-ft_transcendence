@@ -65,12 +65,6 @@ volumes:
       device: ./secrets
       type: none
       o: bind
-  frontend-src:
-    driver: local
-    driver_opts:
-      device: ./frontend/src
-      type: none
-      o: bind
 
 networks:
   api:
