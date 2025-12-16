@@ -729,6 +729,7 @@
   border-radius: calc(infinity * 1px);
   border-style: var(--tw-border-style);
   border-width: 1px;
+  background-color: var(--color-white);
   padding-inline: calc(var(--spacing) * 2);
 }
 .friend-round-online {

@@ -27,16 +27,17 @@ export class FriendButton {
 	{
 		try {
 			const resFriends = await api.get("/api/friends"); //personne avec lequels je suis pote !
-			const resRequest = await api.get("/api/friend/requests"); // si j'ai recu une invitation de cette personne / ne m'impacte pas pas la bonne utilisation
+			const resRequest = await api.get(`/api/friends/status?displayName=${this.displayName}`); // si j'ai recu une invitation de cette personne / ne m'impacte pas pas la bonne utilisation
 			if (resFriends?.status == Status.success && resFriends.payload.friends.some((friend:any) =>friend.displayName == this.displayName))
 					this.status= "friend";
 			else if (resRequest?.status == Status.success)
 			{
-				const allPendings = resRequest.payload.requests;
-				if (allPendings.some((pending:any) =>pending.requestFrom == this.displayName))
-				{
+				const statusRequest = resRequest.payload.status;
+				console.log("AHHHHHH " + statusRequest);
+				if (statusRequest === "not send" || statusRequest === "declined")
 					this.status= "add";
-				}
+				else
+					this.status="send"
 			}
 		}
 		catch(e)
