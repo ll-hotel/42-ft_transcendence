@@ -1,8 +1,7 @@
-type PongClientData = | {type : 'input'; up : boolean; down : boolean} | { type : 'ping'};
+type PongClientData = | { type: 'input'; up: boolean; down: boolean } | { type: 'ping' };
 
-function sendInputData(up: boolean, down: boolean)
-{
-	console.log(JSON.stringify({type : 'input', up, down}));
+function sendInputData(up: boolean, down: boolean) {
+	console.log(JSON.stringify({ type: 'input', up, down }));
 }
 
 window.addEventListener("keydown", (event) => {
@@ -29,20 +28,13 @@ window.addEventListener("keyup", (event) => {
 }
 );
 
-class Client
-{
-	readonly uuid:string;
-	socket:WebSocket;
+class Client {
+	readonly uuid: string;
+	socket: WebSocket;
 
-	constructor()
-	{
+	constructor() {
 		this.uuid = crypto.randomUUID();
 		this.socket = new WebSocket('localhost:4242/pong');
 	}
-
-	this.socket.onmessage = event => {
-		const msg = JSON.parse(event.data);
-	};
-
-}
+};
 
