@@ -2,27 +2,20 @@ import { Game } from "../pong.js";
 import AppPage from "./AppPage.js";
 
 export class PongPage implements AppPage {
-	// html: HTMLElement;
-	error: HTMLElement;
 	content: HTMLElement;
 	game: Game;
+	onclick: () => void;
 
 	private constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement) {
 		this.content = html;
-		this.error = this.content.querySelector("#pong-error")!;
 		this.game = new Game(html, ball, paddle);
 
-		const startPanel = html.querySelector("#panel-start");
-		startPanel?.addEventListener("click", () => {
-			startPanel.setAttribute("hidden", "");
-			html.querySelector("#panel-game")?.removeAttribute("hidden");
-			// TODO: Start game.
-			this.game.game_init();
-		});
+		html.querySelector("#game-clickbox")?.addEventListener("click", () => this.onclick());
+		this.onclick = () => this.showGame();
 	}
 
 	static async new(html: HTMLElement): Promise<PongPage | null> {
-		const error = html.querySelector("#pong-error");
+		const error = true;
 		if (!error) {
 			console.log("[pong] Missing html");
 			return null;
@@ -40,30 +33,60 @@ export class PongPage implements AppPage {
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
-		this.content.querySelector("#panel-start")?.removeAttribute("hidden");
-		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
-		this.content.querySelector("#panel-score")?.setAttribute("hidden", "");
-		
-		// this.game.game_init();
+		this.showStart();
 	}
 
 	unload() {
 		this.content.remove();
 	}
 
-	setError(error: string) {
-		this.error.innerHTML = error;
-		if (this.error.innerHTML.length == 0) {
-			this.error.setAttribute("hidden", "");
-		} else {
-			this.error.removeAttribute("hidden");
-		}
+	showStart() {
+		this.onclick = () => this.showGame();
+		this.content.querySelector("#panel-start")?.removeAttribute("hidden");
+		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
+		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
+		this.content.querySelector("#panel-score")?.setAttribute("hidden", "");
 	}
-
-	// start()
-	// {
-	// 	this.game.game_init();
-	// }
+	showGame() {
+		this.onclick = () => this.showPause();
+		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
+		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
+		// this.game.start();
+		setTimeout(() => this.showScore(), 5000);
+	}
+	showPause() {
+		this.onclick = () => this.hidePause();
+		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
+		this.content.querySelector("#panel-pause")?.removeAttribute("hidden");
+		// this.game.pause();
+	}
+	hidePause() {
+		this.onclick = () => this.showPause();
+		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
+		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
+		// this.game.resume();
+	}
+	showScore() {
+		this.onclick = () => this.showStart();
+		const scorePanel = this.content.querySelector("#panel-score");
+		if (scorePanel) {
+			const score = this.game.score;
+			if (score.p1 > score.p2) {
+				scorePanel.innerHTML = "<p>Player 1 Won!</p>";
+			} else if (score.p2 > score.p1) {
+				scorePanel.innerHTML = "<p>Player 2 Won!</p>";
+			} else {
+				scorePanel.innerHTML = "It's a tie!"
+			}
+			scorePanel.innerHTML += "<br>" + `<p>${score.p1} : ${score.p2}</p>`;
+			scorePanel.removeAttribute("hidden");
+		}
+		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
+		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
+		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
+		// this.game.end();
+		setTimeout(() => this.showStart(), 5000);
+	}
 }
 
 async function fetchImage(url: string): Promise<HTMLImageElement | null> {

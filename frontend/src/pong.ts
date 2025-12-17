@@ -107,7 +107,7 @@ export class Game
 	private buffer: number;
 	private tick_interval: number;
 	private tick_rate: number;
-	private score: Score;
+	score: Score;
 	private score_viewer: HTMLElement;
 	static	angle:number = 0;
 	public input: Map<string, boolean>;

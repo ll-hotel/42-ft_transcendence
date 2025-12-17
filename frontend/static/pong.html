@@ -1,16 +1,17 @@
-<body class="flex flex-col size-full place-content-center items-center">
-	<div class="w-3/4 h-full place-content-center items-center">
-		<div id="pong-error" hidden></div>
-
-		<div id="panel-start" class="border radius-sm size-full place-content-center text-center text-2xl">
-			Start Game
+<body class="w-full h-full justify-center-safe xl:w-3/4 xl:h-3/4">
+	<div id="game-clickbox" class="border radius-sm size-full text-center text-2xl">
+		<div id="panel-start" class="size-full place-content-center items-center">
+			<p>Start Game</p>
 		</div>
 
-		<div id="panel-game" class="border radius-sm w-full grid grid-cols-1" hidden>
-			<canvas id="pong-canvas" class="bg-orange-100 size-full"></canvas>
+		<div id="panel-pause" class="size-full place-content-center items-center" hidden>
+			<p>Pause<p>
 		</div>
 
-		<div id="panel-score" class="border radius-sm items-center justify-items-center text-center text-2xl" hidden>
+		<div id="panel-game" class="size-full flex place-content-center" hidden>
+			<canvas id="pong-canvas" class="bg-orange-100 max-w-full max-h-full"></canvas>
 		</div>
-	</div>
+
+		<div id="panel-score" class="size-full place-content-center items-center" hidden></div>
+	<div>
 </body>
