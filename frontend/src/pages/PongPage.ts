@@ -10,8 +10,15 @@ export class PongPage implements AppPage {
 	private constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement) {
 		this.content = html;
 		this.error = this.content.querySelector("#pong-error")!;
-
 		this.game = new Game(html, ball, paddle);
+
+		const startPanel = html.querySelector("#panel-start");
+		startPanel?.addEventListener("click", () => {
+			startPanel.setAttribute("hidden", "");
+			html.querySelector("#panel-game")?.removeAttribute("hidden");
+			// TODO: Start game.
+			this.game.game_init();
+		});
 	}
 
 	static async new(html: HTMLElement): Promise<PongPage | null> {
@@ -33,7 +40,11 @@ export class PongPage implements AppPage {
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
-		this.game.game_init();
+		this.content.querySelector("#panel-start")?.removeAttribute("hidden");
+		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
+		this.content.querySelector("#panel-score")?.setAttribute("hidden", "");
+		
+		// this.game.game_init();
 	}
 
 	unload() {
