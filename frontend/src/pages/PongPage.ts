@@ -46,25 +46,26 @@ export class PongPage implements AppPage {
 		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-score")?.setAttribute("hidden", "");
+		this.game.game_init();
 	}
 	showGame() {
 		this.onclick = () => this.showPause();
 		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
-		// this.game.start();
-		setTimeout(() => this.showScore(), 5000);
+		this.game.start();
+		// setTimeout(() => this.showScore(), 5000);
 	}
 	showPause() {
 		this.onclick = () => this.hidePause();
 		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-pause")?.removeAttribute("hidden");
-		// this.game.pause();
+		this.game.pause();
 	}
 	hidePause() {
 		this.onclick = () => this.showPause();
 		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
-		// this.game.resume();
+		this.game.resume();
 	}
 	showScore() {
 		this.onclick = () => this.showStart();

@@ -101,7 +101,7 @@ export class Game
 	private ball: PongBall;
 	public paddle_p1: PongPaddle;
 	public paddle_p2: PongPaddle;
-	private score: Score;
+	readonly score: Score;
 	public input: Map<string, boolean>;
 
 	//loop
@@ -119,8 +119,8 @@ export class Game
 	{
 		this.canvas = new PongCanvas(html.querySelector("#pong-canvas")!);
 		this.canvas.getContext().imageSmoothingEnabled = false;
-		this.score_viewer = html.querySelector("#score_viewer")!;
-		this.start_button = html.querySelector("#start_button")!;
+		this.score_viewer = html.querySelector("#panel-score")!;
+		this.start_button = html.querySelector("#panel-start")!;
 		this.score= {p1: 0, p2: 0};
 		this.paddle_p1 = new PongPaddle({x: 0, y: this.canvas.canvas.height / 2} , paddle_texture);
 		this.paddle_p2 = new PongPaddle({x: this.canvas.canvas.width, y: this.canvas.canvas.height / 2}, paddle_texture);
@@ -192,6 +192,23 @@ export class Game
 		this.ball.spawn_ball((Math.random() < 0.5 ? -1 : 1));
 		this.is_running = true;
 		this.loop(this.last_timestamp);
+	}
+
+	resume() : void
+	{
+		console.log("resume");
+		if (this.is_running == false)
+		{
+			this.is_running = true;
+			this.loop(this.last_timestamp);
+		}
+	}
+
+	pause() : void
+	{
+		console.log("pause");
+		if (this.is_running)
+			this.is_running = false;
 	}
 
 	private loop = (timestamp: number) =>
