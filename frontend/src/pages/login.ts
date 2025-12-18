@@ -34,17 +34,20 @@ export class Login implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement) {
-		const searchKey = "?code=";
-		if (location.search.startsWith(searchKey)) {
+		const params = new URLSearchParams(location.search);
+		const provider = params.get("provider");
+		const code = params.get("code");
+		let path = "";
+		if (code && provider) {
+			if (provider === "42")
+				path = "/api/auth42/callback?code=";
+			else
+				path = "/api/authGoogle/callback?code=";
 			const logging = document.createElement("p");
 			logging.className = "font-bold text-xl";
 			logging.innerText = "Logging in...";
 			container.appendChild(logging);
-
-			const searchArgs = location.search.substring(1).split("&");
-			const searchCode = searchArgs.find(s => s.startsWith("code="))!;
-			const code = searchCode.split("=")[1];
-			const res = await api.get("/api/auth42/callback?code=" + code);
+			const res = await api.get(path + code);
 			if (res && res.payload.accessToken) {
 				localStorage.setItem("accessToken", res.payload.accessToken);
 			}
