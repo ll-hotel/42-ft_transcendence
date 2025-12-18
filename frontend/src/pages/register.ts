@@ -29,8 +29,10 @@ export class RegisterPage implements AppPage {
 			return;
 		}
 		container.appendChild(this.content);
+		document.querySelector("#navbar")?.setAttribute("hidden", "");
 	}
 	unload(): void {
+		document.querySelector("#navbar")?.removeAttribute("hidden");
 		this.content.remove();
 		(this.form.querySelector("[name=username]")! as HTMLInputElement).value = "";
 		(this.form.querySelector("[name=password]")! as HTMLInputElement).value = "";

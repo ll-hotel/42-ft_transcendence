@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="w-svw h-svh">
 
 <head>
 	<meta charset='utf-8' />
@@ -9,12 +9,21 @@
 	<script src="index.js" type="module"></script>
 </head>
 
-<body>
-	<nav class="flex flex-row bg-orange-100 border-b-4 top-0 left-0 transition delay-75 duration-200 ease-in-out hover:bg-orange-200">
-		<ul id="dynamic-menu" class="flex flex-row p-2"></ul>
-	</nav>
+<body class="flex flex-col size-full">
+	<header class="sticky top-0">
+		<nav id="navbar" class="flex bg-orange-100 border-b-4 w-full h-16">
+			<ul id="dynamic-menu" class="flex flex-row p-2 w-full text-black justify-items-center items-center">
+				<li class="p-2 border rounded-md bg-white">
+					<button onclick="gotoPage('profile')">Profile</button>
+				</li>
+				<li class="p-2 border rounded-md bg-white">
+					<button onclick="gotoPage('pong')">Pong</button>
+				</li>
+			</ul>
+		</nav>
+	</header>
 	<noscript>Please enable Javascript.</noscript>
-	<div id="content" class="flex min-h-svh min-w-svw items-center place-content-center p-2 md:p-4"></div>
+	<div id="content" class="flex grow items-center place-content-center p-2 md:p-4"></div>
 </body>
 
 </html>
