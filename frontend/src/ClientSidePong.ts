@@ -37,12 +37,12 @@ class Client
 	constructor()
 	{
 		this.uuid = crypto.randomUUID();
-		this.socket = new WebSocket('localhost:4242/pong');
+		this.socket = new WebSocket('localhost:8443/pong');
 	}
 
-	this.socket.onmessage = event => {
-		const msg = JSON.parse(event.data);
-	};
+	// this.socket.onmessage = event => {
+	// 	const msg = JSON.parse(event.data);
+	// };
 
 }
 
