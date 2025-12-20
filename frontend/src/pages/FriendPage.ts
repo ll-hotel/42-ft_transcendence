@@ -110,7 +110,7 @@ export class FriendPage implements AppPage
 			console.log("No Requests");
 
 		requests.forEach((request: any) => {
-			const card:HTMLElement = FriendPage.createRequestCard(request)
+			const card:HTMLElement = this.createRequestCard(request)
 			this.listContainer.appendChild(card);
 		}
 	)
@@ -164,7 +164,7 @@ export class FriendPage implements AppPage
 	}
 
 
-	static createRequestCard(request: any): HTMLElement
+	createRequestCard(request: any): HTMLElement
 	{
 		const card = document.createElement("div");
 		card.className = "request-card";
@@ -191,6 +191,7 @@ export class FriendPage implements AppPage
 			{
 				console.log(`Tu es ami avec ${request.requestFrom}`);
 				card.remove();
+				this.loadFriends();
 			}
 			else
 				console.error("AcceptRes didn't work");

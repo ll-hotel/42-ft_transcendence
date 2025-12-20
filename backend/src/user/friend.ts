@@ -194,10 +194,19 @@ class friend {
 		if(await tcheckFriends(usr.id, target.id))
 			return rep.code(STATUS.success).send({status : "accepted"});
 
-		const [friendExists] =  await db.select().from(friends).where(and(eq(friends.senderId, usr.id), eq(friends.receiverId, target.id)));
-		
+		const [friendExists] = await db.select().from(friends).where(or(and(eq(friends.senderId, usr.id), eq(friends.receiverId, target.id)), and(eq(friends.senderId, target.id), eq(friends.receiverId, usr.id))));
+
 		if (friendExists)
-			status = friendExists.status;
+		{
+			if (friendExists.status == "pending")
+			{
+				if (friendExists.senderId === usr.id)
+					status = "pending_out";
+				else
+					status = "pending_in";
+			}
+			else status = friendExists.status;
+			}
 
 		return rep.code(STATUS.success).send({status: status});
 	}

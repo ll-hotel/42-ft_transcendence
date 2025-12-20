@@ -47,9 +47,21 @@ export class OtherProfilePage implements AppPage {
 			localStorage.removeItem("userinfo");
 			return;
 		}
+		const statusDot = this.content.querySelector("#status-dot");
+		const statusText = this.content.querySelector("#status-text");
 		const matchList = this.content.querySelector("#match-list");
-		if (!matchList)
+		const cntFriendButton = this.content.querySelector(".friend-buttons");
+		
+		if (!matchList || !statusDot || !statusText)
+		{
 			return;
+		}
+		
+		statusText.innerHTML = "";
+		const isOnline = userinfo.isOnline;
+		statusDot.className = isOnline ? "friend-round-online" : "friend-round-offline";
+		statusText.className = isOnline ? "friend-text-online" : "friend-text-offline";
+		statusText.textContent = isOnline ? "Online" : "Offline";
 
 		matchList.innerHTML = "";
 		for (let i = 0; i < 5; i += 1) {
@@ -59,7 +71,6 @@ export class OtherProfilePage implements AppPage {
 			).toHTML());
 		}
 
-		const cntFriendButton = this.content.querySelector(".friend-buttons");
 		if (cntFriendButton)
 		{
 			const oldButton = cntFriendButton.querySelector("#friend-buttons-cnt");
@@ -75,6 +86,7 @@ export class OtherProfilePage implements AppPage {
 	setParams(params: any) {
 		if (!params || !params.displayName)
 			return;
+
 		this.loadUserInfo(params.displayName);
 	}
 };

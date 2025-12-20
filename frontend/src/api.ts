@@ -19,7 +19,10 @@ export class api {
 	static async patch(uri: string, body: object = {}) {
 		return this.request("PATCH", uri, body);
 	}
-	private static async request(method: "GET" | "POST" | "PATCH", uri: string, body: string | object = "") {
+	static async delete(uri: string, body: object = {}) {
+		return this.request("DELETE", uri, body);
+	}
+	private static async request(method: "GET" | "POST" | "PATCH" | "DELETE", uri: string, body: string | object = "") {
 		const token = localStorage.getItem("accessToken");
 		let headers;
 		let jsonBody: string | null = null;
