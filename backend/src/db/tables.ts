@@ -38,7 +38,31 @@ export const matches = sqliteTable("matches", {
 	scoreP1: integer("scoreP1").notNull().default(0),
 	scoreP2: integer("scoreP2").notNull().default(0),
 	winnerId: integer("winnerId").references(() => users.id),
-	endedAt: integer("endedAt", {mode : "timestamp"}),
+	endedAt: integer("endedAt"),
 
 });
 
+export const tournaments = sqliteTable("tournaments", {
+	id: integer("id").primaryKey({autoIncrement : true}),
+	name: text("name").notNull(),
+	status: text("status").notNull().default("pending"),
+	winnerId: integer("winnerId").references(() => users.id),
+	createdAt: integer("createdAt"),
+
+});
+
+export const tournamentPlayers = sqliteTable("tournamentPlayers", {
+	id: integer("id").primaryKey({autoIncrement : true}),
+	tournamentId: integer("tournamentId").notNull().references(() => tournaments.id, { onDelete: "cascade"}),
+
+	userId: integer("userId").notNull().references(() => users.id),
+	eliminated: integer("eliminated").notNull().default(0),
+});
+
+export const tournamentMatches = sqliteTable("tournamentMatches", {
+	id: integer("id").primaryKey({autoIncrement : true}),
+	tournamentId: integer("tournamentId").notNull().references(() => tournaments.id, { onDelete: "cascade"}), 
+
+	matchId: integer("matchId").notNull().references(() => matches.id, {onDelete: "cascade"}),
+	round: integer("round").notNull(),
+});

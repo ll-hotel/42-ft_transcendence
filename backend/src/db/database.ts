@@ -44,7 +44,6 @@ async function createFriendsTable() {
 	  `);
 }
 
-
 async function createMatchmakingQueueTable() {
 		await db.run(sql`
 		CREATE TABLE IF NOT EXISTS matchmakingQueue (
@@ -54,7 +53,6 @@ async function createMatchmakingQueueTable() {
 		);
 		`);
 }
-
 
 async function createMatchesTable() {
 	await db.run(sql`
@@ -72,4 +70,43 @@ async function createMatchesTable() {
 	 FOREIGN KEY (winnerId) REFERENCES users(id) ON DELETE SET NULL
 	 );
 		`);
+}
+
+async function createTournamentsTable() {
+	await db.run(sql`
+	CREATE TABLE IF NOT EXISTS Tournaments (
+	 id INTEGER PRIMARY KEY AUTOINCREMENT,
+	 name TEXT NOT NULL,
+	 status TEXT NOT NULL DEFAULT 'pending',
+	 winnerId INTEGER,
+	 createdAt INTEGER,
+	 FOREIGN KEY (winnerId) REFERENCES users(id)
+
+	 );
+		`);
+}
+
+async function createTournamentPlayers() {
+	await db.run(sql`
+	CREATE TABLE IF NOT EXISTS TournamentPlayers (
+	 id INTEGER PRIMARY KEY AUTOINCREMENT,
+	 tournamentId INTEGER NOT NULL,
+	 userId INTEGER NOT NULL,
+	 eliminated INTEGER NOT NULL DEFAULT 0,
+	 FOREIGN KEY (tournamentId) REFERENCES tournaments(id) ON DELETE CASCADE,
+	 FOREIGN KEY (userId) REFERENCES users(id)
+	 );	
+	 `);
+}
+
+async function createTournamentMatches() {
+	await db.run(sql`
+	 CREATE TABLE IF NOT EXISTS TournamentMatches (
+	 id INTEGER PRIMARY KEY AUTOINCREMENT,
+	 tournamentId INTEGER NOT NULL,
+	 matchId INTEGER NOT NULL,
+	 round INTEGER NOT NULL,
+	 FOREIGN KEY (tournamentId) REFERENCES tournaments(id),
+	 FOREIGN KEY (matchId) REFERENCES matches(id) ON DELETE CASCADE,
+	 )`)
 }

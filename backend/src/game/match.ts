@@ -1,9 +1,10 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { authGuard } from "../security/authGuard";
 import { db } from "../db/database";
-import { matches } from "../db/tables";
+import { matches, tournamentMatches } from "../db/tables";
 import { eq, or, and } from "drizzle-orm";
 import { STATUS } from "../shared";
+import {Tournament} from "./tournament"
 
 class Match {
 	static setup(app: FastifyInstance) {
@@ -53,8 +54,14 @@ class Match {
 			winnerId,
 			scoreP1,
 			scoreP2,
-			endedAt: new Date(),
+			endedAt: Date.now(),
 		}).where(eq(matches.id, matchId));
+
+		const [tm] = await db.select().from(tournamentMatches).where(eq(tournamentMatches.matchId), matchId);
+		if (tm)
+			Tournament.tournamentEndMatch(matchId, winnerId);
+		
+		return rep.code(STATUS.success).send({ message: "Match ended"});
 
 	}
 }

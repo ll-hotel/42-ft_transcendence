@@ -17,9 +17,7 @@ class Matchmaking {
 {
 	const usr = req.user!;
 
-    const [inQueue] = await db.select()
-        .from(matchmakingQueue)
-        .where(eq(matchmakingQueue.userId, usr.id));
+	const [inQueue] = await db.select().from(matchmakingQueue).where(eq(matchmakingQueue.userId, usr.id));
     if (inQueue)
         return rep.code(STATUS.bad_request).send({ message: "Already in queue" });
 
@@ -31,28 +29,25 @@ class Matchmaking {
 
     await db.insert(matchmakingQueue).values({ userId: usr.id });
 
-    const players = await db.select()
-        .from(matchmakingQueue)
-        .limit(2);
+    const players = await db.select().from(matchmakingQueue).limit(2);
 
     if (players.length < 2)
         return rep.code(STATUS.success).send({ message: "Waiting for opponent..." });
 
     const [p1, p2] = players;
 
-    const [match] = await db.insert(matches)
-        .values({
+    const [match] = await db.insert(matches).values({
             player1Id: p1.userId,
             player2Id: p2.userId,
             status: "ongoing"
-        })
-        .returning();
+		})
+		.returning();
 
     await db.delete(matchmakingQueue)
-      .where(or(
+	.where(or(
         eq(matchmakingQueue.userId, p1.userId),
         eq(matchmakingQueue.userId, p2.userId)
-      ));
+	));
 
     notifyUser(p1.userId, {
         type: "MATCH_FOUND",
@@ -61,7 +56,7 @@ class Matchmaking {
     });
 
     notifyUser(p2.userId, {
-        type: "MATCH_FOUND",
+		type: "MATCH_FOUND",
         matchId: match.id,
         opponentId: p1.userId,
     });
