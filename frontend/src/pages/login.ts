@@ -24,6 +24,14 @@ export class Login implements AppPage {
 			}
 			location.assign(res.payload.redirect);
 		};
+		const googleButton: HTMLButtonElement = this.content.querySelector("button#button-google")!;
+		googleButton.onclick = async function() {
+			const res = await api.get("/api/authGoogle");
+			if (!res || !res.payload.redirect) {
+				return;
+			}
+			location.assign(res.payload.redirect);
+		};
 	}
 	static new(content: HTMLElement) {
 		if (!content.querySelector("form") ||
