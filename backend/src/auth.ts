@@ -24,9 +24,15 @@ const SCHEMA_REGISTER = {
 const SCHEMA_LOGIN = SCHEMA_REGISTER;
 
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
-const UID = fs.readFileSync("/run/secrets/uid_42", "utf-8").trim();
-const clientSecret = fs.readFileSync("/run/secrets/client42_secret", "utf-8").trim();
-const redirectURI = `https://localhost:8443/login`
+
+
+
+const oauthKeys = JSON.parse(fs.readFileSync("/run/secrets/oauthKeys", "utf-8").trim());
+
+
+
+const redirect42 = `https://localhost:8443/login?provider=42`;
+const redirectGoogle = `https://localhost:8443/login?provider=google`;
 
 /// Usernames are formed of alphanumerical characters ONLY.
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
@@ -40,7 +46,9 @@ class AuthService {
 		app.post('/api/auth/login', { schema: SCHEMA_LOGIN }, this.login);
 		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
 		app.get('/api/auth42', this.redirectAuth42);
-		app.get('/api/auth42/callback', this.callback); 
+		app.get('/api/auth42/callback', this.callback);
+		app.get('/api/authGoogle', this.redirectGoogle);
+		app.get('/api/authGoogle/callback', this.googleCallback);
 	}
 
 	async register(req: FastifyRequest, rep: FastifyReply) {
@@ -147,7 +155,7 @@ class AuthService {
 	}
 
 	async redirectAuth42(req: FastifyRequest, rep: FastifyReply) {
-		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${UID}&redirect_uri=${encodeURI(redirectURI)}&response_type=code`
+		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${oauthKeys.s42.clientId}&redirect_uri=${encodeURI(redirect42)}&response_type=code`
 		rep.send({ redirect: redirectURL });
 	}
 
@@ -161,10 +169,10 @@ class AuthService {
 			headers: {'Content-type': "application/json"},
 			body: JSON.stringify({
 				grant_type: "authorization_code",
-				client_id: UID,
-				client_secret: clientSecret,
+				client_id: oauthKeys.s42.clientId,
+				client_secret: oauthKeys.s42.clientSecret,
 				code,
-				redirect_uri: redirectURI,
+				redirect_uri: redirect42,
 
 			})
 		});
@@ -192,12 +200,64 @@ class AuthService {
 				// avatar = image?
 			});
 		}
-		// console.log(userData);
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		rep.setCookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'strict', path: '/api' });
 		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));
+		rep.code(STATUS.success).send({
+		  	message: MESSAGE.logged_in,
+		  	loggedIn: true,
+		  	accessToken,
+		});
+	}
 
+	async redirectGoogle(req:FastifyRequest, rep: FastifyReply) {
+		const redirectURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthKeys.google.clientId}&redirect_uri=${encodeURIComponent(redirectGoogle)}&response_type=code&scope=openid email profile`;
+		rep.send({ redirect: redirectURL });
+	}
+
+	async googleCallback(req: FastifyRequest, rep: FastifyReply) {
+		const {code} = req.query as {code?: string};
+		if (!code)
+			return rep.code(STATUS.bad_request).send({ message: "Missing code "});
+
+		const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+			method: 'POST',
+			headers: {'Content-type': "application/json"},
+			body: JSON.stringify({
+				code,
+				client_id: oauthKeys.google.clientId,
+				client_secret: oauthKeys.google.clientSecret,
+				redirect_uri: redirectGoogle,
+				grant_type: "authorization_code",
+			})
+		});
 		
+		const token = await tokenResponse.json();	
+		if (!token.access_token)
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_token });
+		const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+			headers: {Authorization: `Bearer ${token.access_token}`}
+		});
+		const userData = await response.json();
+		const [userExists] = await db.select().from(users).where(eq(users.username, userData.email));
+		let user;
+		if (userExists)
+			user = userExists;
+		else {
+			const uuid = uiidv4();
+			user = {uuid};
+			const pass = await hashPassword("GoogleUser___" + uuid);
+			await db.insert(users).values({
+				uuid,
+				username: userData.email,
+				displayName: userData.given_name,
+				password: pass,
+				// avatar: userData.picture,
+			});
+		}
+		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
+		rep.setCookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'strict', path: '/api' });
+		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));
 		rep.code(STATUS.success).send({
 		  	message: MESSAGE.logged_in,
 		  	loggedIn: true,
