@@ -4,16 +4,18 @@ import { db } from "../db/database";
 import { matches, tournamentMatches } from "../db/tables";
 import { eq, or, and } from "drizzle-orm";
 import { STATUS } from "../shared";
-import {Tournament} from "./tournament"
+import { Tournament } from "./tournament"
 
 class Match {
 	static setup(app: FastifyInstance) {
 		app.get('/api/match/current', { preHandler: authGuard }, Match.getCurrent);
 		app.get('/api/match/:id', { preHandler: authGuard }, Match.getMatchById);
 
-		app.post('/api/match/:id/end', { preHandler: authGuard }, Match.endMatch);
+		app.post('/api/match/create', { preHandler: authGuard }, Match.createMatch);
 
 	}
+
+	
 
 	static async getCurrent(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
@@ -22,7 +24,7 @@ class Match {
 			or(eq(matches.player1Id, usr.id), eq(matches.player2Id, usr.id)),
 			eq(matches.status, "ongoing")));
 		if (!match)
-			return rep.code(STATUS.not_found).send({ message: "No ongoing match"});
+			return rep.code(STATUS.not_found).send({ message: "User is not in match"});
 
 		return rep.code(STATUS.success).send(match);
 	}
@@ -57,9 +59,9 @@ class Match {
 			endedAt: Date.now(),
 		}).where(eq(matches.id, matchId));
 
-		const [tm] = await db.select().from(tournamentMatches).where(eq(tournamentMatches.matchId), matchId);
+		const [tm] = await db.select().from(tournamentMatches).where(eq(tournamentMatches.matchId, matchId));
 		if (tm)
-			Tournament.tournamentEndMatch(matchId, winnerId);
+			await Tournament.tournamentEndMatch(matchId, winnerId);
 		
 		return rep.code(STATUS.success).send({ message: "Match ended"});
 

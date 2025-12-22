@@ -8,6 +8,7 @@ import matchmaking from "./game/matchmaking";
 import websocketPlugin from "@fastify/websocket";
 import matchmakingWS from "./websocket/matchmaking.ws";
 import match from "./game/match";
+import tournament from "./game/tournament";
 
 
 
@@ -25,9 +26,9 @@ async function main() {
 
 
 	app.register(websocketPlugin);
-	app.register(matchmakingWS); 	
+	app.register(matchmakingWS);
 	
-	
+	app.register(tournament);
 	app.register(auth);
 	app.register(user);
 	app.register(f => friendService.setup(f));

@@ -10,9 +10,12 @@ export class Tournament {
 		app.post("/api/tournaments/create", { preHandler: authGuard }, Tournament.createTournament);
 		app.post("/api/tournaments/:id/join", { preHandler: authGuard }, Tournament.joinTournament);
 		app.post("/api/tournaments/:id/start", { preHandler: authGuard }, Tournament.startTournament);
+		
+		app.get("/api/tournament/:id/status", { preHandler: authGuard }, Tournament.tournamentStatus);
 	}
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
 		const { name } = req.body as { name: string };
 		
 		// 
@@ -22,6 +25,11 @@ export class Tournament {
 			name,
 			createdAt: Date.now(),
 		}).returning();
+
+		await db.insert(tournamentPlayers).values({
+			tournamentId: tournament.id,
+			userId: usr.id,
+		});
 
 		return rep.code(STATUS.created).send({
 			message: "Tournament created",
@@ -91,6 +99,8 @@ export class Tournament {
 		]);
 
 		await db.update(tournaments).set({status:"ongoing"}).where(eq(tournaments.id, id));
+		
+		// notifyUser TOURNAMENT_STARTED
 
 		return rep.code(STATUS.success).send({ 
 			message: "Tournament started",
@@ -104,13 +114,15 @@ export class Tournament {
 			return;
 		if (tm.round === 1) 
 			await Tournament.semiFinalEnd(tm.tournamentId);
-		else if (tm.round === 2) 
+		else if (tm.round === 2) {
 			await db.update(tournaments).set({status: "ended"}).where(eq(tournaments.id, tm.tournamentId));
+			// notify User TOURNAMENT_ENDED
+		}
 	}
 
 	static async semiFinalEnd(tournamentId: number) {
 		const link = await db.select().from(tournamentMatches).where(and(
-			eq(tournamentMatches.tournamentId), tournamentId, 
+			eq(tournamentMatches.tournamentId, tournamentId), 
 			eq(tournamentMatches.round, 1)));
 
 		if (link.length !== 2)
@@ -128,18 +140,26 @@ export class Tournament {
 		const winner1 = finished[0].winnerId;
 		const winner2 = finished[1].winnerId;
 
+		if (!winner1 || !winner2)
+			return;
+
 		const [finalMatch] = await db.insert(matches).values({
-			player1Id: winner1,
-			player2Id: winner2,
+			player1Id: Number(winner1),
+			player2Id: Number(winner2),
 			status: "ongoing",
 		}).returning();
 
+		// notifyUser FINAL_MATCH 
 		await db.insert(tournamentMatches).values({
 			tournamentId,
 			matchId: finalMatch.id,
 			round: 2,
 		});
 
+	}
+
+	static async tournamentStatus() {
+		
 	}
  }
 

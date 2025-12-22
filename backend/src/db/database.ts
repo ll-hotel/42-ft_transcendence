@@ -13,6 +13,9 @@ export async function createTables() {
 	createFriendsTable();
 	createMatchmakingQueueTable();
 	createMatchesTable();
+	createTournamentsTable();
+	createTournamentPlayers();
+	createTournamentMatches();
 }
 
 async function createUserTable() {
@@ -107,6 +110,6 @@ async function createTournamentMatches() {
 	 matchId INTEGER NOT NULL,
 	 round INTEGER NOT NULL,
 	 FOREIGN KEY (tournamentId) REFERENCES tournaments(id),
-	 FOREIGN KEY (matchId) REFERENCES matches(id) ON DELETE CASCADE,
-	 )`)
+	 FOREIGN KEY (matchId) REFERENCES matches(id) ON DELETE CASCADE
+	 );`);
 }
