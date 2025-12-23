@@ -1,7 +1,9 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import Chat from "../chat";
 import { authGuard } from "../security/authGuard";
 import { STATUS } from "../shared";
+import { getUserIdByUsername } from "../user/user";
+
 
 export function chatRoute(fastify: FastifyInstance) {
 	fastify.get(
@@ -10,32 +12,52 @@ export function chatRoute(fastify: FastifyInstance) {
 			websocket: true,
 			preHandler: authGuard,
 		},
-		newWebsocketConnection
+		(ws : WebSocket, req : FastifyRequest) => {
+			chat.newWebsocketConnection(ws, req);
+		}
 	);
+
 	fastify.get(
 		"/api/chat/room/:id",
 		{
 			preHandler: authGuard,
 		},
-		(req, rep) => {
-			const chatuser = chat.users.get("@" + req.user!.username);
+		(req : FastifyRequest, rep: FastifyReply) => {
+			const chatuser = chat.getOrCreateUser(req.user!.id, req.user!.username);
 			if (!chatuser) {
 				return rep.code(STATUS.bad_request).send({ message: "User not registered" });
 			}
 			const roomId = "#" + (req.params as { id: string }).id;
 			if (roomId.length == 1 || !chat.rooms.has(roomId)) {
-				return rep.code(STATUS.not_found).send({ message: "Not found" });
+				return rep.code(STATUS.not_found).send({ message: "Room not found" });
 			}
-			rep.code(STATUS.success).send({ message: "Success" });
+			const room = chat.rooms.get(roomId)!;
+			return rep.code(STATUS.success).send({ roomId: room.id });
+		}
+	);
+
+	fastify.post(
+		"/api/chat/private/:username",
+		{
+			preHandler:authGuard,
+		},
+		async (req: FastifyRequest, rep: FastifyReply) => {
+			const me = chat.getOrCreateUser(req.user!.id, req.user!.username);
+			const targetName = (req.params as { username : string}).username;
+			try {
+				const targetId = await getUserIdByUsername(targetName);
+				if (!targetId)
+					throw new Error("Username not found");
+				const target = chat.getOrCreateUser(targetId, targetName);
+				const room = await chat.createPrivateRoom(me,target);
+				return rep.send({ roomId : room.id});
+			}
+			catch (err) {
+				return rep.code(STATUS.bad_request).send({message: (err as Error).message })
+			}
 		}
 	);
 }
 
 const chat = new Chat.Instance();
 
-function newWebsocketConnection(ws: WebSocket, req: FastifyRequest) {
-	const user = req.user!;
-	if (!chat.createUser(user.username, ws)) {
-		return ws.close(STATUS.bad_request);
-	}
-}

@@ -1,170 +1,263 @@
+import { tcheckFriends } from "./user/friend";
+
+function privateRoomId(UserAId: string, UserBId: string): string {
+	const [a, b] = UserAId < UserBId ? [UserAId, UserBId] : [UserBId, UserAId];
+	return `#private:${a}:${b}`;
+}
+
 namespace Chat {
-	type Message = {
-		source: string,
-		target: string,
-		content: string,
+	export type Message = {
+		source: string;
+		target: string;
+		content: string;
 	};
 
-	class Connection {
-		ws: WebSocket;
-		incoming: Message[];
+	export class Connection {
+	ws: WebSocket;
+	incoming: Chat.Message[];
 
-		private constructor(ws: WebSocket) {
-			this.ws = ws;
-			this.incoming = [];
-			ws.addEventListener("message", (event: MessageEvent<string>) => {
-				const msg = parseJson<Message>(event.data);
-				if (msg) {
-					this.incoming.push(msg);
+	constructor(ws: WebSocket) {
+		this.ws = ws;
+		this.incoming = [];
+
+		ws.addEventListener("message", (event) => {
+			try {
+				const msg = JSON.parse(event.data.toString());
+				this.incoming.push(msg);
+			} catch {
+				// ignore invalid
+			}
+		});
+	}
+
+	popMessages(): Chat.Message[] {
+		const msgs = this.incoming;
+		this.incoming = [];
+		return msgs;
+	}
+}
+
+
+	export class User {
+		id: string;
+		userId: number;
+		connections: Set<Connection>;
+		rooms: Set<string>;
+		buffer: Message[];
+		buffMax : number;
+
+		constructor(userId: number, username: string) {
+			this.userId = userId;
+			this.id = "@" + username;
+			this.connections = new Set();
+			this.rooms = new Set();
+			this.buffer = [];
+			this.buffMax= 100
+		}
+
+		connect(ws: WebSocket) {
+			const conn = new Connection(ws);
+			this.connections.add(conn);
+			this.flushBuffer();
+
+			ws.addEventListener("close", () => 
+			{
+				this.connections.delete(conn);
+			})
+		}
+
+		disconnect() {
+			for (const conn of this.connections)
+			{
+				if (conn.ws.readyState == WebSocket.OPEN)
+					conn.ws.close();
+			}
+			this.connections.clear();
+			this.buffer = [];
+		}
+
+		send(message: Message) {
+			if (this.connections.size > 0)
+			{
+				for (const conn of this.connections)
+				{
+					if (conn.ws && conn.ws.readyState === WebSocket.OPEN)
+						conn.ws.send(JSON.stringify(message));
 				}
-			});
+			}
+			else {
+				if (this.buffer.length >= this.buffMax)
+					this.buffer.shift();
+				this.buffer.push(message);
+			}
 		}
-		static new(ws: WebSocket) {
-			return new Connection(ws);
+
+		flushBuffer() {
+			if (this.connections.size === 0)
+				return;
+			for (const conn of this.connections) 
+				if (conn.ws && conn.ws.readyState === WebSocket.OPEN)
+					for (const msg of this.buffer)
+						conn.ws.send(JSON.stringify(msg));
+			this.buffer = [];
 		}
-		sendRaw(data: string) {
-			this.ws.send(data);
+
+		flushIncoming(chat: Instance) {
+			for (const conn of this.connections) {
+				const messages = conn.popMessages();
+				for (const msg of messages) {
+
+					// message vers room
+					if (msg.target.startsWith("#"))
+					{
+						const room = chat.rooms.get(msg.target);
+						if (room) 
+							room.send(msg);
+						continue;
+					}
+
+				/*	// message privé
+					if (msg.target.startsWith("@")) {
+						const target = chat.users.get(msg.target);
+						if (!target) continue;
+						try {
+							const room = await chat.createPrivateRoom(this, target);
+							room.send(msg);
+						}
+						catch {};
+					}*/
+				}
+			}
 		}
-		messages() {
-			const msgs = this.incoming;
-			this.incoming = [];
-			return msgs;
+
+	}
+
+	export class Room {
+		id: string;
+		users: User[];
+		
+		private constructor(id: string) {
+			this.id = id;
+			this.users = [];
+		}
+
+		static new(id: string) {
+			return new Room("#" + id);
+		}
+
+		connect(user: User) {
+			if (!this.users.find(u => u.id === user.id)) {
+				this.users.push(user);
+				this.send({ source: user.id, target: this.id, content: "Joined" });
+				user.rooms.add(this.id);
+				user.flushBuffer();
+			}
+		}
+
+		disconnect(userId: string) {
+			this.users = this.users.filter(u => u.id !== userId);
+		}
+
+		send(message: Message) {
+			for (const user of this.users) {
+				user.send({ ...message, target: this.id });
+			}
+		}
+
+		flush() {
+			for (const user of this.users) {
+				user.flushBuffer();
+			}
 		}
 	}
 
-	function parseJson<T>(text: string): T | null {
-		let obj: T;
-		try {
-			obj = JSON.parse(text);
-		} catch (error) {
-			console.log(JSON.stringify({ origin: "parseJSON", text: error }))
-			return null;
-		}
-		return obj;
-	}
 
 	export class Instance {
-		users: Map<string, User>;
+		users: Map<string, User>; // tous les users connus
 		rooms: Map<string, Room>;
 
 		constructor() {
 			this.users = new Map();
 			this.rooms = new Map();
-			setInterval(async () => await this.flush(), 200);
-			setInterval(() => this.users.forEach(user => user.send(
-				{ source: user.id.slice(1), target: "", content: "", }
-			)), 2000);
+			setInterval(() => this.flush(), 50)
 		}
-		async flush() {
-			const promises: Promise<void>[] = [];
-			for (const [_, user] of this.users) {
-				promises.push(user.flush());
+
+		flush() {
+			for (const user of this.users.values()) {
+				user.flushIncoming(this);
 			}
-			for (const promise of promises) {
-				await promise;
+			for (const room of this.rooms.values()) {
+				room.flush();
 			}
 		}
-		createUser(username: string, ws: WebSocket): boolean {
-			const chatUser = Chat.User.new(username, ws, this);
-			if (!chatUser) {
-				return false;
+
+		getOrCreateUser(userId: number, username: string): User {
+			const key = "@" + username;
+			let user = this.users.get(key);
+			if (!user) {
+				user = new User(userId, username);
+				this.users.set(key, user);
 			}
-			this.users.set(chatUser.id, chatUser);
-			chatUser.send({ source: username, target: "", content: ""});
-			return true;
+			return user;
 		}
+
 		createRoom(id: string): boolean {
-			if (this.rooms.has("#" + id)) {
+			if (this.rooms.has("#" + id))
 				return false;
-			}
 			const room = Room.new(id);
-			if (!room) {
-				return false;
-			}
 			this.rooms.set(room.id, room);
 			return true;
 		}
-	};
 
-	export class User {
-		id: string;
-		conn: Connection;
-		chat: Instance;
+		async createPrivateRoom(userA: User, userB: User): Promise<Room> {
+			const areFriends = await tcheckFriends(userA.userId, userB.userId);
+			if (!areFriends)
+				throw new Error("Cannot create private room: not friends");
 
-		private constructor(username: string, ws: WebSocket, chat: Instance) {
-			this.id = username;
-			this.conn = Connection.new(ws);
-			this.chat = chat;
+			const id = privateRoomId(userA.id, userB.id);
+			let room = this.rooms.get(id);
+			if (!room) {
+				room = Room.new(id.slice(1))!;
+				this.rooms.set(room.id, room);
+			}
+			room.connect(userA);
+			room.connect(userB);
+			return room;
 		}
-		static new(username: string, ws: WebSocket, chat: Instance) {
-			if (/(?:[a-zA-Z].*)\w.*/.test(username) == false || ws.readyState == ws.CLOSED) {
-				return null;
+
+		async newWebsocketConnection(ws: WebSocket, req: any) {
+			const userInfo = req.user!;
+			const user = this.getOrCreateUser(userInfo.id, userInfo.username);
+			user.connect(ws);
+
+			for (const other of this.users.values()) {
+				if (other === user)
+					continue;
+				try {
+					await this.createPrivateRoom(user, other);
+				}
+				catch {}
 			}
-			const userId = "@" + username;
-			if (chat.users.has(userId)) {
-				return null;
+
+			// Rejoin rooms existantes
+			for (const roomId of user.rooms) {
+				const room = this.rooms.get(roomId);
+				if (room) room.connect(user);
 			}
+
 			ws.addEventListener("close", () => {
-				for (const [_, room] of chat.rooms) {
-					room.disconnect(userId);
+				if (user.connections.size === 0) {
+					for (const roomId of user.rooms) {
+						const room = this.rooms.get(roomId);
+						room?.disconnect(user.id);
+						if (room?.users.length === 0)
+							this.rooms.delete(room.id);
+					}
+					user.rooms.clear();
 				}
-				chat.users.delete(userId);
 			});
-			return new User(userId, ws, chat);
 		}
-		send(message: Message) {
-			this.conn.sendRaw(JSON.stringify(message));
-		}
-		async flush() {
-			for (const message of this.conn.messages()) {
-				console.log({ message });
-				if (message.target[0] == "#") {
-					this.chat.rooms.get(message.target)?.send(message);
-				} else if (message.target[0] == "@") {
-					this.chat.users.get(message.target)?.send(message);
-				}
-			}
-		}
-	};
-
-	export class Room {
-		id: string;
-		users: User[];
-
-		private constructor(id: string) {
-			this.id = id;
-			this.users = [];
-		}
-		static new(id: string) {
-			if (/\w+/.test(id) == false) {
-				return null;
-			}
-			return new Room("#" + id);
-		}
-		send(message: Message) {
-			if (message.target != this.id) {
-				return;
-			}
-			for (const user of this.users) {
-				user.send(message);
-			}
-		}
-		connect(user: User) {
-			if (this.users.find(o => o.id == user.id)) {
-				// User already joined.
-				return;
-			}
-			this.users.push(user);
-			this.send({ source: user.id, target: this.id, content: "Joined" });
-		}
-		disconnect(id: string) {
-			const pos = this.users.findIndex(o => o.id == id);
-			if (pos >= 0) {
-				this.users.splice(pos, 1);
-			}
-			console.log({ room: this.id, message: `Disconnected ${id}` });
-		}
-	};
-};
+	}
+}
 
 export default Chat;

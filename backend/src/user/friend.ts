@@ -4,7 +4,16 @@ import { friends, users } from '../db/tables';
 import { eq, and, or} from 'drizzle-orm';
 import { authGuard } from '../security/authGuard';
 import { STATUS, MESSAGE } from '../shared';
+import user from './user';
 
+export async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
+	{
+		const res = await db.select({id:friends.id }).from(friends).where(and(
+			eq(friends.status, "accepted"), or( and(
+				eq(friends.senderId, user_1), eq(friends.receiverId, user_2)), and(
+				eq(friends.senderId,user_2), eq(friends.receiverId, user_1))))).limit(1);
+				return res.length > 0;
+	}
 
 class friend {
 	setup(app: FastifyInstance) {
@@ -15,9 +24,9 @@ class friend {
 
 		app.get("/api/friends", {preHandler: authGuard}, this.getFriends);
 		app.get("/api/friend/requests", {preHandler: authGuard}, this.getPendingRequests);
+		app.get("/api/friends/status", {preHandler: authGuard}, this.getFriendStatus);
 		app.delete("/api/friend/remove", {preHandler: authGuard}, this.removeFriend);
 
-		//block?
 	}
 
 	async sendRequest(req: FastifyRequest, rep: FastifyReply)
@@ -118,15 +127,13 @@ class friend {
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
-
-
 		})
 		.from(friends).innerJoin(users, or(eq(users.id, friends.senderId), eq(users.id, friends.receiverId)))
 		.where(and(
 			or(eq(friends.senderId, usr.id), eq(friends.receiverId, usr.id)), 
 			eq(friends.status, "accepted")));
 
-		const friendsList = result.filter(f => f.displayName !== usr.displayName);
+		const friendsList = result.filter((f : any) => f.displayName !== usr.displayName);
 
 		return rep.code(STATUS.success).send({friends: friendsList});
 	}
@@ -173,6 +180,38 @@ class friend {
 
 		return rep.code(STATUS.success).send({message: "Friend removed"});
 	}
+
+	async getFriendStatus(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+		const {displayName} = req.query as {displayName: string};
+		let status = "not sent";
+
+		if (!displayName)
+			return rep.code(STATUS.bad_request).send({message: "Missing displayName"})
+		const [target] = await db.select().from(users).where(eq(users.displayName, displayName));
+		if (!target)
+			return rep.code(STATUS.not_found).send({message: MESSAGE.user_notfound});
+
+		if(await tcheckFriends(usr.id, target.id))
+			return rep.code(STATUS.success).send({status : "accepted"});
+
+		const [friendExists] = await db.select().from(friends).where(or(and(eq(friends.senderId, usr.id), eq(friends.receiverId, target.id)), and(eq(friends.senderId, target.id), eq(friends.receiverId, usr.id))));
+
+		if (friendExists)
+		{
+			if (friendExists.status == "pending")
+			{
+				if (friendExists.senderId === usr.id)
+					status = "pending_out";
+				else
+					status = "pending_in";
+			}
+			else status = friendExists.status;
+			}
+
+		return rep.code(STATUS.success).send({status: status});
+	}
+
 }
 
 

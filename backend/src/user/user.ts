@@ -124,6 +124,10 @@ class User {
 		}
 	}
 }
+export async function getUserIdByUsername(username: string): Promise<number | null> {
+	const [user] = await db.select({ id: users.id }).from(users).where(eq(users.displayName, username));
+	return user ? user.id : null;
+}
 
 export default function(fastify: FastifyInstance) {
 	User.setup(fastify);

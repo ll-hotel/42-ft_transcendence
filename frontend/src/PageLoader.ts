@@ -3,7 +3,7 @@ import newHomePage from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
 import { ProfilePage } from "./pages/profile.js"
-import { ChatPage } from "./pages/chat.js";
+import { ChatElement } from "./pages/chat.js";
 
 enum Pages {
 	home = "home.html",
@@ -67,7 +67,7 @@ class PageLoader {
 			case "register": newPage = RegisterPage.new; break;
 			case "login": newPage = Login.new; break;
 			case "profile": newPage = ProfilePage.new; break;
-			case "chat": newPage = ChatPage.new; break;
+			case "chat": newPage = ChatElement.new; break;
 		}
 		const html = await downloadHtmlBody(Pages[name]);
 		const page = newPage(html);
