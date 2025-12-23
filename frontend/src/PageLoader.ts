@@ -5,9 +5,17 @@ import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
 import { ProfilePage } from "./pages/profile.js"
 import { OtherProfilePage } from "./pages/otherProfile.js";
+import { Login } from "./pages/login.js";
+import { RegisterPage } from "./pages/register.js";
+import { ProfilePage } from "./pages/profile.js"
+import { ChatElement } from "./pages/chat.js";
 
 enum Pages {
 	home = "home.html",
+	register = "register.html",
+	login = "login.html",
+	profile = "profile.html",
+	chat = "chat.html",
 	register = "register.html",
 	login = "login.html",
 	profile = "profile.html",
@@ -24,6 +32,10 @@ export function strToPageName(str: string): PageName | null {
 		case "profile": return "profile";
 		case "otherProfile" : return "otherProfile";
 		case "friend": return "friend";
+		case "register": return "register";
+		case "login": return "login";
+		case "profile": return "profile";
+		case "chat": return "chat";
 	}
 	return null;
 }
@@ -51,6 +63,16 @@ class PageLoader {
 		for (const download of downloads) {
 			await download;
 		}
+		const downloads = [
+			this.download("home"),
+			this.download("register"),
+			this.download("login"),
+			this.download("profile"),
+			this.download("chat"),
+		];
+		for (const download of downloads) {
+			await download;
+		}
 	}
 
 	load(name: PageName) {
@@ -68,6 +90,10 @@ class PageLoader {
 		let newPage: (html: HTMLElement) => AppPage | null;
 		switch (name) {
 			case "home": newPage = newHomePage; break;
+			case "register": newPage = RegisterPage.new; break;
+			case "login": newPage = Login.new; break;
+			case "profile": newPage = ProfilePage.new; break;
+			case "chat": newPage = ChatElement.new; break;
 			case "register": newPage = RegisterPage.new; break;
 			case "login": newPage = Login.new; break;
 			case "profile": newPage = ProfilePage.new; break;
@@ -141,4 +167,32 @@ window.onpopstate = function() {
 	}
 	const page = strToPageName(path) || "login";
 	gotoPage(page);
+}
+
+const loader = new PageLoader(document.body.querySelector("#content")!);
+
+export async function gotoPage(name: PageName) {
+	if (name != "login" && name != "register") {
+		const token = localStorage.getItem("accessToken");
+		if (!token) {
+			name = "login";
+		}
+	}
+	if (loader.loaded && loader.loaded == name) {
+		return;
+	}
+	if (name == "login") {
+		history.pushState(null, "", "/" + name + location.search);
+	} else {
+		history.pushState(null, "", "/" + name);
+	}
+	await loader.downloadPages();
+	loader.load(name);
+}
+
+(window as any).gotoPage = gotoPage;
+
+window.onpopstate = function() {
+	const page = strToPageName(location.pathname.substring(1)) || "login";
+	loader.load(page);
 }

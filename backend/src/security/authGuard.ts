@@ -29,6 +29,9 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 	const cookie = req.cookies ? req.cookies.accessToken : undefined;
 	let token = cookie;
 	if (token == undefined) {
+		token = parseCookies(req).get("accessToken");
+	}
+	if (token == undefined) {
 		// Try to get the accessToken from Authorization header.
 		const keyValue = req.headers.authorization?.split(" ");
 		if (!keyValue || keyValue.length < 2) {
@@ -58,3 +61,14 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 		avatar: user.avatar,
 	}
 }	
+
+function parseCookies(req: FastifyRequest): Map<string, string> {
+	const cookies = new Map<string, string>;
+	const words = req.headers["cookie"] ? req.headers["cookie"].split("&") : [];
+	const pairs = words.map(w => w.split("="));
+	for (const pair of pairs) {
+		if (pair.length < 2) continue;
+		cookies.set(pair[0], pair[1]);
+	}
+	return cookies;
+}
