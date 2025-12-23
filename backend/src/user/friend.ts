@@ -5,7 +5,7 @@ import { eq, and, or} from 'drizzle-orm';
 import { authGuard } from '../security/authGuard';
 import { STATUS, MESSAGE } from '../shared';
 
-async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
+export async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
 	{
 		const res = await db.select({id:friends.id }).from(friends).where(and(
 			eq(friends.status, "accepted"), or( and(
@@ -123,6 +123,7 @@ class friend {
 		const usr = req.user!;
 
 		const result = await db.select({
+			username: users.username,
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,

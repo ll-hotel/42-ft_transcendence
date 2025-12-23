@@ -14,12 +14,14 @@ PETITES TACHES
 import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
+import { FriendChat } from "./FriendChat.js";
 
-type Friend = {
-	displayName: string,
-	avatar: string,
-	isOnline: number,
+type Message = {
+	source: string;
+	target: string;
+	content: string 
 };
+
 
 export class FriendPage implements AppPage
 {
@@ -27,13 +29,15 @@ export class FriendPage implements AppPage
 	listContainer: HTMLElement;
 	chatContainer: HTMLElement;
 	selectedCard: HTMLElement | null = null;
+	chat: FriendChat;
 
 	constructor(content: HTMLElement)
 	{
 		this.content= content;
 		this.listContainer = content.querySelector("#friend-list-content")!;
 		this.chatContainer = content.querySelector("#friend-chat")!;
-
+		this.selectedCard = null;
+		this.chat = new FriendChat();
 		if (!this.listContainer || !this.chatContainer)
 				throw new Error("Friend page HTML incorrect");
 	}
@@ -42,29 +46,20 @@ export class FriendPage implements AppPage
 	{
 		if (!content)
 			return null;
-
-		const list = content.querySelector<HTMLElement>("#friend-list-content")!;
-		const chat = content.querySelector<HTMLElement>("#friend-chat")!;
-
-		if (!list || !chat)
-			return null;
-
 		return new FriendPage(content);
 	}
 
 	async loadInto(container: HTMLElement)
 	{
-		const token = localStorage.getItem("accessToken");
-		if (!token) {
-			return gotoPage("login");
-		}
 		container.appendChild(this.content);
+		await this.chat.connect(`/api/chat/connect`);
 		return this.loadFriends();
 	}
 
 	unload(): void
 	{
 		this.content.remove();
+		this.chat.ws?.close();
 	}
 
 
@@ -117,7 +112,7 @@ export class FriendPage implements AppPage
 
 		friends.forEach((friend: any) => {
 			const card :HTMLElement = FriendPage.createFriendCard(friend)
-			card.onclick = () => {
+			card.onclick = async () => {
 
 				if(this.selectedCard)
 				{
@@ -129,17 +124,13 @@ export class FriendPage implements AppPage
 				card.classList.add("friend-card-select");
 
 				this.selectedCard = card;
-				this.loadChat(friend.displayName);
+				this.loadChat(friend.displayName, friend.username);
 			}
 			this.listContainer.appendChild(card);
 		});
 	}
 
-	async loadChat(friendName : string)
-	{
-		this.chatContainer.innerHTML = "<div>Besoin de creer le chat...</div>"
-		return;
-	}
+	// GESTION CARTES FRIENDS
 
 	static createFriendCard(friend: any): HTMLElement
 	{
@@ -202,7 +193,7 @@ export class FriendPage implements AppPage
 		decline.textContent = "No";
 
 		decline.onclick = async () => {
-			const declineRes = await api.post("/api/friend/decline", {displayName : request.requestFrom});
+			const declineRes = await api.patch("/api/friend/decline", {displayName : request.requestFrom});
 
 			if (declineRes && declineRes.status == Status.success)
 			{
@@ -217,4 +208,54 @@ export class FriendPage implements AppPage
 		requestsBtn?.appendChild(decline);
 	return card;
 	}
+
+	//Gestion Chargement du chat
+
+	async loadChat(targetDisplayname : string, targetUsername: string)
+	{
+		await this.chat.openRoom(targetUsername);
+		this.chatContainer.querySelector("#chat-name")!.textContent = targetDisplayname;
+		this.renderMessages();
+
+		const input = this.chatContainer.querySelector<HTMLInputElement>("#chat-input")!;
+		const sendBtn = this.chatContainer.querySelector<HTMLButtonElement>("button")!;
+
+		sendBtn.onclick = () => {
+			if (!input.value || !this.chat.currentRoomId )
+				return ;
+			this.chat.send(input.value);
+			input.value = "";
+			this.renderMessages()
+		}
+
+		setInterval(() => this.renderMessages(), 500);
+	}
+
+	renderMessages() {
+		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
+		if (!this.chat.currentRoomId){
+			chatList.innerHTML= "";
+			return;
+		}
+		const msgs = this.chat.getRoomMessages();
+
+		if (this.chat.lastMessage < msgs.length) {
+			chatList.innerHTML= "";
+			return;
+		}
+		if (this.chat.lastMessage === msgs.length)
+			return;
+		const newMsgs = msgs.slice(this.chat.lastMessage); 
+
+		for (let msg of newMsgs)
+		{
+			const divMsg = document.createElement("div");
+			msg.source == this.chat.username ? 
+				divMsg.classList.add("msg-me") : divMsg.classList.add("msg-target") ;
+			divMsg.textContent = msg.content;
+			chatList.appendChild(divMsg);
+		}
+		this.chat.lastMessage = msgs.length
+	}
+
 }
