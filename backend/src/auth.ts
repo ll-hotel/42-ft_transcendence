@@ -1,5 +1,4 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import fastifyCookie from '@fastify/cookie';
 import jwt from 'jsonwebtoken';
 import { v4 as uiidv4 } from 'uuid';
 import { STATUS, MESSAGE } from './shared';
@@ -41,7 +40,6 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class AuthService {
 	setup(app: FastifyInstance) {
-		app.register(fastifyCookie);
 		app.post('/api/auth/register', { schema: SCHEMA_REGISTER }, this.register);
 		app.post('/api/auth/login', { schema: SCHEMA_LOGIN }, this.login);
 		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
@@ -139,7 +137,6 @@ class AuthService {
 		rep.code(STATUS.success).send({
 			message: MESSAGE.logged_in,
 			loggedIn: true,
-			accessToken,
 		});
 	};
 
@@ -151,7 +148,7 @@ class AuthService {
 		await db.update(users).set({ isOnline: 0 }).where(eq(users.id, user.id));
 
 		rep.clearCookie('accessToken', { path: "/api" });
-		rep.code(STATUS.success).send({ message: MESSAGE.logged_out });
+		rep.code(STATUS.success).send({ message: MESSAGE.logged_out, loggedIn: false});
 	}
 
 	async redirectAuth42(req: FastifyRequest, rep: FastifyReply) {
@@ -206,7 +203,6 @@ class AuthService {
 		rep.code(STATUS.success).send({
 		  	message: MESSAGE.logged_in,
 		  	loggedIn: true,
-		  	accessToken,
 		});
 	}
 
@@ -261,7 +257,6 @@ class AuthService {
 		rep.code(STATUS.success).send({
 		  	message: MESSAGE.logged_in,
 		  	loggedIn: true,
-		  	accessToken,
 		});
 	}
 };

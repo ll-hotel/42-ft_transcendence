@@ -42,6 +42,13 @@ export class Login implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement) {
+		const me = await api.get("/api/me");
+		console.log(me);
+		if (me && me.status === Status.success) {
+			gotoPage("profile");
+			return;
+		}
+
 		const params = new URLSearchParams(location.search);
 		const provider = params.get("provider");
 		const code = params.get("code");
@@ -56,16 +63,17 @@ export class Login implements AppPage {
 			logging.innerText = "Logging in...";
 			container.appendChild(logging);
 			const res = await api.get(path + code);
-			if (res && res.payload.accessToken) {
-				localStorage.setItem("accessToken", res.payload.accessToken);
+			if (res && res.payload.loggedIn) {
+				gotoPage("profile");
+				return;
 			}
 			logging.remove();
 		}
-		if (localStorage.getItem("accessToken")) {
+		/* if (localStorage.getItem("accessToken")) {
 			// Already connected. Redirecting to user profile page.
 			gotoPage("profile");
 			return;
-		}
+		} */
 		container.appendChild(this.content);
 	}
 	unload(): void {
@@ -88,7 +96,7 @@ export class Login implements AppPage {
 			this.toggleTwoFA();
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
-			localStorage.setItem("accessToken", res.payload.accessToken);
+		//	localStorage.setItem("accessToken", res.payload.accessToken);
 			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {
