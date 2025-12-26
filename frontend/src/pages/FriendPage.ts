@@ -39,7 +39,7 @@ export class FriendPage implements AppPage
 		this.selectedCard = null;
 		this.chat = new FriendChat();
 		if (!this.listContainer || !this.chatContainer)
-				throw new Error("Friend page HTML incorrect");
+					console.log("Error in html");
 	}
 
 	static new(content:HTMLElement)
@@ -213,38 +213,44 @@ export class FriendPage implements AppPage
 
 	async loadChat(targetDisplayname : string, targetUsername: string)
 	{
+		if (targetUsername == this.chat.targetUsername)
+			return;
+		
+		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
+		chatList.innerHTML= "";
+
+		this.chat.cleanRoomState();
 		await this.chat.openRoom(targetUsername);
+		await this.chat.loadHistory();
+
+		console.log("Current Room ID:", this.chat.currentRoomId);
 		this.chatContainer.querySelector("#chat-name")!.textContent = targetDisplayname;
-		this.renderMessages();
+	
+		this.renderMessages(chatList);
+		this.bindSend();
+		setInterval(() => this.renderMessages(chatList), 500);
+	}
 
-		const input = this.chatContainer.querySelector<HTMLInputElement>("#chat-input")!;
-		const sendBtn = this.chatContainer.querySelector<HTMLButtonElement>("button")!;
+	bindSend()
+	{
+		const input = this.chatContainer.querySelector<HTMLInputElement>("#chat-input");
+		const sendBtn = this.chatContainer.querySelector<HTMLButtonElement>("#chat-send");
 
+		if (!input ||!sendBtn)  {
+			console.log("Missing chat input or sendBtn in html");
+			return;
+		}
 		sendBtn.onclick = () => {
 			if (!input.value || !this.chat.currentRoomId )
 				return ;
 			this.chat.send(input.value);
 			input.value = "";
-			this.renderMessages()
-		}
-
-		setInterval(() => this.renderMessages(), 500);
+		};
 	}
 
-	renderMessages() {
-		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
-		if (!this.chat.currentRoomId){
-			chatList.innerHTML= "";
-			return;
-		}
+	renderMessages(chatList: HTMLDivElement) {
 		const msgs = this.chat.getRoomMessages();
 
-		if (this.chat.lastMessage < msgs.length) {
-			chatList.innerHTML= "";
-			return;
-		}
-		if (this.chat.lastMessage === msgs.length)
-			return;
 		const newMsgs = msgs.slice(this.chat.lastMessage); 
 
 		for (let msg of newMsgs)

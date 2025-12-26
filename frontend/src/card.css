@@ -62,3 +62,15 @@
 .result-name{
 	@apply ml-3 font-medium text-gray-800
 }
+
+#chat-content {
+  @apply flex flex-col gap-2 overflow-y-auto p-2;
+}
+
+.msg-me {
+  @apply self-end bg-blue-500 text-white rounded-lg px-3 py-1 max-w-xs break-words;
+}
+
+.msg-target {
+  @apply self-start bg-red-500 text-white rounded-lg px-3 py-1 max-w-xs break-words;
+}

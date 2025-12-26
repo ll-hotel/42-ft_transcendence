@@ -23,10 +23,7 @@ export function chatRoute(fastify: FastifyInstance) {
 			preHandler: authGuard,
 		},
 		(req : FastifyRequest, rep: FastifyReply) => {
-			const chatuser = chat.getOrCreateUser(req.user!.id, req.user!.username);
-			if (!chatuser) {
-				return rep.code(STATUS.bad_request).send({ message: "User not registered" });
-			}
+			const me = chat.getOrCreateUser(req.user!.id, req.user!.username);
 			const roomId = "#" + (req.params as { id: string }).id;
 			if (roomId.length == 1 || !chat.rooms.has(roomId)) {
 				return rep.code(STATUS.not_found).send({ message: "Room not found" });
@@ -35,6 +32,26 @@ export function chatRoute(fastify: FastifyInstance) {
 			return rep.code(STATUS.success).send({ roomId: room.id });
 		}
 	);
+
+	fastify.get(
+		"/api/chat/room/:id/message",
+		{
+			preHandler:authGuard,
+		},
+		(req: FastifyRequest, rep: FastifyReply) => {
+			const me = chat.getOrCreateUser(req.user!.id, req.user!.username);
+			const roomId = "#" + (req.params as { id: string }).id;
+			const room = chat.rooms.get(roomId);
+
+			if (!room)
+				return rep.code(STATUS.not_found).send({ message:"Room not found"});
+			if (!room.users.has(me)) 
+				return rep.code(STATUS.unauthorized).send({message: "User not allow"})
+			const allMess = room.messages.slice(-8);
+
+			return rep.code(STATUS.success).send(allMess);
+		}
+	)
 
 	fastify.post(
 		"/api/chat/private/:username",

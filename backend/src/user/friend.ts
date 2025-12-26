@@ -123,10 +123,10 @@ class friend {
 		const usr = req.user!;
 
 		const result = await db.select({
-			username: users.username,
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
+			username: users.username,
 		})
 		.from(friends).innerJoin(users, or(eq(users.id, friends.senderId), eq(users.id, friends.receiverId)))
 		.where(and(

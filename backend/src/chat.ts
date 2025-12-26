@@ -1,4 +1,5 @@
 import { tcheckFriends } from "./user/friend";
+import user from "./user/user";
 
 function privateRoomId(UserAId: string, UserBId: string): string {
 	const [a, b] = UserAId < UserBId ? [UserAId, UserBId] : [UserBId, UserAId];
@@ -10,13 +11,14 @@ namespace Chat {
 		source: string;
 		target: string;
 		content: string;
+		system?: boolean;
 	};
 
 	export class Connection {
 	ws: WebSocket;
 	incoming: Chat.Message[];
 
-	constructor(ws: WebSocket) {
+	constructor(ws: WebSocket, onMessage: () => void) {
 		this.ws = ws;
 		this.incoming = [];
 
@@ -24,8 +26,8 @@ namespace Chat {
 			try {
 				const msg = JSON.parse(event.data.toString());
 				this.incoming.push(msg);
+				onMessage();
 			} catch {
-				// ignore invalid
 			}
 		});
 	}
@@ -55,10 +57,11 @@ namespace Chat {
 			this.buffMax= 100
 		}
 
-		connect(ws: WebSocket) {
-			const conn = new Connection(ws);
+		connect(ws: WebSocket, chat: Instance) {
+			const conn = new Connection(ws, ()=> {
+				this.flushIncoming(chat);
+			});
 			this.connections.add(conn);
-			this.flushBuffer();
 
 			ws.addEventListener("close", () => 
 			{
@@ -134,11 +137,15 @@ namespace Chat {
 
 	export class Room {
 		id: string;
-		users: User[];
+		users: Set<User>;
+		messages: Message[];
+		messMax : number
 		
 		private constructor(id: string) {
 			this.id = id;
-			this.users = [];
+			this.users = new Set();
+			this.messages = [];
+			this.messMax = 500;
 		}
 
 		static new(id: string) {
@@ -146,28 +153,36 @@ namespace Chat {
 		}
 
 		connect(user: User) {
-			if (!this.users.find(u => u.id === user.id)) {
-				this.users.push(user);
-				this.send({ source: user.id, target: this.id, content: "Joined" });
+			if (!this.users.has(user))
+				{
+				this.users.add(user);
+				this.send({ source: user.id, target: this.id, content: "Joined", system: true });
 				user.rooms.add(this.id);
-				user.flushBuffer();
 			}
 		}
 
 		disconnect(userId: string) {
-			this.users = this.users.filter(u => u.id !== userId);
+			this.send({source: userId, target : this.id, content : "Disconnect", system: true});
+			for (const user of this.users)
+			{
+				if (user.id === userId)
+				{
+					this.users.delete(user);
+					break;
+				}
+			}
 		}
 
 		send(message: Message) {
-			for (const user of this.users) {
-				user.send({ ...message, target: this.id });
+			if (!message.system)
+			{
+				this.messages.push(message);
+				if (this.messages.length > this.messMax)
+					this.messages.shift();
 			}
-		}
 
-		flush() {
-			for (const user of this.users) {
-				user.flushBuffer();
-			}
+			for (const user of this.users)
+				user.send({ ...message, target: this.id });
 		}
 	}
 
@@ -179,15 +194,13 @@ namespace Chat {
 		constructor() {
 			this.users = new Map();
 			this.rooms = new Map();
-			setInterval(() => this.flush(), 50)
+			
+
 		}
 
 		flush() {
 			for (const user of this.users.values()) {
 				user.flushIncoming(this);
-			}
-			for (const room of this.rooms.values()) {
-				room.flush();
 			}
 		}
 
@@ -216,7 +229,8 @@ namespace Chat {
 
 			const id = privateRoomId(userA.id, userB.id);
 			let room = this.rooms.get(id);
-			if (!room) {
+			if (!room)
+			{
 				room = Room.new(id.slice(1))!;
 				this.rooms.set(room.id, room);
 			}
@@ -228,7 +242,7 @@ namespace Chat {
 		async newWebsocketConnection(ws: WebSocket, req: any) {
 			const userInfo = req.user!;
 			const user = this.getOrCreateUser(userInfo.id, userInfo.username);
-			user.connect(ws);
+			user.connect(ws, this);
 
 			for (const other of this.users.values()) {
 				if (other === user)
@@ -240,17 +254,21 @@ namespace Chat {
 			}
 
 			// Rejoin rooms existantes
-			for (const roomId of user.rooms) {
+			for (const roomId of user.rooms)
+			{
 				const room = this.rooms.get(roomId);
 				if (room) room.connect(user);
 			}
+
+
+			user.flushBuffer();
 
 			ws.addEventListener("close", () => {
 				if (user.connections.size === 0) {
 					for (const roomId of user.rooms) {
 						const room = this.rooms.get(roomId);
 						room?.disconnect(user.id);
-						if (room?.users.length === 0)
+						if (room && room.users.size === 0)
 							this.rooms.delete(room.id);
 					}
 					user.rooms.clear();
