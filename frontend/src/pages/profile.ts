@@ -57,11 +57,9 @@ export class ProfilePage implements AppPage {
 
 	async logoutClick() {
 		const reply = await api.post("/api/auth/logout");
-	/* 	if (!reply || reply.status == Status.unauthorized) {
+		if (!reply || reply.status == Status.unauthorized) {
 			// Unauthorized = not logged in or wrong user.
 		}
-		localStorage.removeItem("accessToken");
-		localStorage.removeItem("userinfo"); */
 		await gotoPage("login");
 	}
 };

@@ -17,7 +17,6 @@ export class api {
 		return this.request("POST", uri, body);
 	}
 	private static async request(method: "GET" | "POST", uri: string, body: string | object = "") {
-	//	const token = localStorage.getItem("accessToken") || "";
 		let headers;
 		let jsonBody: string | null = null;
 		if (method == "GET") {

@@ -27,7 +27,6 @@ const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 
 export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 	const cookie = req.cookies ? req.cookies.accessToken : undefined;
-	console.log("COOKIES = ",req.cookies);
 	let token = cookie;
 	if (!token)
 		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
