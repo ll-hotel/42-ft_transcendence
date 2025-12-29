@@ -3,8 +3,6 @@ import newHomePage from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
 import { ProfilePage } from "./pages/profile.js"
-import { api, Status } from "./api.js";
-
 
 enum Pages {
 	home = "home.html",
@@ -87,12 +85,6 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
 export async function gotoPage(name: PageName) {
-	if (name === "login") {
-		const me = await api.get("/api/me");
-		if (me && me.status === Status.success)
-			name = "profile";
-	}
-
 	if (loader.loaded && loader.loaded == name) {
 		return;
 	}
