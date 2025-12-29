@@ -56,13 +56,15 @@ export class Login implements AppPage {
 			logging.innerText = "Logging in...";
 			container.appendChild(logging);
 			const res = await api.get(path + code);
-			if (res && res.payload.accessToken) {
-				localStorage.setItem("accessToken", res.payload.accessToken);
+			if (res && res.payload.loggedIn) {
+				gotoPage("profile");
+				logging.remove();
+				return;
 			}
 			logging.remove();
 		}
-		if (localStorage.getItem("accessToken")) {
-			// Already connected. Redirecting to user profile page.
+		const me = await api.get("/api/me");
+		if (me && me.status === Status.success) {
 			gotoPage("profile");
 			return;
 		}
@@ -88,7 +90,6 @@ export class Login implements AppPage {
 			this.toggleTwoFA();
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
-			localStorage.setItem("accessToken", res.payload.accessToken);
 			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {

@@ -85,12 +85,6 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
 export async function gotoPage(name: PageName) {
-	if (name != "login" && name != "register") {
-		const token = localStorage.getItem("accessToken");
-		if (!token) {
-			name = "login";
-		}
-	}
 	if (loader.loaded && loader.loaded == name) {
 		return;
 	}
