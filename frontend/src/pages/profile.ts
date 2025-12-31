@@ -13,14 +13,17 @@ export class ProfilePage implements AppPage {
 		this.displayname = content.querySelector("#profile-displayname")!;
 		this.username = content.querySelector("#profile-username")!;
 		const logout = content.querySelector("#logout") as HTMLElement;
+		const edit = content.querySelector("#edit") as HTMLElement;
 		logout.onclick = () => this.logoutClick();
+		edit.onclick = () => this.editClick();
 	}
 	static new(content: HTMLElement) {
 		const logout = content.querySelector("#logout");
+		const edit = content.querySelector("#edit");
 		const displayname = content.querySelector("#profile-displayname");
 		// const username = content.querySelector("#profile-username")!;
 		// if (!content || !logout || !displayname || !username) {
-		if (!content || !logout || !displayname) {
+		if (!content || !logout || !displayname || !edit) {
 			return null;
 		}
 		return new ProfilePage(content! as HTMLElement);
@@ -40,9 +43,8 @@ export class ProfilePage implements AppPage {
 		if (!localUserInfo) {
 			const res = await api.get("/api/me");
 			if (!res || !res.payload) return;
-			if (res.status != Status.success) {
+			if (res.status != Status.success)
 				return alert("Error: " + res.payload.message);
-			}
 			localUserInfo = JSON.stringify(res.payload);
 			localStorage.setItem("userinfo", localUserInfo);
 		}
@@ -73,5 +75,9 @@ export class ProfilePage implements AppPage {
 		localStorage.removeItem("accessToken");
 		localStorage.removeItem("userinfo");
 		await gotoPage("login");
+	}
+
+	async editClick() {
+		await gotoPage("editProfile");
 	}
 };

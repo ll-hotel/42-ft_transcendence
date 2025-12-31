@@ -30,6 +30,7 @@ class User {
 		}
 		rep.code(STATUS.success).send({
 			displayName: req.user.displayName,
+			username: req.user.username,
 			avatar: req.user.avatar
 		});
 	}
@@ -146,7 +147,7 @@ class User {
 }
 
 export async function getUserIdByUsername(username: string): Promise<number | null> {
-	const [user] = await db.select({ id: users.id }).from(users).where(eq(users.displayName, username));
+	const [user] = await db.select({ id: users.id }).from(users).where(eq(users.username, username));
 	return user ? user.id : null;
 }
 

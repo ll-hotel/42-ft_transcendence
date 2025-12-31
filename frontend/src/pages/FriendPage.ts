@@ -1,19 +1,19 @@
 /*TO DO
 GROSSE TACHES
-° Creer un moyen d'ajouter des amis (navbar pour trouver un user (si la chose rentrer correspond au Displayname alors redirige vers le profil du mec))
-° Gerer la reception d'une demande d'ami (notif qui redirige vers son profil ? Message du type (Antoine sohaite etre amie avec vous) ?)
-° Gestion de l'affichage des chats (api via l'id qui retourne les precedents messages envoyés (api/message/iddupoteaquitenvoielesmessages))
+x Creer un moyen d'ajouter des amis (navbar pour trouver un user (si la chose rentrer correspond au Displayname alors redirige vers le profil du mec))
+x Gerer la reception d'une demande d'ami (notif qui redirige vers son profil ? Message du type (Antoine sohaite etre amie avec vous) ?)
+X Gestion de l'affichage des chats (api via l'id qui retourne les precedents messages envoyés (api/message/iddupoteaquitenvoielesmessages))
 
 PETITES TACHES
 ° Gerer mieux le responsive (card friend, container friend and mess)
-° Rendre visible l'ami séléctionner
+X Rendre visible l'ami séléctionner
 ° link les bouttons Block, 1vs1 
-° Link l'input text, et le button send
+X Link l'input text, et le button send
 
 */
 import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
-import { gotoPage } from "../PageLoader.js";
+import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { FriendChat } from "./FriendChat.js";
 
 type Message = {
@@ -28,7 +28,9 @@ export class FriendPage implements AppPage
 	content: HTMLElement;
 	listContainer: HTMLElement;
 	chatContainer: HTMLElement;
-	selectedCard: HTMLElement | null = null;
+	selectedCard: HTMLElement | null;
+	renderInterval: number | null = null;
+	mounted : boolean;
 	chat: FriendChat;
 
 	constructor(content: HTMLElement)
@@ -37,6 +39,7 @@ export class FriendPage implements AppPage
 		this.listContainer = content.querySelector("#friend-list-content")!;
 		this.chatContainer = content.querySelector("#friend-chat")!;
 		this.selectedCard = null;
+		this.mounted = false;
 		this.chat = new FriendChat();
 		if (!this.listContainer || !this.chatContainer)
 					console.log("Error in html");
@@ -51,15 +54,37 @@ export class FriendPage implements AppPage
 
 	async loadInto(container: HTMLElement)
 	{
+		if (this.mounted)
+			return;
+		this.mounted = true;
 		container.appendChild(this.content);
 		await this.chat.connect(`/api/chat/connect`);
-		return this.loadFriends();
+		await this.loadFriends();
 	}
 
 	unload(): void
 	{
+		if (this.renderInterval)
+		{
+			clearInterval(this.renderInterval);
+			this.renderInterval = null;
+		}
+		this.chat.reset();
+		this.selectedCard = null;
 		this.content.remove();
-		this.chat.ws?.close();
+		this.mounted = false;
+
+		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
+		chatList.innerHTML= "";
+
+		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name")!;
+		chatName.textContent = chatName.dataset.default!;
+		chatName.classList.remove("hover:text-[#04809F]");
+		chatName.classList.remove("cursor-pointer");
+		chatName.onclick = null;
+
+		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block")!;
+		blockBtn.disabled = true;
 	}
 
 
@@ -111,7 +136,7 @@ export class FriendPage implements AppPage
 	)
 
 		friends.forEach((friend: any) => {
-			const card :HTMLElement = FriendPage.createFriendCard(friend)
+			const card :HTMLElement = FriendPage.createFriendCard(friend);
 			card.onclick = async () => {
 
 				if(this.selectedCard)
@@ -224,19 +249,63 @@ export class FriendPage implements AppPage
 		await this.chat.loadHistory();
 
 		console.log("Current Room ID:", this.chat.currentRoomId);
-		this.chatContainer.querySelector("#chat-name")!.textContent = targetDisplayname;
-	
+		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name")!;
+		chatName.textContent = targetDisplayname;
+		chatName.classList.add("hover:text-[#04809F]");
+		chatName.classList.add("cursor-pointer");
+		chatName.onclick = async () => { 
+			await gotoUserPage(targetDisplayname);
+		}
+		await this.setBlockButton(chatName, chatList, targetDisplayname);
 		this.renderMessages(chatList);
 		this.bindSend();
-		setInterval(() => this.renderMessages(chatList), 500);
+		
+		if (this.renderInterval)
+			clearInterval(this.renderInterval);
+
+	this.renderInterval = window.setInterval(() => {
+	this.renderMessages(chatList);
+	}, 	300);
 	}
+
+	async setBlockButton(chatName : HTMLSpanElement, chatList : HTMLDivElement, targetDisplayname : string) {
+		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block")!;
+
+		blockBtn.disabled = !this.selectedCard;
+		blockBtn.onclick = async () => {
+			const confirmBlock = confirm(`Voulez-vous vraiment bloquer ${targetDisplayname} ?`);
+			if (!confirmBlock)
+				return;
+
+			const res = await api.delete("/api/friend/remove", { displayName: targetDisplayname });
+			if (res && res.status === Status.success) {
+				alert(`${targetDisplayname} a été supprimé de vos amis.`);
+
+				await this.loadFriends();
+
+				chatList.innerHTML = "";
+				chatName.textContent = chatName.dataset.default!;
+				chatName.classList.remove("hover:text-[#04809F]");
+				chatName.classList.remove("cursor-pointer");
+				chatName.onclick = null;
+				this.selectedCard = null;
+				this.chat.cleanRoomState();
+				blockBtn.disabled = true;
+			}
+			else {
+				alert("Impossible de supprimer l'ami. Veuillez réessayer.");
+			}
+		};
+	}
+
 
 	bindSend()
 	{
 		const input = this.chatContainer.querySelector<HTMLInputElement>("#chat-input");
 		const sendBtn = this.chatContainer.querySelector<HTMLButtonElement>("#chat-send");
 
-		if (!input ||!sendBtn)  {
+		if (!input || !sendBtn)
+		{
 			console.log("Missing chat input or sendBtn in html");
 			return;
 		}
@@ -256,7 +325,8 @@ export class FriendPage implements AppPage
 		for (let msg of newMsgs)
 		{
 			const divMsg = document.createElement("div");
-			msg.source == this.chat.username ? 
+			console.log(`source = ${msg.source} et username = @${this.chat.username}`);
+			msg.source === `@${this.chat.username}` ? 
 				divMsg.classList.add("msg-me") : divMsg.classList.add("msg-target") ;
 			divMsg.textContent = msg.content;
 			chatList.appendChild(divMsg);

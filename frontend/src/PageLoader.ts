@@ -6,13 +6,14 @@ import { RegisterPage } from "./pages/register.js";
 import { ProfilePage } from "./pages/profile.js"
 import { OtherProfilePage } from "./pages/otherProfile.js";
 import { ChatElement } from "./pages/chat.js";
+import { editProfile } from "./pages/editProfile.js";
 
 enum Pages {
 	home = "home.html",
 	register = "register.html",
 	login = "login.html",
 	profile = "profile.html",
-	chat = "chat.html",
+	editProfile = "editProfile.html",
 	otherProfile="otherProfile.html",
 	friend ="friend.html",
 };
@@ -26,7 +27,7 @@ export function strToPageName(str: string): PageName | null {
 		case "profile": return "profile";
 		case "otherProfile" : return "otherProfile";
 		case "friend": return "friend";
-		case "chat": return "chat";
+		case "editProfile": return "editProfile";
 	}
 	return null;
 }
@@ -50,7 +51,7 @@ class PageLoader {
 			this.download("profile"),
 			this.download("otherProfile"),
 			this.download("friend"),
-			this.download("chat")
+			this.download("editProfile"),
 		];
 		for (const download of downloads) {
 			await download;
@@ -77,7 +78,7 @@ class PageLoader {
 			case "profile": newPage = ProfilePage.new; break;
 			case "otherProfile": newPage = OtherProfilePage.new; break;
 			case "friend": newPage = FriendPage.new; break;
-			case "chat": newPage = ChatElement.new; break;
+			case "editProfile": newPage = editProfile.new; break;
 		}
 		const html = await downloadHtml(Pages[name]);
 		const page = newPage(html);

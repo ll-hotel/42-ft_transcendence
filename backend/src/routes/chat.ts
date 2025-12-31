@@ -24,7 +24,7 @@ export function chatRoute(fastify: FastifyInstance) {
 		},
 		(req : FastifyRequest, rep: FastifyReply) => {
 			const me = chat.getOrCreateUser(req.user!.id, req.user!.username);
-			const roomId = "#" + (req.params as { id: string }).id;
+			const roomId = (req.params as { id: string }).id;
 			if (roomId.length == 1 || !chat.rooms.has(roomId)) {
 				return rep.code(STATUS.not_found).send({ message: "Room not found" });
 			}
@@ -40,7 +40,7 @@ export function chatRoute(fastify: FastifyInstance) {
 		},
 		(req: FastifyRequest, rep: FastifyReply) => {
 			const me = chat.getOrCreateUser(req.user!.id, req.user!.username);
-			const roomId = "#" + (req.params as { id: string }).id;
+			const roomId = (req.params as { id: string }).id;
 			const room = chat.rooms.get(roomId);
 
 			if (!room)

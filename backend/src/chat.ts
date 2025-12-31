@@ -3,7 +3,7 @@ import user from "./user/user";
 
 function privateRoomId(UserAId: string, UserBId: string): string {
 	const [a, b] = UserAId < UserBId ? [UserAId, UserBId] : [UserBId, UserAId];
-	return `#private:${a}:${b}`;
+	return `private:${a}:${b}`;
 }
 
 namespace Chat {
@@ -109,15 +109,20 @@ namespace Chat {
 			for (const conn of this.connections) {
 				const messages = conn.popMessages();
 				for (const msg of messages) {
-
-					// message vers room
-					if (msg.target.startsWith("#"))
-					{
-						const room = chat.rooms.get(msg.target);
-						if (room) 
-							room.send(msg);
+					if (!this.rooms.has(msg.target))
 						continue;
-					}
+					const room = chat.rooms.get(msg.target);
+					if (!room || !room.users.has(this))
+						continue;
+
+					const allmsg: Message = {
+						source : this.id,
+						target: msg.target,
+						content:msg.content
+					};
+
+					room.send(allmsg);
+					continue;
 
 				/*	// message privé
 					if (msg.target.startsWith("@")) {
@@ -149,7 +154,7 @@ namespace Chat {
 		}
 
 		static new(id: string) {
-			return new Room("#" + id);
+			return new Room(id);
 		}
 
 		connect(user: User) {
@@ -215,7 +220,7 @@ namespace Chat {
 		}
 
 		createRoom(id: string): boolean {
-			if (this.rooms.has("#" + id))
+			if (this.rooms.has(id))
 				return false;
 			const room = Room.new(id);
 			this.rooms.set(room.id, room);
@@ -231,7 +236,7 @@ namespace Chat {
 			let room = this.rooms.get(id);
 			if (!room)
 			{
-				room = Room.new(id.slice(1))!;
+				room = Room.new(id)!;
 				this.rooms.set(room.id, room);
 			}
 			room.connect(userA);
@@ -243,15 +248,6 @@ namespace Chat {
 			const userInfo = req.user!;
 			const user = this.getOrCreateUser(userInfo.id, userInfo.username);
 			user.connect(ws, this);
-
-			for (const other of this.users.values()) {
-				if (other === user)
-					continue;
-				try {
-					await this.createPrivateRoom(user, other);
-				}
-				catch {}
-			}
 
 			// Rejoin rooms existantes
 			for (const roomId of user.rooms)

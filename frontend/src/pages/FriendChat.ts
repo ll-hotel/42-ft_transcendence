@@ -13,10 +13,16 @@ export class FriendChat {
 	targetUsername: string = "";
 	currentRoomId : string | null = null;
 	lastMessage = 0;
+	isActive = false;
 
 	async connect(url: string) {
+		this.isActive = true;
 		if (this.ws)
 			return this.ws;
+		const me = await api.get("/api/me");
+		if (!me || !me.payload ||me.status!==Status.success)
+			return alert("Error API me");
+		this.username = me.payload.username;
 		return new Promise<WebSocket>((resolve, reject) => {
 			this.ws = new WebSocket(url);
 
@@ -27,11 +33,11 @@ export class FriendChat {
 
 			this.ws.addEventListener("message", (event) => {
 				try {
+					if (!this.isActive)
+						return;
 					const msg: Message = JSON.parse(event.data);
 					console.log("Received message:", msg, "currentRoomId:", this.currentRoomId);
 					this.messages.push(msg);
-					if (!this.username)
-						this.username = msg.source;
 				}
 				catch (err) {
 					console.error("WebSocket message parse error:", err);
@@ -53,13 +59,22 @@ export class FriendChat {
 	{
 		if (!this.ws || !this.currentRoomId)
 			return;
-		this.ws.send(JSON.stringify({source: this.username,target:this.currentRoomId,content:msg,}));
+		this.ws.send(JSON.stringify({target:this.currentRoomId,content:msg}));
+	}
+
+	reset(){
+		this.disconnect();
+		this.messages = [];
+		this.targetUsername = "";
+		this.isActive = false;
 	}
 
 	disconnect() {
 		this.ws?.close();
 		this.ws = null;
 		this.username = "";
+		this.currentRoomId = null;
+		this.lastMessage = 0;
 	}
 
 	async openRoom(username : string)
@@ -79,21 +94,23 @@ export class FriendChat {
 		if (!this.currentRoomId)
 			return;
 
-		const res = await api.get(`/api/chat/messages/${this.currentRoomId}`);
+		this.messages = [];
+		const res = await api.get(`/api/chat/room/${this.currentRoomId}/message`);
 		if (!res ||res.status !== Status.success)
 			return;
 
-		this.messages.push(...res?.payload.messages);
+		this.messages.push(...res?.payload);
 	}
 
 	getRoomMessages(): Message[] {
 		if (!this.currentRoomId)
 			return [];
-		return (this.messages.filter((msg: Message) => msg.target === this.currentRoomId));
-
+		return this.messages.filter(mess => mess.target === this.currentRoomId);
 	}
 
+
 	cleanRoomState(){
+		this.messages = [];
 		this.currentRoomId = null;
 		this.lastMessage = 0;
 		this.targetUsername = "";
