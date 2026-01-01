@@ -6,6 +6,9 @@ import { createTables } from "./db/database"
 import userModule from "./user/user";
 import { friendService } from "./user/friend";
 import fastifyCookie from '@fastify/cookie';
+import match from "./game/match";
+import matchmaking from "./game/matchmaking";
+import tournament from "./game/tournament";
 
 async function main() {
 	await createTables();
@@ -23,6 +26,9 @@ async function main() {
 	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
+	app.register(match);
+	app.register(matchmaking);
+	app.register(tournament);
 
 	app.get("/ping", (_req, res) => {
 		res.code(STATUS.success).send("pong");

@@ -13,7 +13,7 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 class User {
 	static setup(app: FastifyInstance) {
 		app.get("/api/me", { preHandler: authGuard }, User.getMe);
-		app.get("/api/users", { preHandler: authGuard }, User.getUser);
+		app.get("/api/users",	 { preHandler: authGuard }, User.getUser);
 
 		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
 		app.patch("/api/user/password", { preHandler: authGuard }, User.updatePassword);
@@ -28,6 +28,7 @@ class User {
 			return (rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized }));
 		}
 		rep.code(STATUS.success).send({
+			id: req.user.id,
 			displayName: req.user.displayName,
 			avatar: req.user.avatar
 		});
