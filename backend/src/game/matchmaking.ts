@@ -4,10 +4,10 @@ import { STATUS } from "../shared";
 import { db } from "../db/database";
 import { matchmakingQueue, matches, users } from "../db/tables";
 import { eq, or, and } from "drizzle-orm";
-import conn from "../connection";
+import socket from "../socket";
 
-function notifyUser(user: conn.ClientId, match: number, opponent: string) {
-	conn.send(user, {
+function notifyUser(user: socket.ClientId, match: number, opponent: string) {
+	socket.send(user, {
 		source: "matchmaking",
 		type: "found",
 		match,
