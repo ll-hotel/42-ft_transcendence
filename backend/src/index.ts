@@ -28,10 +28,10 @@ async function main() {
 	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
-	// app.register(tournamentModule);
+	app.register(tournamentModule);
 	// app.register(matchmakingModule);
-	// app.register(matchmakingWS);
-	// app.register(matchModule);
+	app.register(matchmakingWS);
+	app.register(matchModule);
 	app.register(socketRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
