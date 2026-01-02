@@ -32,7 +32,7 @@ namespace socket {
 	}
 
 	export function send(target: ClientId, message: Message) {
-		if (isAlive(target) == false) {
+		if (isAlive(target)) {
 			clients.get(target)!.socket.send(JSON.stringify(message));
 		}
 	}
