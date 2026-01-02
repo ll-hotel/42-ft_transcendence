@@ -33,11 +33,13 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 	try {
 		payload = jwt.verify(token, jwtSecret, {}) as { uuid: string };
 	} catch {
+		rep.clearCookie("accessToken", { path: "/api" });
 		rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_token });
 		return;
 	}
 	const dbUsers = await db.select().from(users).where(eq(users.uuid, payload.uuid));
 	if (dbUsers.length === 0) {
+		rep.clearCookie("accessToken", { path: "/api" });
 		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
 	}
 	const user = dbUsers[0];
