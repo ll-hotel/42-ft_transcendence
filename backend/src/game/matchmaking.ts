@@ -4,7 +4,6 @@ import { STATUS } from "../shared";
 import { db } from "../db/database";
 import { matchmakingQueue, matches } from "../db/tables";
 import { eq, or, and} from "drizzle-orm";
-import { notifyUser } from "../websocket/game.ws";
 
 class Matchmaking {
 

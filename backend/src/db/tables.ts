@@ -56,6 +56,7 @@ export const tournamentPlayers = sqliteTable("tournamentPlayers", {
 	tournamentId: integer("tournamentId").notNull().references(() => tournaments.id, { onDelete: "cascade"}),
 
 	userId: integer("userId").notNull().references(() => users.id),
+	displayName: text("displayName").notNull().references(() => users.displayName),
 	eliminated: integer("eliminated").notNull().default(0),
 });
 

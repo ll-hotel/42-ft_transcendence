@@ -95,6 +95,7 @@ async function createTournamentPlayers() {
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 tournamentId INTEGER NOT NULL,
 	 userId INTEGER NOT NULL,
+	 displayName TEXT NOT NULL,
 	 eliminated INTEGER NOT NULL DEFAULT 0,
 	 FOREIGN KEY (tournamentId) REFERENCES tournaments(id) ON DELETE CASCADE,
 	 FOREIGN KEY (userId) REFERENCES users(id)

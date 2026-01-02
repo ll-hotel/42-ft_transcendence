@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
-import { tournaments, tournamentMatches, tournamentPlayers, matches } from "../db/tables";
+import { tournaments, tournamentMatches, tournamentPlayers, matches, users } from "../db/tables";
 import { authGuard } from "../security/authGuard";
 import { STATUS } from "../shared";
 import { eq, and, or, inArray} from "drizzle-orm";
@@ -11,15 +11,19 @@ export class Tournament {
 		app.post("/api/tournaments/:id/join", { preHandler: authGuard }, Tournament.joinTournament);
 		app.post("/api/tournaments/:id/start", { preHandler: authGuard }, Tournament.startTournament);
 		
-		/* app.get("/api/tournament/:id/status", { preHandler: authGuard }, Tournament.tournamentStatus); */
+		app.get("/api/tournament/:id/status", { preHandler: authGuard }, Tournament.tournamentStatus);
 	}
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 		const { name } = req.body as { name: string };
 		
-		// 
-
+		const [alreadyInTournament] = await db.select().from(tournamentPlayers).where(and(
+			eq(tournamentPlayers.userId, usr.id),
+			eq(tournamentPlayers.eliminated, 0)
+		));
+		if (alreadyInTournament)
+				return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament "});
 
 		const [tournament] = await db.insert(tournaments).values({
 			name,
@@ -29,6 +33,7 @@ export class Tournament {
 		await db.insert(tournamentPlayers).values({
 			tournamentId: tournament.id,
 			userId: usr.id,
+			displayName: usr.displayName,
 		});
 
 		return rep.code(STATUS.created).send({
@@ -47,7 +52,10 @@ export class Tournament {
 		if (tournament.status !== "pending")
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
 
-		const [alreadyInTournament] = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.userId, usr.id));
+		const [alreadyInTournament] = await db.select().from(tournamentPlayers).where(and(
+			eq(tournamentPlayers.userId, usr.id),
+			eq(tournamentPlayers.eliminated, 0)
+		));
 		if (alreadyInTournament)
 				return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament "});
 
@@ -64,6 +72,7 @@ export class Tournament {
 		await db.insert(tournamentPlayers).values({
 			tournamentId: id,
 			userId: usr.id,
+			displayName: usr.displayName,
 		});
 
 		// notify other players usr joined
@@ -137,9 +146,21 @@ export class Tournament {
 			return; // wait for all round's matches to end
 
 		// round ended
+		for (let i = 0; i < finished.length; i++) {
+			let loserId;
+			if (finished[i].winnerId === finished[i].player1Id)
+				loserId = finished[i].player2Id;
+			else
+				loserId = finished[i].player1Id;
+			await db.update(tournamentPlayers).set({ eliminated: 1 }).where(and(
+				eq(tournamentPlayers.tournamentId, tournamentId),
+				eq(tournamentPlayers.userId, loserId),
+			));
+		}
 
 		const winners = finished.map(x => x.winnerId); //null check
 		if (winners.length === 1) {
+			const players = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.tournamentId, tournamentId));
 			await db.update(tournaments).set({ status: "ended", winnerId: winners[0]}).where(eq(tournaments.id, tournamentId));
 
 			// notify winner tournament won
@@ -165,26 +186,61 @@ export class Tournament {
 
 	}
 
-	/* static async tournamentStatus(req: FastifyRequest, rep: FastifyReply) {
+	static async tournamentStatus(req: FastifyRequest, rep: FastifyReply) {
 		const { id } = req.params as { id: number };
 
 		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, id));
 		if (!tournament)
 			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
 
-		const players = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.tournamentId, id));
-		const links = await db.select().from(tournamentMatches).where(eq(tournamentMatches.tournamentId, id));
-		if (links.length === 0) {
+		const playersLink = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.tournamentId, id));
+		const players = playersLink.map(x => ({
+			userId: x.userId,
+			displayName: x.displayName,
+			eliminated: x.eliminated,
+		}));
+
+		const matchLinks = await db.select().from(tournamentMatches).where(eq(tournamentMatches.tournamentId, id));
+		if (matchLinks.length === 0) {
 			return rep.code(STATUS.success).send({
 				tournament,
 				players,
 				rounds : {},
 			});
 		}
-		const matchIds = links.map(x => x.matchId);
+		const matchIds = matchLinks.map(x => x.matchId);
 		const allMatches = await db.select().from(matches).where(inArray(matches.id, matchIds));
+		const rounds: any = {};
 
-	} */
+
+		for (let i = 0; i < matchLinks.length; i++) {
+			const match = allMatches.find(x => x.id === matchLinks[i].matchId);
+			if (!match)
+				continue;
+			const p1 = players.find(x => x.userId === match.player1Id);
+			const p2 = players.find(x => x.userId === match.player2Id);
+
+			if (!rounds[matchLinks[i].round])
+				rounds[matchLinks[i].round] = [];
+			rounds[matchLinks[i].round].push({
+				matchId: match.id,
+				player1: p1 ? p1.displayName : null,
+				player2: p2 ? p2.displayName : null,
+				status: match.status,
+				winnerId: match.winnerId,
+				scoreP1: match.scoreP1,
+				scoreP2: match.scoreP2,
+			});
+		}
+
+		return rep.code(STATUS.success).send({
+			tournament,
+			players,
+			rounds
+		});
+
+
+	}
  }
 
  export default function(fastify: FastifyInstance) {

@@ -41,6 +41,7 @@ class User {
 			return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName }));
 
 		const usr = await db.select({
+			id: users.id,
 			uuid: users.uuid,
 			displayName: users.displayName,
 			avatar: users.avatar,
