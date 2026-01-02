@@ -55,6 +55,7 @@ export class api {
 			} else {
 				console.log("[api]: Request rejected");
 			}
+			return null;
 		});
 	}
 }

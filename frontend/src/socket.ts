@@ -16,6 +16,7 @@ namespace socket {
 
 	export function connect() {
 		socket = new WebSocket("/api/websocket");
+		socket.onopen = () => console.log("[socket] Connection established.");
 		socket.onclose = () => {
 			socket = null;
 			if (wasConnected) {
@@ -61,3 +62,10 @@ namespace socket {
 
 export default socket;
 
+(window as any).socket = {
+	connect: socket.connect,
+	isAlive: socket.isAlive,
+	send: socket.send,
+	disconnect: socket.disconnect,
+	addListener: socket.addListener,
+};
