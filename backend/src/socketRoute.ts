@@ -12,7 +12,5 @@ function route(ws: WebSocket, req: FastifyRequest) {
 	if (socket.clients.has(clientId)) {
 		return ws.close(STATUS.bad_request);
 	}
-	ws.addEventListener("close", () => socket.disconnect(clientId));
-	socket.clients.set(clientId, { socket: ws });
+	socket.connect(clientId, ws);
 }
-
