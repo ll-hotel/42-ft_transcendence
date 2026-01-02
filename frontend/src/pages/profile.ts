@@ -37,9 +37,9 @@ export class ProfilePage implements AppPage {
 
 	async loadUserInfo() {
 		const res = await api.get("/api/me");
-		if (!res || !res.payload) return;
-		if (res.status != Status.success) {
-			return alert("Error: " + res.payload.message);
+		if (!res || res.status != Status.success) {
+			gotoPage("login");
+			return;
 		}
 		const userInfo = res.payload as { displayName: string };
 		this.displayname.innerHTML = userInfo.displayName;
@@ -60,8 +60,6 @@ export class ProfilePage implements AppPage {
 		if (!reply || reply.status == Status.unauthorized) {
 			// Unauthorized = not logged in or wrong user.
 		}
-		localStorage.removeItem("accessToken");
-		localStorage.removeItem("userinfo");
 		await gotoPage("login");
 	}
 };

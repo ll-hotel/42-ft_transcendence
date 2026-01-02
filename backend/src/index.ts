@@ -1,17 +1,16 @@
-import Fastify, { FastifyInstance } from "fastify"
-import auth from "./auth";
 import fs from "fs";
+import Fastify, { FastifyInstance } from "fastify"
+import fastifyWebsocket from "@fastify/websocket";
+import fastifyCookie from '@fastify/cookie';
 import { createTables } from "./db/database"
-import user from "./user/user";
 import { friendService } from "./user/friend"
-import matchmaking from "./game/matchmaking";
-import websocketPlugin from "@fastify/websocket";
+import authModule from "./auth";
+import userModule from "./user/user";
+import matchmakingModule from "./game/matchmaking";
+import matchModule from "./game/match";
+import tournamentModule from "./game/tournament";
 import matchmakingWS from "./websocket/matchmaking.ws";
-import match from "./game/match";
-import tournament from "./game/tournament";
-
-
-
+import socketRoute from "./socketRoute";
 
 async function main() {
 	await createTables();
@@ -24,16 +23,16 @@ async function main() {
 		}
 	});
 
-
-	app.register(websocketPlugin);
-	app.register(matchmakingWS);
-	
-	app.register(tournament);
-	app.register(auth);
-	app.register(user);
+	app.register(fastifyCookie);
+	app.register(fastifyWebsocket);
+	app.register(authModule);
+	app.register(userModule);
 	app.register(f => friendService.setup(f));
-	app.register(matchmaking);
-	app.register(match);
+	app.register(tournamentModule);
+	app.register(matchmakingModule);
+	app.register(matchmakingWS);
+	app.register(matchModule);
+	app.register(socketRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
 		if (err) {
