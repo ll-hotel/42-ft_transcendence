@@ -1,5 +1,4 @@
-import { FastifyRequest } from "fastify";
-import { STATUS } from "./shared";
+export default socket;
 
 namespace socket {
 	export type ClientId = number;
@@ -16,16 +15,7 @@ namespace socket {
 	};
 	export type Message = BaseMessage | MatchMessage;
 
-	const clients: Map<ClientId, Client> = new Map();
-
-	export function connectionRoute(socket: WebSocket, req: FastifyRequest) {
-		const clientId = req.user!.id;
-		if (clients.has(clientId)) {
-			return socket.close(STATUS.bad_request);
-		}
-		socket.addEventListener("close", () => disconnect(clientId));
-		clients.set(clientId, { socket });
-	}
+	export const clients: Map<ClientId, Client> = new Map();
 
 	export function isAlive(client: ClientId) {
 		return clients.has(client) && clients.get(client)!.socket.readyState == WebSocket.OPEN;
@@ -45,5 +35,3 @@ namespace socket {
 		}
 	}
 }
-
-export default socket;
