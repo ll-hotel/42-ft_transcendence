@@ -84,11 +84,11 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
-export async function gotoPage(name: PageName) {
+export async function gotoPage(name: PageName, includeSearch: boolean = false) {
 	if (loader.loaded && loader.loaded == name) {
 		return;
 	}
-	if (name == "login") {
+	if (includeSearch) {
 		history.pushState(null, "", "/" + name + location.search);
 	} else {
 		history.pushState(null, "", "/" + name);

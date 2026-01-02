@@ -1,4 +1,3 @@
-import { api } from "./api.js";
 import { gotoPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
 
@@ -9,12 +8,10 @@ document.addEventListener("DOMContentLoaded", async function() {
 		return;
 	}
 	const uri = window.location.pathname;
-
-	const res = await api.get("/api/me");
-	if (res && res.status == 200) {
-		socket.connect();
-	}
-	
 	const name = strToPageName(uri.substring(1)) || "login";
-	await gotoPage(name);
+	if (name == "login" || (await socket.connect()) == false) {
+		await gotoPage("login", true);
+	} else {
+		await gotoPage(name);
+	}
 });

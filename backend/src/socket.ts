@@ -28,10 +28,11 @@ export function connect(clientId: ClientId, socket: WebSocket) {
 function onMessage(clientId: ClientId, ev: MessageEvent) {
 	try {
 		const json = JSON.parse(ev.data);
-		console.log("[socket]", "message", clientId, json);
+		if (json.source != "ping")
+			console.log("[socket]", "message", clientId, json);
 	} catch (_) {
 		if (ev.data) {
-			console.log("[socket]", "message", clientId, ev.data);
+			console.log("[socket]", "message", clientId, '"' + ev.data + '"');
 		}
 	}
 }

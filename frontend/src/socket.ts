@@ -1,3 +1,5 @@
+import { api, Status } from "./api.js";
+
 type BaseMessage = {
 	source: string,
 	type: string,
@@ -12,15 +14,23 @@ let socket: WebSocket | null = null;
 const hooks = new Map<string, ((m: Message) => void)[]>();
 // Used to reconnect on socket unwanted disconnection.
 let wasConnected = false;
-let pingInterval: number | null = null;
 
-export function connect() {
+export async function connect(): Promise<boolean> {
+	if (socket) {
+		return true;
+	} else {
+		const me = await api.get("/api/me")
+		if (!me || me.status == Status.unauthorized) {
+			return false;
+		}
+	}
 	socket = new WebSocket("/api/websocket");
-	socket.onopen = () => console.log("[socket] Connection established.");
-	socket.onclose = (ev) => {
+	socket.onopen = () => console.log("[socket]", "Connected.");
+	socket.onclose = () => {
+		console.log("[socket]", "Disconnected.");
 		socket = null;
-		if (ev.code != 401 && wasConnected) {
-			connect();
+		if (wasConnected) {
+			setTimeout(connect, 500);
 		}
 	};
 	socket.onmessage = (event) => {
@@ -34,22 +44,23 @@ export function connect() {
 		}
 	}
 	wasConnected = true;
-	if (!pingInterval) {
-		pingInterval = setInterval(pingIntervalHook, 4000);
-	}
+	pingLoop();
+	return true;
 }
-function pingIntervalHook() {
-	if (socket) {
-		socket.send("");
-	}
+function pingLoop() {
+	setTimeout(() => {
+		send({source: "ping", type: "ping"}) && pingLoop();
+	}, 4000);
 }
 export function isAlive() {
 	return (socket && socket.readyState == WebSocket.OPEN) || false;
 }
-export function send(message: Message) {
-	if (isAlive()) {
-		socket!.send(JSON.stringify(message));
+export function send(message: Message): boolean {
+	if (isAlive() == false) {
+		return false;
 	}
+	socket!.send(JSON.stringify(message));
+	return true;
 }
 export function disconnect() {
 	wasConnected = false;
