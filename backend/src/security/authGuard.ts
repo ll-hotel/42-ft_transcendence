@@ -28,14 +28,8 @@ const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 	const cookie = req.cookies ? req.cookies.accessToken : undefined;
 	let token = cookie;
-	if (token == undefined) {
-		// Try to get the accessToken from Authorization header.
-		const keyValue = req.headers.authorization?.split(" ");
-		if (!keyValue || keyValue.length < 2) {
-			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
-		}
-		token = keyValue[1];
-	}
+	if (!token)
+		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
 	let payload: { uuid: string };
 	try {
 		payload = jwt.verify(token, jwtSecret, {}) as { uuid: string };
