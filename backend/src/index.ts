@@ -1,6 +1,6 @@
 import fs from "fs";
 import Fastify, { FastifyInstance } from "fastify"
-import websocketPlugin from "@fastify/websocket";
+import fastifyWebsocket from "@fastify/websocket";
 import fastifyCookie from '@fastify/cookie';
 import { createTables } from "./db/database"
 import { friendService } from "./user/friend"
@@ -10,6 +10,7 @@ import matchmakingModule from "./game/matchmaking";
 import matchModule from "./game/match";
 import tournamentModule from "./game/tournament";
 import matchmakingWS from "./websocket/matchmaking.ws";
+import socketRoute from "./socketRoute";
 
 async function main() {
 	await createTables();
@@ -23,14 +24,15 @@ async function main() {
 	});
 
 	app.register(fastifyCookie);
+	app.register(fastifyWebsocket);
 	app.register(authModule);
 	app.register(userModule);
-	app.register(websocketPlugin);
 	app.register(f => friendService.setup(f));
-	app.register(tournamentModule);
-	app.register(matchmakingModule);
-	app.register(matchmakingWS);
-	app.register(matchModule);
+	// app.register(tournamentModule);
+	// app.register(matchmakingModule);
+	// app.register(matchmakingWS);
+	// app.register(matchModule);
+	app.register(socketRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
 		if (err) {
