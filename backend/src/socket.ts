@@ -22,16 +22,18 @@ export function connect(clientId: ClientId, socket: WebSocket) {
 	console.log("[socket]", "connect", clientId);
 	socket.addEventListener("close", () => disconnect(clientId));
 	clients.set(clientId, { socket });
-	socket.addEventListener("message", (ev) => {
-		try {
-			const json = JSON.parse(ev.data);
-			console.log("[socket]", "message", clientId, json);
-		} catch (_) {
-			if (ev.data) {
-				console.log("[socket]", "message", clientId, ev.data);
-			}
+	socket.addEventListener("message", (ev) => onMessage(clientId, ev));
+}
+
+function onMessage(clientId: ClientId, ev: MessageEvent) {
+	try {
+		const json = JSON.parse(ev.data);
+		console.log("[socket]", "message", clientId, json);
+	} catch (_) {
+		if (ev.data) {
+			console.log("[socket]", "message", clientId, ev.data);
 		}
-	})
+	}
 }
 
 export function send(target: ClientId, message: Message) {

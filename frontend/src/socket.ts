@@ -17,9 +17,9 @@ let pingInterval: number | null = null;
 export function connect() {
 	socket = new WebSocket("/api/websocket");
 	socket.onopen = () => console.log("[socket] Connection established.");
-	socket.onclose = () => {
+	socket.onclose = (ev) => {
 		socket = null;
-		if (wasConnected) {
+		if (ev.code != 401 && wasConnected) {
 			connect();
 		}
 	};

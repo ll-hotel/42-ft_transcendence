@@ -6,8 +6,8 @@ import { matchmakingQueue, matches, users } from "../db/tables";
 import { eq, or, and } from "drizzle-orm";
 import socket from "../socket";
 
-function notifyUser(user: socket.ClientId, match: number, opponent: string) {
-	socket.send(user, {
+function notifyUser(userId: number, match: number, opponent: string) {
+	socket.send(userId, {
 		source: "matchmaking",
 		type: "found",
 		match,
@@ -21,7 +21,9 @@ class Matchmaking {
 		app.post("/api/matchmaking/join", { preHandler: authGuard }, Matchmaking.joinQueue);
 		app.delete("/api/matchmaking/leave", { preHandler: authGuard }, Matchmaking.leaveQueue);
 
-		setInterval(function() { while (Matchmaking.createMatch()); }, 1000);
+		setInterval(async () => {
+			while (await Matchmaking.createMatch()) {}
+		}, 1000);
 	}
 
 	static async joinQueue(req: FastifyRequest, rep: FastifyReply) {

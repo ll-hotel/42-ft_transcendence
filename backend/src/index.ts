@@ -29,7 +29,7 @@ async function main() {
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
 	app.register(tournamentModule);
-	// app.register(matchmakingModule);
+	app.register(matchmakingModule);
 	app.register(matchmakingWS);
 	app.register(matchModule);
 	app.register(socketRoute);
