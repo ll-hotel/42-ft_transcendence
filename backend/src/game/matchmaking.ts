@@ -19,7 +19,7 @@ class Matchmaking {
 
 	static setup(app: FastifyInstance) {
 		app.post("/api/matchmaking/join", { preHandler: authGuard }, Matchmaking.joinQueue);
-		app.delete("/api/matchmaking/leave", { preHandler: authGuard }, Matchmaking.leaveQueue);
+		app.post("/api/matchmaking/leave", { preHandler: authGuard }, Matchmaking.leaveQueue);
 
 		setInterval(async () => {
 			while (await Matchmaking.createMatch()) {}

@@ -8,14 +8,14 @@ type MatchMessage = BaseMessage & {
 	match: number,
 	opponent: string,
 };
-type Message = BaseMessage | MatchMessage;
+export type Message = BaseMessage | MatchMessage;
 
 let socket: WebSocket | null = null;
 const hooks = new Map<string, ((m: Message) => void)[]>();
 // Used to reconnect on socket unwanted disconnection.
 let wasConnected = false;
 
-export async function connect(): Promise<boolean> {
+async function connect(): Promise<boolean> {
 	if (socket) {
 		return true;
 	} else {
@@ -52,25 +52,29 @@ function pingLoop() {
 		send({source: "ping", type: "ping"}) && pingLoop();
 	}, 4000);
 }
-export function isAlive() {
+function isAlive() {
 	return (socket && socket.readyState == WebSocket.OPEN) || false;
 }
-export function send(message: Message): boolean {
+function send(message: Message): boolean {
 	if (isAlive() == false) {
 		return false;
 	}
 	socket!.send(JSON.stringify(message));
 	return true;
 }
-export function disconnect() {
+function disconnect() {
 	wasConnected = false;
 	socket?.close();
 }
-export function addListener(source: string, hook: (m: Message) => void) {
+function addListener(source: string, hook: (m: Message) => void) {
 	if (!hooks.has(source)) {
 		hooks.set(source, []);
-	} else {
-		hooks.get(source)!.push(hook);
+	}
+	hooks.get(source)!.push(hook);
+}
+function removeListener(source: string) {
+	if (hooks.has(source)) {
+		hooks.delete(source);
 	}
 }
 
@@ -79,6 +83,7 @@ export default {
 	send,
 	disconnect,
 	addListener,
+	removeListener,
 };
 
 // For development purposes.
