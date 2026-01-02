@@ -2,45 +2,57 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { authGuard } from "../security/authGuard";
 import { STATUS } from "../shared";
 import { db } from "../db/database";
-import { matchmakingQueue, matches } from "../db/tables";
+import { matchmakingQueue, matches, users } from "../db/tables";
 import { eq, or, and } from "drizzle-orm";
-import { notifyUser } from "../websocket/matchmaking.ws";
+import conn from "../connection";
+
+function notifyUser(user: conn.ClientId, match: number, opponent: string) {
+	conn.send(user, {
+		source: "matchmaking",
+		type: "found",
+		match,
+		opponent,
+	});
+}
 
 class Matchmaking {
 
 	static setup(app: FastifyInstance) {
-		app.get("/api/matchmaking/join", { preHandler: authGuard, websocket: true }, Matchmaking.joinQueue);
+		app.post("/api/matchmaking/join", { preHandler: authGuard }, Matchmaking.joinQueue);
 		app.delete("/api/matchmaking/leave", { preHandler: authGuard }, Matchmaking.leaveQueue);
+
+		setInterval(function() { while (Matchmaking.createMatch()); }, 1000);
 	}
 
-	static async joinQueue(ws: WebSocket, req: FastifyRequest) {
+	static async joinQueue(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 
 		const [inQueue] = await db.select().from(matchmakingQueue).where(eq(matchmakingQueue.userId, usr.id));
 		if (inQueue)
-			return ws.close(STATUS.bad_request, JSON.stringify({ message: "Already in queue" }));
+			return rep.code(STATUS.bad_request).send({ message: "Already in queue" });
 
 		const [isPlaying] = await db.select().from(matches).where(and(
 			or(eq(matches.player1Id, usr.id), eq(matches.player2Id, usr.id)),
 			eq(matches.status, "ongoing")));
 		if (isPlaying)
-			return ws.close(STATUS.bad_request, JSON.stringify({ message: "Already in game" }));
+			return rep.code(STATUS.bad_request).send({ message: "Already in game" });
 
 		await db.insert(matchmakingQueue).values({ userId: usr.id });
 
+		rep.code(STATUS.success).send({ message: "Joined queue" });
+	}
+
+	static async createMatch() {
 		const players = await db.select().from(matchmakingQueue).limit(2);
-
-		if (players.length < 2)
-			return ws.close(STATUS.success, JSON.stringify({ message: "Waiting for opponent" }));
-
+		if (players.length < 2) {
+			return false;
+		}
 		const [p1, p2] = players;
-
 		const [match] = await db.insert(matches).values({
 			player1Id: p1.userId,
 			player2Id: p2.userId,
 			status: "ongoing"
-		})
-			.returning();
+		}).returning();
 
 		await db.delete(matchmakingQueue)
 			.where(or(
@@ -48,21 +60,13 @@ class Matchmaking {
 				eq(matchmakingQueue.userId, p2.userId)
 			));
 
-		notifyUser(p1.userId, {
-			type: "MATCH_FOUND",
-			matchId: match.id,
-			opponentId: p2.userId,
-		});
+		const [user1] = await db.select().from(users).where(eq(users.id, p1.userId));
+		const [user2] = await db.select().from(users).where(eq(users.id, p2.userId));
+		notifyUser(user1.id, match.id, user2.username);
+		notifyUser(user2.id, match.id, user1.username);
 
-		notifyUser(p2.userId, {
-			type: "MATCH_FOUND",
-			matchId: match.id,
-			opponentId: p1.userId,
-		});
-
-		return ws.close(STATUS.success, JSON.stringify({ message: "Match started", matchId: match.id }));
+		return true;
 	}
-
 
 	static async leaveQueue(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
