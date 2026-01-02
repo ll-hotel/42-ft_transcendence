@@ -9,6 +9,7 @@ import { hashPassword, comparePassword } from './security/hash';
 import { generate2FASecret, generateQRCode, verify2FAToken } from './security/2fa';
 import fs from "fs";
 import { authGuard } from './security/authGuard';
+import socket from './socket';
 
 const SCHEMA_REGISTER = {
 	body: {
@@ -143,6 +144,8 @@ class AuthService {
 			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized });
 
 		await db.update(users).set({ isOnline: 0 }).where(eq(users.id, user.id));
+
+		socket.disconnect(user.id);
 
 		rep.clearCookie('accessToken', { path: "/api" });
 		rep.code(STATUS.success).send({ message: MESSAGE.logged_out, loggedIn: false});
