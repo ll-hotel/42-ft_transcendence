@@ -26,10 +26,11 @@ async function connect(): Promise<boolean> {
 	}
 	socket = new WebSocket("/api/websocket");
 	socket.onopen = () => console.log("[socket]", "Connected.");
-	socket.onclose = () => {
+	socket.onclose = (ev) => {
 		console.log("[socket]", "Disconnected.");
 		socket = null;
-		if (wasConnected) {
+		// 4001 means server disconnected us manually.
+		if (wasConnected && ev.code != 4001) {
 			setTimeout(connect, 500);
 		}
 	};

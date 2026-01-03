@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 	const uri = window.location.pathname;
 	const name = strToPageName(uri.substring(1)) || "login";
 	if (name == "login" || (await socket.connect()) == false) {
-		await gotoPage("login", true);
+		await gotoPage("login", location.search);
 	} else {
 		await gotoPage(name);
 	}
