@@ -1,16 +1,15 @@
-import fs from "fs";
-import Fastify, { FastifyInstance } from "fastify"
+import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
-import fastifyCookie from '@fastify/cookie';
-import { createTables } from "./db/database"
-import { friendService } from "./user/friend"
+import Fastify, { FastifyInstance } from "fastify";
+import fs from "fs";
 import authModule from "./auth";
-import userModule from "./user/user";
-import matchmakingModule from "./game/matchmaking";
+import { createTables } from "./db/database";
 import matchModule from "./game/match";
+import matchmakingModule from "./game/matchmaking";
 import tournamentModule from "./game/tournament";
-import matchmakingWS from "./websocket/matchmaking.ws";
 import socketRoute from "./socketRoute";
+import { friendService } from "./user/friend";
+import userModule from "./user/user";
 
 async function main() {
 	await createTables();
@@ -20,7 +19,7 @@ async function main() {
 		https: {
 			key: fs.readFileSync("/run/secrets/privatekey.pem"),
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
-		}
+		},
 	});
 
 	app.register(fastifyCookie);
@@ -30,7 +29,6 @@ async function main() {
 	app.register(f => friendService.setup(f));
 	app.register(tournamentModule);
 	app.register(matchmakingModule);
-	app.register(matchmakingWS);
 	app.register(matchModule);
 	app.register(socketRoute);
 
