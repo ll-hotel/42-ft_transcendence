@@ -4,9 +4,9 @@ import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import authModule from "./auth";
 import { createTables } from "./db/database";
-import matchModule from "./game/match";
-import matchmakingModule from "./game/matchmaking";
-import tournamentModule from "./game/tournament";
+import gameMatch from "./game/match";
+import gameQueue from "./game/queue";
+import gameTournament from "./game/tournament";
 import socketRoute from "./socketRoute";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
@@ -27,9 +27,9 @@ async function main() {
 	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
-	app.register(tournamentModule);
-	app.register(matchmakingModule);
-	app.register(matchModule);
+	app.register(gameTournament);
+	app.register(gameQueue);
+	app.register(gameMatch);
 	app.register(socketRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
