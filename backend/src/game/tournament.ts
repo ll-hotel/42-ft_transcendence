@@ -11,7 +11,7 @@ export class Tournament {
 		app.post("/api/tournaments/:id/join", { preHandler: authGuard }, Tournament.joinTournament);
 		app.post("/api/tournaments/:id/start", { preHandler: authGuard }, Tournament.startTournament);
 		
-		app.get("/api/tournament/:id/status", { preHandler: authGuard }, Tournament.tournamentStatus);
+		app.get("/api/tournaments/:id/status", { preHandler: authGuard }, Tournament.tournamentStatus);
 	}
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
@@ -46,7 +46,7 @@ export class Tournament {
 		const usr = req.user!;
 		const {id} = req.params as {id: number};
 
-		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, id));
+		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, id));	
 		if (!tournament)
 			return rep.code(STATUS.not_found).send({ message: "Tournament not found"});
 		if (tournament.status !== "pending")
