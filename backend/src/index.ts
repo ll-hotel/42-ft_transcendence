@@ -20,7 +20,7 @@ async function main() {
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
 
-	app.get("/ping", (_req, res) => {
+	app.get("/ping", (_req, res) => {	
 		res.code(STATUS.success).send("pong");
 	});
 

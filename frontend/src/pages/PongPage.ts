@@ -53,7 +53,7 @@ export class PongPage implements AppPage {
 		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
 		this.game.start();
-		// setTimeout(() => this.showScore(), 5000);
+		//setTimeout(() => this.showScore(), 5000);
 	}
 	showPause() {
 		this.onclick = () => this.hidePause();
@@ -85,7 +85,7 @@ export class PongPage implements AppPage {
 		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
-		// this.game.end();
+		//this.game.end();
 		setTimeout(() => this.showStart(), 5000);
 	}
 }
