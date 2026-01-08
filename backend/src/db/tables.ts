@@ -45,7 +45,7 @@ export const matches = sqliteTable("matches", {
 
 export const tournaments = sqliteTable("tournaments", {
 	id: integer("id").primaryKey({autoIncrement : true}),
-	createdBy: text("createdBy").notNull().references(() => users.displayName),
+	createdBy: text("createdBy").notNull().references(() => users.uuid),
 	size: integer("size"),
 	name: text("name").notNull(),
 	status: text("status").notNull().default("pending"),
@@ -59,7 +59,7 @@ export const tournamentPlayers = sqliteTable("tournamentPlayers", {
 	tournamentId: integer("tournamentId").notNull().references(() => tournaments.id, { onDelete: "cascade"}),
 
 	userId: integer("userId").notNull().references(() => users.id),
-	displayName: text("displayName").notNull().references(() => users.displayName),
+	userUuid: text("userUuid").notNull().references(() => users.uuid),
 	eliminated: integer("eliminated").notNull().default(0),
 });
 

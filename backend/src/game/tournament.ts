@@ -30,7 +30,7 @@ export class Tournament {
 
 		const [tournament] = await db.insert(tournaments).values({
 			name,
-			createdBy: usr.displayName,
+			createdBy: usr.uuid,
 			size: size,
 			createdAt: Date.now(),
 		}).returning();
@@ -38,7 +38,7 @@ export class Tournament {
 		await db.insert(tournamentPlayers).values({
 			tournamentId: tournament.id,
 			userId: usr.id,
-			displayName: usr.displayName,
+			userUuid:	usr.uuid,
 		});
 
 		return rep.code(STATUS.created).send({
@@ -77,7 +77,7 @@ export class Tournament {
 		await db.insert(tournamentPlayers).values({
 			tournamentId: id,
 			userId: usr.id,
-			displayName: usr.displayName,
+			userUuid: usr.uuid,
 		});
 
 		// notify other players usr joined
@@ -92,7 +92,7 @@ export class Tournament {
 		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, id));
 		if (!tournament)
 			return rep.code(STATUS.not_found).send({ message: "Tournament not found" })
-		if (usr.displayName !== tournament.createdBy)
+		if (usr.uuid !== tournament.createdBy)
 			return rep.code(STATUS.unauthorized).send({ message: "You are not the creator of this tournament " });
 		if (tournament.status !== "pending")
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
@@ -206,7 +206,7 @@ export class Tournament {
 		const playersLink = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.tournamentId, id));
 		const players = playersLink.map(x => ({
 			userId: x.userId,
-			displayName: x.displayName,
+			userUuid: x.userUuid,
 			eliminated: x.eliminated,
 		}));
 
@@ -234,8 +234,8 @@ export class Tournament {
 				rounds[matchLinks[i].round] = [];
 			rounds[matchLinks[i].round].push({
 				matchId: match.id,
-				player1: p1 ? p1.displayName : null,
-				player2: p2 ? p2.displayName : null,
+				player1Uuid: p1 ? p1.userUuid : null,
+				player2Uuid: p2 ? p2.userUuid : null,
 				status: match.status,
 				winnerId: match.winnerId,
 				scoreP1: match.scoreP1,
