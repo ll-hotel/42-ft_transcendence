@@ -1,7 +1,6 @@
-import { drizzle } from "drizzle-orm/better-sqlite3"
-import Database from "better-sqlite3"
+import Database from "better-sqlite3";
 import { sql } from "drizzle-orm";
-
+import { drizzle } from "drizzle-orm/better-sqlite3";
 
 const path = "/srv/app/db/database.sqlite";
 
@@ -32,7 +31,7 @@ async function createUserTable() {
 	  isOnline	INTEGER NOT NULL DEFAULT 0
 	  );
 	  `);
-	}
+}
 
 async function createFriendsTable() {
 	await db.run(sql`
@@ -48,7 +47,7 @@ async function createFriendsTable() {
 }
 
 async function createMatchmakingQueueTable() {
-		await db.run(sql`
+	await db.run(sql`
 		CREATE TABLE IF NOT EXISTS matchmakingQueue (
 		 id INTEGER PRIMARY KEY AUTOINCREMENT,
 		 userId INTEGER NOT NULL,

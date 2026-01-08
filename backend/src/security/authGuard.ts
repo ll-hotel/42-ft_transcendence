@@ -26,19 +26,20 @@ declare module "fastify" {
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 
 export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
-	const cookie = req.cookies ? req.cookies.accessToken : undefined;
-	let token = cookie;
+	const token = req.cookies ? req.cookies.accessToken : parseCookies(req).get("accessToken");
 	if (!token)
 		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
 	let payload: { uuid: string };
 	try {
 		payload = jwt.verify(token, jwtSecret, {}) as { uuid: string };
 	} catch {
+		rep.clearCookie("accessToken", { path: "/api" });
 		rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_token });
 		return;
 	}
 	const dbUsers = await db.select().from(users).where(eq(users.uuid, payload.uuid));
 	if (dbUsers.length === 0) {
+		rep.clearCookie("accessToken", { path: "/api" });
 		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
 	}
 	const user = dbUsers[0];
@@ -52,3 +53,14 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 		avatar: user.avatar,
 	}
 }	
+
+function parseCookies(req: FastifyRequest): Map<string, string> {
+	const cookies = new Map<string, string>;
+	const words = req.headers["cookie"] ? req.headers["cookie"].split("&") : [];
+	const pairs = words.map(w => w.split("="));
+	for (const pair of pairs) {
+		if (pair.length < 2) continue;
+		cookies.set(pair[0], pair[1]);
+	}
+	return cookies;
+}

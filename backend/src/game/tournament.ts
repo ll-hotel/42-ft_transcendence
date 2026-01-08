@@ -1,41 +1,31 @@
+import * as drizzle from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
-import { tournaments, tournamentMatches, tournamentPlayers, matches, users } from "../db/tables";
+import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
 import { STATUS } from "../shared";
-import { eq, and, or, inArray} from "drizzle-orm";
 
 export class Tournament {
 	static setup(app: FastifyInstance) {
 		app.post("/api/tournaments/create", { preHandler: authGuard }, Tournament.createTournament);
 		app.post("/api/tournaments/:id/join", { preHandler: authGuard }, Tournament.joinTournament);
 		app.post("/api/tournaments/:id/start", { preHandler: authGuard }, Tournament.startTournament);
-		
 		app.get("/api/tournament/:id/status", { preHandler: authGuard }, Tournament.tournamentStatus);
 	}
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
-		const usr = req.user!;
+		const user = req.user!;
 		const { name } = req.body as { name: string };
-		
-		const [alreadyInTournament] = await db.select().from(tournamentPlayers).where(and(
-			eq(tournamentPlayers.userId, usr.id),
-			eq(tournamentPlayers.eliminated, 0)
-		));
-		if (alreadyInTournament)
-				return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament "});
 
-		const [tournament] = await db.insert(tournaments).values({
+		const [tournament] = await db.insert(tables.tournaments).values({
 			name,
 			createdAt: Date.now(),
 		}).returning();
-
-		await db.insert(tournamentPlayers).values({
+		await db.insert(tables.tournamentPlayers).values({
 			tournamentId: tournament.id,
-			userId: usr.id,
-			displayName: usr.displayName,
+			userId: user.id,
+			displayName: user.displayName,
 		});
-
 		return rep.code(STATUS.created).send({
 			message: "Tournament created",
 			tournament,
@@ -43,187 +33,187 @@ export class Tournament {
 	}
 
 	static async joinTournament(req: FastifyRequest, rep: FastifyReply) {
-		const usr = req.user!;
-		const {id} = req.params as {id: number};
+		const user = req.user!;
+		const { id } = req.params as { id: number };
 
-		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, id));
-		if (!tournament)
-			return rep.code(STATUS.not_found).send({ message: "Tournament not found"});
-		if (tournament.status !== "pending")
+		const [tournament] = await db.select().from(tables.tournaments).where(drizzle.eq(tables.tournaments.id, id));
+		if (!tournament) {
+			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
+		}
+		if (tournament.status !== "pending") {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
+		}
 
-		const [alreadyInTournament] = await db.select().from(tournamentPlayers).where(and(
-			eq(tournamentPlayers.userId, usr.id),
-			eq(tournamentPlayers.eliminated, 0)
+		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(
+			drizzle.eq(tables.tournamentPlayers.userId, user.id),
+		);
+		if (alreadyInTournament) {
+			return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament " });
+		}
+
+		const [alreadyInMatch] = await db.select().from(tables.matches).where(drizzle.and(
+			drizzle.or(drizzle.eq(tables.matches.player1Id, user.id), drizzle.eq(tables.matches.player2Id, user.id)),
+			drizzle.or(drizzle.eq(tables.matches.status, "pending"), drizzle.eq(tables.matches.status, "ongoing")),
 		));
-		if (alreadyInTournament)
-				return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament "});
-
-		const [alreadyInMatch] = await db.select().from(matches).where(and(
-			or(eq(matches.player1Id, usr.id), eq(matches.player2Id, usr.id)),
-			or(eq(matches.status, "pending"), eq(matches.status, "ongoing"))));
-		if (alreadyInMatch)
+		if (alreadyInMatch) {
 			return rep.code(STATUS.bad_request).send({ message: "You are already in a match" });
+		}
 
-		const players = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.tournamentId, id));
-		if (players.length === 8)
+		const players = await db.select().from(tables.tournamentPlayers).where(
+			drizzle.eq(tables.tournamentPlayers.tournamentId, id),
+		);
+		if (players.length >= 4) {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament full" });
+		}
 
-		await db.insert(tournamentPlayers).values({
+		await db.insert(tables.tournamentPlayers).values({
 			tournamentId: id,
-			userId: usr.id,
-			displayName: usr.displayName,
+			userId: user.id,
+			displayName: user.displayName,
 		});
 
-		// notify other players usr joined
-
-		return rep.code(STATUS.success).send({ message: "Joined tournament"});
+		return rep.code(STATUS.success).send({ message: "Joined tournament" });
 	}
 
 	static async startTournament(req: FastifyRequest, rep: FastifyReply) {
 		const { id } = req.params as { id: number };
 
-		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, id));
-		if (!tournament)
+		const [tournament] = await db.select().from(tables.tournaments).where(drizzle.eq(tables.tournaments.id, id));
+		if (!tournament) {
 			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
-		if (tournament.status !== "pending")
+		}
+		if (tournament.status !== "pending") {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
-
-		const players = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.tournamentId, id)); 
-		if (players.length !== 4 && players.length !== 8) 
-			return rep.code(STATUS.bad_request).send({ message: "Not enough players"});
-
-		const round = 1;
-		const matchesCreated = [];
-		for (let i = 0; i < players.length; i += 2) {
-			const [match] = await db.insert(matches).values({
-				player1Id: players[i].userId,
-				player2Id: players[i + 1].userId,
-				status: "ongoing",
-			}).returning();
-
-			matchesCreated.push(match);
-			await db.insert(tournamentMatches).values({
-				tournamentId: id,
-				matchId: match.id,
-				round,
-			});
 		}
 
-		await db.update(tournaments).set({status:"ongoing"}).where(eq(tournaments.id, id));
-		
-		// notify all users TOURNAMENT_STARTED
-		// notify users match round 1
+		const players = await db.select().from(tables.tournamentPlayers).where(
+			drizzle.eq(tables.tournamentPlayers.tournamentId, id),
+		);
+		if (players.length !== 4) {
+			return rep.code(STATUS.bad_request).send({ message: "Not enough players" });
+		}
 
-		return rep.code(STATUS.success).send({ 
+		const [m1] = await db.insert(tables.matches).values({
+			player1Id: players[0].userId,
+			player2Id: players[1].userId,
+			status: "ongoing",
+		}).returning();
+		const [m2] = await db.insert(tables.matches).values({
+			player1Id: players[2].userId,
+			player2Id: players[3].userId,
+			status: "ongoing",
+		}).returning();
+
+		await db.insert(tables.tournamentMatches).values([
+			{ tournamentId: id, matchId: m1.id, round: 1 },
+			{ tournamentId: id, matchId: m2.id, round: 1 },
+		]);
+
+		await db.update(tables.tournaments).set({ status: "ongoing" }).where(drizzle.eq(tables.tournaments.id, id));
+
+		// notifyUser TOURNAMENT_STARTED
+
+		return rep.code(STATUS.success).send({
 			message: "Tournament started",
-			matches: matchesCreated,
+			matches: [m1, m2],
 		});
 	}
 
 	static async tournamentEndMatch(matchId: number, winnerId: number) {
-		const [tm] = await db.select().from(tournamentMatches).where(eq(tournamentMatches.matchId, matchId));
-		if (!tm)
+		const [tm] = await db.select().from(tables.tournamentMatches).where(
+			drizzle.eq(tables.tournamentMatches.matchId, matchId),
+		);
+		if (!tm) {
 			return;
-
-		// notify match ended
-	
-		await Tournament.handleRoundEnd(tm.tournamentId, tm.round);
+		}
+		if (tm.round === 1) {
+			await Tournament.semiFinalEnd(tm.tournamentId);
+		} else if (tm.round === 2) {
+			await db.update(tables.tournaments).set({ status: "ended" }).where(
+				drizzle.eq(tables.tournaments.id, tm.tournamentId),
+			);
+			// notify User TOURNAMENT_ENDED
+		}
 	}
 
-	static async handleRoundEnd(tournamentId: number, round: number) {
-		const link = await db.select().from(tournamentMatches).where(and(
-			eq(tournamentMatches.tournamentId, tournamentId),
-			eq(tournamentMatches.round, round)
+	static async semiFinalEnd(tournamentId: number) {
+		const link = await db.select().from(tables.tournamentMatches).where(drizzle.and(
+			drizzle.eq(tables.tournamentMatches.tournamentId, tournamentId),
+			drizzle.eq(tables.tournamentMatches.round, 1),
 		));
-		const matchIds = link.map(x => x.matchId);
-		if (matchIds.length === 0)
+
+		if (link.length !== 2) {
 			return;
-		const roundMatches = await db.select().from(matches).where(inArray(matches.id, matchIds));
-		
-		const finished = roundMatches.filter(x => x.status === "ended");
-		if (finished.length !== roundMatches.length)
-			return; // wait for all round's matches to end
-
-		// round ended
-		for (let i = 0; i < finished.length; i++) {
-			let loserId;
-			if (finished[i].winnerId === finished[i].player1Id)
-				loserId = finished[i].player2Id;
-			else
-				loserId = finished[i].player1Id;
-			await db.update(tournamentPlayers).set({ eliminated: 1 }).where(and(
-				eq(tournamentPlayers.tournamentId, tournamentId),
-				eq(tournamentPlayers.userId, loserId),
-			));
 		}
 
-		const winners = finished.map(x => x.winnerId); //null check
-		if (winners.length === 1) {
-			const winnerId = winners[0];
-			if (winnerId !== null) {
-				await db.update(tournamentPlayers).set({ eliminated: 1 }).where(eq(tournamentPlayers.userId, winnerId));
-				await db.update(tournaments).set({ status: "ended", winnerId: winnerId}).where(eq(tournaments.id, tournamentId));
-			}
-			// notify winner tournament won
-			// notify others tournament ended
-			return; 
+		const semiMatches = await db.select().from(tables.matches).where(drizzle.or(
+			drizzle.eq(tables.matches.id, link[0].matchId),
+			drizzle.eq(tables.matches.id, link[1].matchId),
+		));
+
+		const finished = semiMatches.filter(x => x.status === "ended");
+		if (finished.length < 2) {
+			return;
 		}
 
-		const nextRound = round + 1;
-		for (let i = 0; i < winners.length; i += 2) {
-			const [match] = await db.insert(matches).values({
-				player1Id: Number(winners[i]),
-				player2Id: Number(winners[i + 1]),
-				status: "ongoing",
-			}).returning();
+		const winner1 = finished[0].winnerId;
+		const winner2 = finished[1].winnerId;
 
-			await db.insert(tournamentMatches).values({
-				tournamentId,
-				matchId: match.id,
-				round: nextRound,
-			});
-			// notify players new_match (round nextRound)
+		if (!winner1 || !winner2) {
+			return;
 		}
 
+		const [finalMatch] = await db.insert(tables.matches).values({
+			player1Id: Number(winner1),
+			player2Id: Number(winner2),
+			status: "ongoing",
+		}).returning();
+
+		// notifyUser FINAL_MATCH
+		await db.insert(tables.tournamentMatches).values({
+			tournamentId,
+			matchId: finalMatch.id,
+			round: 2,
+		});
 	}
-	
+
 	static async tournamentStatus(req: FastifyRequest, rep: FastifyReply) {
 		const { id } = req.params as { id: number };
 
-		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, id));
-		if (!tournament)
+		const [tournament] = await db.select().from(tables.tournaments).where(drizzle.eq(tables.tournaments.id, id));
+		if (!tournament) {
 			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
-
-		const playersLink = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.tournamentId, id));
+		}
+		const playersLink = await db.select().from(tables.tournamentPlayers).where(
+			drizzle.eq(tables.tournamentPlayers.tournamentId, id),
+		);
 		const players = playersLink.map(x => ({
 			userId: x.userId,
 			displayName: x.displayName,
 			eliminated: x.eliminated,
 		}));
-
-		const matchLinks = await db.select().from(tournamentMatches).where(eq(tournamentMatches.tournamentId, id));
+		const matchLinks = await db.select().from(tables.tournamentMatches).where(
+			drizzle.eq(tables.tournamentMatches.tournamentId, id),
+		);
 		if (matchLinks.length === 0) {
 			return rep.code(STATUS.success).send({
 				tournament,
 				players,
-				rounds : {},
+				rounds: {},
 			});
 		}
 		const matchIds = matchLinks.map(x => x.matchId);
-		const allMatches = await db.select().from(matches).where(inArray(matches.id, matchIds));
+		const allMatches = await db.select().from(tables.matches).where(drizzle.inArray(tables.matches.id, matchIds));
 		const rounds: any = {};
-
 
 		for (let i = 0; i < matchLinks.length; i++) {
 			const match = allMatches.find(x => x.id === matchLinks[i].matchId);
-			if (!match)
-				continue;
+			if (!match) continue;
 			const p1 = players.find(x => x.userId === match.player1Id);
 			const p2 = players.find(x => x.userId === match.player2Id);
-
-			if (!rounds[matchLinks[i].round])
+			if (!rounds[matchLinks[i].round]) {
 				rounds[matchLinks[i].round] = [];
+			}
 			rounds[matchLinks[i].round].push({
 				matchId: match.id,
 				player1: p1 ? p1.displayName : null,
@@ -234,17 +224,14 @@ export class Tournament {
 				scoreP2: match.scoreP2,
 			});
 		}
-
 		return rep.code(STATUS.success).send({
 			tournament,
 			players,
-			rounds
+			rounds,
 		});
-
-
 	}
- }
+}
 
- export default function(fastify: FastifyInstance) {
+export default function(fastify: FastifyInstance) {
 	Tournament.setup(fastify);
- }
+}
