@@ -23,11 +23,11 @@ export class RegisterPage implements AppPage {
 	}
 
 	loadInto(container: HTMLElement): void {
-		if (localStorage.getItem("accessToken")) {
+//		if (localStorage.getItem("accessToken")) {
 			// Already connected. Redirecting to user profile page.
-			gotoPage("profile");
-			return;
-		}
+//			gotoPage("profile");
+//			return;
+//		}
 		container.appendChild(this.content);
 	}
 	unload(): void {

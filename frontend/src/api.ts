@@ -23,18 +23,17 @@ export class api {
 		return this.request("DELETE", uri, body);
 	}
 	private static async request(method: "GET" | "POST" | "PATCH" | "DELETE", uri: string, body: string | object = "") {
-		const token = localStorage.getItem("accessToken");
 		let headers;
 		let jsonBody: string | null = null;
 		if (method == "GET") {
 			headers = {
 				"Accept": "application/json",
-				"Authorization": "Bearer " + token,
+				"Authorization": "Bearer",
 			};
 		} else {
 			headers = {
 				"Accept": "application/json",
-				"Authorization": "Bearer " + token,
+				"Authorization": "Bearer",
 				"Content-Type": "application/json",
 			};
 			jsonBody = JSON.stringify(body);

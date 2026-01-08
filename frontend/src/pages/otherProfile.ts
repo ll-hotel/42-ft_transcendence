@@ -8,6 +8,7 @@ export class OtherProfilePage implements AppPage {
 	content: HTMLElement;
 	displayname: HTMLElement;
 	username: HTMLElement;
+	private actualDisplayname: string | null = null;
 
 	private constructor(content: HTMLElement) {
 		this.content = content;
@@ -26,6 +27,9 @@ export class OtherProfilePage implements AppPage {
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
+
+		if (this.actualDisplayname)
+			this.loadUserInfo(this.actualDisplayname);
 	}
 
 	unload(): void {
@@ -44,7 +48,7 @@ export class OtherProfilePage implements AppPage {
 			this.displayname.innerHTML = userinfo.displayName;
 		} catch {
 			// If JSON.parse throws then our local user info is corrupted.
-			localStorage.removeItem("userinfo");
+
 			return;
 		}
 		const statusDot = this.content.querySelector("#status-dot");
@@ -87,6 +91,9 @@ export class OtherProfilePage implements AppPage {
 		if (!params || !params.displayName)
 			return;
 
-		this.loadUserInfo(params.displayName);
+		this.actualDisplayname = params.displayName;
+
+		if(this.content.isConnected)
+			this.loadUserInfo(params.displayName);
 	}
 };

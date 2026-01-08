@@ -111,12 +111,12 @@ export async function gotoUserPage( displayName : any)
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
 export async function gotoPage(name: PageName, params?: any) {
-	if (name != "login" && name != "register") {
-		const token = localStorage.getItem("accessToken");
-		if (!token) {
-			name = "login";
-		}
-	}
+//	if (name != "login" && name != "register") {
+//		const token = localStorage.getItem("accessToken");
+//		if (!token) {
+//			name = "login";
+//		}
+//	}
 	if (loader.loaded && loader.loaded == name) {
 		const current = loader.list.get(name);
 		if (current && current.setParams)

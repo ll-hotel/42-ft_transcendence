@@ -48,8 +48,7 @@ export class editProfile implements AppPage
 
 
 	async loadUserInfo() {
-		let userInfo = localStorage.getItem("userinfo");
-
+		let userInfo;
 		if (!userInfo) {
 			const resMe = await api.get("/api/me");
 			if (!resMe || !resMe.payload)
@@ -57,17 +56,15 @@ export class editProfile implements AppPage
 			if ( resMe.status != Status.success)
 				return alert("Error when loading user info :" + resMe.payload.message);
 			userInfo = JSON.stringify(resMe.payload);
-			localStorage.setItem("userinfo", userInfo);
 		}
 		try {
 			const user = JSON.parse(userInfo);
 			this.updatePreview(user.displayName, user.avatar);
 		}
-		catch {
-			localStorage.removeItem("userinfo");
+		catch
+		{
+			
 		}
-
-		
 	}
 	async submitUserForm() {
 		const userFormData = new FormData(this.userForm);
@@ -85,17 +82,6 @@ export class editProfile implements AppPage
 			return alert("Error when editing user info: " + res.payload.message);
 
 		this.updatePreview(displayName, avatar);
-		
-		const localUserInfo = localStorage.getItem("userinfo");
-		
-		if (localUserInfo) {
-			const userinfo = JSON.parse(localUserInfo);
-			if (displayName)
-				userinfo.displayName = displayName;
-			if (avatar)
-				userinfo.avatar = avatar;
-			localStorage.setItem("userinfo", JSON.stringify(userinfo));
-		}
 		this.userForm.reset();
 	}
 

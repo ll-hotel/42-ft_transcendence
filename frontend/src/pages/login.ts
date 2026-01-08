@@ -45,16 +45,16 @@ export class Login implements AppPage {
 			const searchCode = searchArgs.find(s => s.startsWith("code="))!;
 			const code = searchCode.split("=")[1];
 			const res = await api.get("/api/auth42/callback?code=" + code);
-			if (res && res.payload.accessToken) {
-				localStorage.setItem("accessToken", res.payload.accessToken);
-			}
+//			if (res && res.payload.accessToken) {
+//				localStorage.setItem("accessToken", res.payload.accessToken);
+//			}
 			logging.remove();
 		}
-		if (localStorage.getItem("accessToken")) {
+//		if (localStorage.getItem("accessToken")) {
 			// Already connected. Redirecting to user profile page.
-			gotoPage("profile");
-			return;
-		}
+//			gotoPage("profile");
+//			return;
+//		}
 		container.appendChild(this.content);
 	}
 	unload(): void {

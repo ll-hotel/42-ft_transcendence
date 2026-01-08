@@ -1,6 +1,6 @@
 import { api, Status } from "./api.js";
 
-export type FriendStatus = "add" | "send" | "friend" | "accept";
+export type FriendStatus = "add" | "sent" | "friend" | "accept";
 
 export class FriendButton {
 	container: HTMLElement;
@@ -37,7 +37,7 @@ export class FriendButton {
 				else if (statusRequest === "accepted")
 					this.status="friend";
 				else
-					this.status="send";
+					this.status="sent";
 			}
 		}
 		catch(e)
@@ -56,7 +56,7 @@ export class FriendButton {
 		switch(this.status)
 		{
 			case "add": this.button.textContent = "Add"; break;
-			case "send": this.button.textContent = "Send"; break;
+			case "sent": this.button.textContent = "sent"; break;
 			case "accept": this.button.textContent = "Accept"; break;
 			case "friend":
 				this.button.textContent = "Friend";
@@ -83,13 +83,13 @@ export class FriendButton {
 				if(resFriends?.status == Status.success && resFriends.payload.status === "accepted")
 					this.status = "friend";
 				else
-					this.status = "send";
+					this.status = "sent";
 				this.render();
 			}
 			else
-				 alert( res?.payload?.message || "Error Friend send");
+				 alert( res?.payload?.message || "Error Friend sent");
 		}
-		else if (this.status == "send")
+		else if (this.status == "sent")
 		{
 			alert("Already send");
 		}
