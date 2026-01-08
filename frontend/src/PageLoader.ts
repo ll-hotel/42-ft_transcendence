@@ -8,12 +8,17 @@ import Play from "./pages/play.js";
 import PlayLocal from "./pages/play_local.js";
 import PlayMatch from "./pages/play_match.js";
 import PlayTournament from "./pages/play_tournament.js";
+import { OtherProfilePage } from "./pages/otherProfile.js";
+import { editProfile } from "./pages/editProfile.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "home", new: newHomePage },
 	{ name: "register", new: RegisterPage.new },
 	{ name: "login", new: Login.new },
 	{ name: "profile", new: ProfilePage.new },
+	{ name: "profile/other", new: OtherProfilePage.new},
+	{ name: "profile/edit", new: editProfile.new},
+	{ name: "friends", new: FriendPage.new},
 	{ name: "play", new: Play.new },
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
@@ -70,7 +75,7 @@ class PageLoader {
 };
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	return await fetch(`/${encodeURI(path + ".html")}`, {
+	const element = await fetch(`/${encodeURI(path + ".html")}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
@@ -83,16 +88,41 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 	
 }
 
-export async function gotoUserPage( displayName : any)
+export async function gotoUserPage( displayName : string)
 {
-	history.pushState({ page: "otherProfile", params : {displayName}}, "", "/user/" + displayName);
-	await gotoPage("otherProfile", {displayName});
+	await gotoPage("profile/other", "?displayName=" + displayName);
 }
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
+/*export async function gotoPage(name: PageName, params?: any) {
+//	if (name != "login" && name != "register") {
+//		const token = localStorage.getItem("accessToken");
+//		if (!token) {
+//			name = "login";
+//		}
+//	}
+	if (loader.loaded && loader.loaded == name) {
+		const current = loader.list.get(name);
+		if (current && current.setParams)
+			current.setParams(params);
+		return;
+	}
+	if (name == "login")
+		history.pushState(null, "", "/" + name + location.search);
+	else if (name != "otherProfile")
+		history.pushState({ page: name}, "", "/" + name);
+	await loader.download(name);
+	loader.load(name);
+
+	const page = loader.list.get(name);
+	if (page && page.setParams)
+	{
+		page.setParams(params);
+	}
+*/
 export async function gotoPage(name: string, search: string = "") {
 	const pageName = strToPageName(name);
-	if (pageName == null || (loader.loaded && loader.loaded == pageName)) {
+	if (pageName == null || (loader.loaded && loader.loaded == pageName && pageName != "profile/other")) {
 		return;
 	}
 	history.pushState(null, "", "/" + pageName + search);
@@ -105,12 +135,12 @@ export async function gotoPage(name: string, search: string = "") {
 
 window.onpopstate = function() {
 	const path = location.pathname.substring(1);
-	if (path.startsWith("user/"))
-		{
-			const displayName = path.split("/")[1];
-			gotoPage("otherProfile", {displayName});
-			return;
-		}
+	//if (path.startsWith("user/"))
+	//	{
+	//		const displayName = path.split("/")[1];
+	//		gotoPage("profile/other", displayName);
+	//		return;
+	//	}
 		const page = strToPageName(path) || "login";
-		gotoPage(page);
+		gotoPage(page, location.search);
 	}

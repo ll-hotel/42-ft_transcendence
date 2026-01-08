@@ -26,9 +26,9 @@ export class RegisterPage implements AppPage {
 		const me = await api.get("/api/me");
 		if (me && me.status === Status.success) {
 			// Already connected. Redirecting to user profile page.
-//			gotoPage("profile");
-//			return;
-//		}
+			gotoPage("profile");
+			return;
+		}
 		container.appendChild(this.content);
 	}
 	unload(): void {

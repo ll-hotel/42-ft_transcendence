@@ -67,6 +67,6 @@ export class ProfilePage implements AppPage {
 	}
 
 	async editClick() {
-		await gotoPage("editProfile");
+		await gotoPage("profile/edit");
 	}
 };

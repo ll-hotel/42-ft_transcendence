@@ -8,7 +8,6 @@ export class OtherProfilePage implements AppPage {
 	content: HTMLElement;
 	displayname: HTMLElement;
 	username: HTMLElement;
-	private actualDisplayname: string | null = null;
 
 	private constructor(content: HTMLElement) {
 		this.content = content;
@@ -27,9 +26,10 @@ export class OtherProfilePage implements AppPage {
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
+		const params = new URLSearchParams(location.search);
 
-		if (this.actualDisplayname)
-			this.loadUserInfo(this.actualDisplayname);
+		const newDisplayName = params.get("displayName");
+		this.loadUserInfo(newDisplayName);
 	}
 
 	unload(): void {
@@ -85,15 +85,5 @@ export class OtherProfilePage implements AppPage {
 		const friendButton = new FriendButton(displayName);
 		friendButton.container.id= "friend-buttons-cnt";
 		cntFriendButton?.appendChild(friendButton.getFriendButton());
-	}
-
-	setParams(params: any) {
-		if (!params || !params.displayName)
-			return;
-
-		this.actualDisplayname = params.displayName;
-
-		if(this.content.isConnected)
-			this.loadUserInfo(params.displayName);
 	}
 };

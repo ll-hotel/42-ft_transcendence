@@ -9,6 +9,7 @@ import gameQueue from "./game/queue";
 import gameTournament from "./game/tournament";
 import socketRoute from "./socketRoute";
 import { friendService } from "./user/friend";
+import { chatRoute } from "./routes/chat";
 import userModule from "./user/user";
 
 async function main() {
@@ -32,6 +33,7 @@ async function main() {
 	app.register(gameQueue);
 	app.register(gameMatch);
 	app.register(socketRoute);
+	app.register(chatRoute);
 
 		await app.listen({ port: 8080, host: "0.0.0.0" });
 	} catch (err) {

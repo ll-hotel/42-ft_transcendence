@@ -1,4 +1,5 @@
-import { gotoPage, strToPageName } from "./PageLoader.js";
+import { api, Status } from "./api.js";
+import { gotoPage, gotoUserPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
@@ -9,13 +10,32 @@ document.addEventListener("DOMContentLoaded", async function() {
 	}
 	initSearchBar();
 	const uri = window.location.pathname;
+	
+ 
+	// JAI ENLEVER LES HISTORIQUE ICI
+
 	const name = strToPageName(uri.substring(1)) || "login";
 	if (name == "login" || (await socket.connect()) == false) {
 		await gotoPage("login", location.search);
-	} else {
-		await gotoPage(name);
+	} else if (name == "profile/other") {
+		await gotoPage("profile/other", location.search);
 	}
-});
+	else
+		await gotoPage(name);
+
+
+	const headerButtons = document.querySelectorAll('header button');
+
+	headerButtons.forEach(btn => {
+		btn.addEventListener('click', async () => {
+			const page = strToPageName(btn.getAttribute('data-page')!);
+			if (!page)
+				return;
+			await gotoPage(page);
+			headerButtons.forEach(b => b.classList.remove('font-bold'));
+			btn.classList.add('font-bold');
+		});
+	});
 });
 
 function initSearchBar() {
