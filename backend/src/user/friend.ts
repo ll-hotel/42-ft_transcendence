@@ -183,7 +183,7 @@ class friend {
 
 	async getFriendStatus(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
-		const {displayName} = req.query as {displayName: string};
+		const {displayName} = req.body as {displayName: string};
 		let status = "not sent";
 
 		if (!displayName)
@@ -192,22 +192,10 @@ class friend {
 		if (!target)
 			return rep.code(STATUS.not_found).send({message: MESSAGE.user_notfound});
 
-		if(await tcheckFriends(usr.id, target.id))
-			return rep.code(STATUS.success).send({status : "accepted"});
-
-		const [friendExists] = await db.select().from(friends).where(or(and(eq(friends.senderId, usr.id), eq(friends.receiverId, target.id)), and(eq(friends.senderId, target.id), eq(friends.receiverId, usr.id))));
-
+		const [friendExists] =  await db.select().from(friends).where(and(eq(friends.senderId, usr.id), eq(friends.receiverId, target.id)));
+		
 		if (friendExists)
-		{
-			if (friendExists.status == "pending")
-			{
-				if (friendExists.senderId === usr.id)
-					status = "pending_out";
-				else
-					status = "pending_in";
-			}
-			else status = friendExists.status;
-			}
+			status = friendExists.status;
 
 		return rep.code(STATUS.success).send({status: status});
 	}

@@ -1,5 +1,5 @@
-import { api, Status } from "./api.js";
-import { gotoPage, gotoUserPage, strToPageName, PageName } from "./PageLoader.js";
+import { gotoPage, strToPageName } from "./PageLoader.js";
+import socket from "./socket.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -9,33 +9,12 @@ document.addEventListener("DOMContentLoaded", async function() {
 	}
 	initSearchBar();
 	const uri = window.location.pathname;
-
-	if (uri.startsWith("/user/")) {
-
-		const displayName = uri.split("/")[2];
-		window.history.pushState({ page: "otherProfile", params: { displayName } }, "", uri);
-		await gotoPage("otherProfile", { displayName });
-	}
-	else
-	{
-		const name = strToPageName(uri.substring(1)) || "login";
-		window.history.pushState({ page: name }, "", "/" + name);
+	const name = strToPageName(uri.substring(1)) || "login";
+	if (name == "login" || (await socket.connect()) == false) {
+		await gotoPage("login", location.search);
+	} else {
 		await gotoPage(name);
 	}
-
-
-
-	const headerButtons = document.querySelectorAll('header button');
-	headerButtons.forEach(btn => {
-	btn.addEventListener('click', async () => {
-		const page = btn.getAttribute('data-page') as PageName;
-		if (!page)
-			return;
-		await gotoPage(page);
-		headerButtons.forEach(b => b.classList.remove('font-bold'));
-		btn.classList.add('font-bold');
-	});
-
 });
 });
 

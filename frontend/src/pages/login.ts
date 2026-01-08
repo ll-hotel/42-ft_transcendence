@@ -1,5 +1,6 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
+import socket from "../socket.js";
 import AppPage from "./AppPage.js";
 
 export class Login implements AppPage {
@@ -24,6 +25,14 @@ export class Login implements AppPage {
 			}
 			location.assign(res.payload.redirect);
 		};
+		const googleButton: HTMLButtonElement = this.content.querySelector("button#button-google")!;
+		googleButton.onclick = async function() {
+			const res = await api.get("/api/authGoogle");
+			if (!res || !res.payload.redirect) {
+				return;
+			}
+			location.assign(res.payload.redirect);
+		};
 	}
 	static new(content: HTMLElement) {
 		if (!content.querySelector("form") ||
@@ -34,21 +43,14 @@ export class Login implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement) {
-		const searchKey = "?code=";
-		if (location.search.startsWith(searchKey)) {
-			const logging = document.createElement("p");
-			logging.className = "font-bold text-xl";
-			logging.innerText = "Logging in...";
-			container.appendChild(logging);
-
-			const searchArgs = location.search.substring(1).split("&");
-			const searchCode = searchArgs.find(s => s.startsWith("code="))!;
-			const code = searchCode.split("=")[1];
-			const res = await api.get("/api/auth42/callback?code=" + code);
-//			if (res && res.payload.accessToken) {
-//				localStorage.setItem("accessToken", res.payload.accessToken);
-//			}
-			logging.remove();
+		const params = new URLSearchParams(location.search);
+		const provider = params.get("provider");
+		const code = params.get("code");
+		if (code && provider) {
+			return loginWithProvider(container, provider, code);
+		}
+		if (await socket.connect()) {
+			return gotoPage("profile");
 		}
 //		if (localStorage.getItem("accessToken")) {
 			// Already connected. Redirecting to user profile page.
@@ -77,7 +79,7 @@ export class Login implements AppPage {
 			this.toggleTwoFA();
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
-			localStorage.setItem("accessToken", res.payload.accessToken);
+			socket.connect();
 			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {
@@ -108,4 +110,23 @@ export class Login implements AppPage {
 			this.twoFAHidden = true;
 		}
 	}
+}
+
+async function loginWithProvider(container: HTMLElement, provider: string, code: string) {
+	let path: string;
+	if (provider === "42")
+		path = "/api/auth42/callback?code=";
+	else
+		path = "/api/authGoogle/callback?code=";
+	const logging = document.createElement("p");
+	logging.className = "font-bold text-xl";
+	logging.innerText = "Logging in...";
+	container.appendChild(logging);
+	const res = await api.get(path + code);
+	logging.remove();
+	if (!res || !res.payload.loggedIn) {
+		return gotoPage("login");
+	}
+	await socket.connect();
+	return gotoPage("profile");
 }

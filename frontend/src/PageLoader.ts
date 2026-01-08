@@ -4,37 +4,32 @@ import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
 import { ProfilePage } from "./pages/profile.js"
-import { OtherProfilePage } from "./pages/otherProfile.js";
-import { ChatElement } from "./pages/chat.js";
-import { editProfile } from "./pages/editProfile.js";
+import Play from "./pages/play.js";
+import PlayLocal from "./pages/play_local.js";
+import PlayMatch from "./pages/play_match.js";
+import PlayTournament from "./pages/play_tournament.js";
 
-enum Pages {
-	home = "home.html",
-	register = "register.html",
-	login = "login.html",
-	profile = "profile.html",
-	editProfile = "editProfile.html",
-	otherProfile="otherProfile.html",
-	friend ="friend.html",
-};
-export type PageName = keyof typeof Pages;
+const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
+	{ name: "home", new: newHomePage },
+	{ name: "register", new: RegisterPage.new },
+	{ name: "login", new: Login.new },
+	{ name: "profile", new: ProfilePage.new },
+	{ name: "play", new: Play.new },
+	{ name: "play/local", new: PlayLocal.new },
+	{ name: "play/match", new: PlayMatch.new },
+	{ name: "play/tournament", new: PlayTournament.new },
+];
 
-export function strToPageName(str: string): PageName | null {
-	switch (str) {
-		case "home": return "home";
-		case "register": return "register";
-		case "login": return "login";
-		case "profile": return "profile";
-		case "otherProfile" : return "otherProfile";
-		case "friend": return "friend";
-		case "editProfile": return "editProfile";
+export function strToPageName(str: string): string | null {
+	for (const page of pages) {
+		if (page.name == str) return str;
 	}
 	return null;
 }
 
 class PageLoader {
-	list: Map<PageName, AppPage>;
-	loaded: PageName | null;
+	list: Map<string, AppPage>;
+	loaded: string | null;
 	content: HTMLElement;
 
 	constructor(loadPlace: HTMLElement) {
@@ -44,21 +39,13 @@ class PageLoader {
 	}
 
 	async downloadPages() {
-		const downloads = [
-			this.download("home"),
-			this.download("register"),
-			this.download("login"),
-			this.download("profile"),
-			this.download("otherProfile"),
-			this.download("friend"),
-			this.download("editProfile"),
-		];
+		const downloads = pages.map(p => this.download(p.name));
 		for (const download of downloads) {
 			await download;
 		}
 	}
 
-	load(name: PageName) {
+	load(name: string) {
 		if (!this.list.has(name)) return;
 		if (this.loaded) {
 			this.list.get(this.loaded)!.unload();
@@ -68,29 +55,22 @@ class PageLoader {
 		document.title = name;
 	}
 
-	async download(name: PageName) {
-		if (this.list.has(name)) return;
-		let newPage: (html: HTMLElement) => AppPage | null;
-		switch (name) {
-			case "home": newPage = newHomePage; break;
-			case "register": newPage = RegisterPage.new; break;
-			case "login": newPage = Login.new; break;
-			case "profile": newPage = ProfilePage.new; break;
-			case "otherProfile": newPage = OtherProfilePage.new; break;
-			case "friend": newPage = FriendPage.new; break;
-			case "editProfile": newPage = editProfile.new; break;
+	async download(name: string) {
+		const pageName = strToPageName(name);
+		if (pageName == null || this.list.has(pageName)) {
+			return;
 		}
-		const html = await downloadHtml(Pages[name]);
-		const page = newPage(html);
+		const html = await downloadHtmlBody(pageName);
+		const page = pages.find(p => p.name == pageName)!.new(html);
 		if (page === null) {
-			return alert("Could not load " + Pages[name]);
+			return alert("Could not load " + pageName);
 		}
 		this.list.set(name, page);
 	}
 };
 
-async function downloadHtml(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	const element = await fetch(`/${encodeURI(path)}`, {
+async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
+	return await fetch(`/${encodeURI(path + ".html")}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
@@ -110,31 +90,14 @@ export async function gotoUserPage( displayName : any)
 }
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
-export async function gotoPage(name: PageName, params?: any) {
-//	if (name != "login" && name != "register") {
-//		const token = localStorage.getItem("accessToken");
-//		if (!token) {
-//			name = "login";
-//		}
-//	}
-	if (loader.loaded && loader.loaded == name) {
-		const current = loader.list.get(name);
-		if (current && current.setParams)
-			current.setParams(params);
+export async function gotoPage(name: string, search: string = "") {
+	const pageName = strToPageName(name);
+	if (pageName == null || (loader.loaded && loader.loaded == pageName)) {
 		return;
 	}
-	if (name == "login")
-		history.pushState(null, "", "/" + name + location.search);
-	else if (name != "otherProfile")
-		history.pushState({ page: name}, "", "/" + name);
-	await loader.download(name);
-	loader.load(name);
-
-	const page = loader.list.get(name);
-	if (page && page.setParams)
-	{
-		page.setParams(params);
-	}
+	history.pushState(null, "", "/" + pageName + search);
+	await loader.downloadPages();
+	loader.load(pageName);
 }
 
 

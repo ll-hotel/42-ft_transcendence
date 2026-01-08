@@ -39,23 +39,14 @@ export class ProfilePage implements AppPage {
 	}
 
 	async loadUserInfo() {
-		let localUserInfo;     //= localStorage.getItem("userinfo");
-		if (!localUserInfo) {
-			const res = await api.get("/api/me");
-			if (!res || !res.payload) return;
-			if (res.status != Status.success)
-				return alert("Error: " + res.payload.message);
-			localUserInfo = JSON.stringify(res.payload);
-//			localStorage.setItem("userinfo", localUserInfo);
+		const res = await api.get("/api/me");
+		if (!res || res.status != Status.success) {
+			gotoPage("login");
+			return;
 		}
-		try {
-			const userinfo = JSON.parse(localUserInfo);
-			this.displayname.innerHTML = userinfo.displayName;
-		} catch {
-			// If JSON.parse throws then our local user info is corrupted.
-//			localStorage.removeItem("userinfo");
-			await this.logoutClick();
-		}
+		const userInfo = res.payload as { displayName: string };
+		this.displayname.innerHTML = userInfo.displayName;
+
 		const matchList = this.content.querySelector("#match-list");
 		if (matchList && matchList.children.length == 0) {
 			for (let i = 0; i < 5; i += 1) {
@@ -72,8 +63,6 @@ export class ProfilePage implements AppPage {
 		if (!reply || reply.status == Status.unauthorized) {
 			// Unauthorized = not logged in or wrong user.
 		}
-//		localStorage.removeItem("accessToken");
-//		localStorage.removeItem("userinfo");
 		await gotoPage("login");
 	}
 

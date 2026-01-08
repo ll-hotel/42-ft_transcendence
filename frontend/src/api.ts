@@ -16,24 +16,16 @@ export class api {
 	static async post(uri: string, body: object = {}) {
 		return this.request("POST", uri, body);
 	}
-	static async patch(uri: string, body: object = {}) {
-		return this.request("PATCH", uri, body);
-	}
-	static async delete(uri: string, body: object = {}) {
-		return this.request("DELETE", uri, body);
-	}
-	private static async request(method: "GET" | "POST" | "PATCH" | "DELETE", uri: string, body: string | object = "") {
+	private static async request(method: "GET" | "POST", uri: string, body: string | object = "") {
 		let headers;
 		let jsonBody: string | null = null;
 		if (method == "GET") {
 			headers = {
 				"Accept": "application/json",
-				"Authorization": "Bearer",
 			};
 		} else {
 			headers = {
 				"Accept": "application/json",
-				"Authorization": "Bearer",
 				"Content-Type": "application/json",
 			};
 			jsonBody = JSON.stringify(body);
@@ -42,6 +34,7 @@ export class api {
 			method,
 			headers,
 			body: jsonBody,
+			credentials: "include",
 		}
 		).then(async function(response) {
 			try {
@@ -56,10 +49,11 @@ export class api {
 			}
 		}).catch(function(reason) {
 			if (reason) {
-				console.log("[api]: Request rejected with :", reason);
+				console.log("[api]: Request rejected with:", reason);
 			} else {
 				console.log("[api]: Request rejected");
 			}
+			return null;
 		});
 	}
 }

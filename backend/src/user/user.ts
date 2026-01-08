@@ -2,8 +2,8 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { authGuard, } from "../security/authGuard";
 import { MESSAGE, STATUS } from "../shared";
 import { db } from "../db/database";
-import { users } from "../db/tables";
-import { eq } from "drizzle-orm";
+import { matches, users } from "../db/tables";
+import { eq, or, and, desc } from "drizzle-orm";
 import { comparePassword, hashPassword } from "../security/hash";
 import { generate2FASecret, generateQRCode } from "../security/2fa";
 
@@ -13,15 +13,12 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 class User {
 	static setup(app: FastifyInstance) {
 		app.get("/api/me", { preHandler: authGuard }, User.getMe);
-		app.get("/api/user", { preHandler: authGuard }, User.getUser);
-		app.get("/api/users/all", { preHandler: authGuard }, User.getallUsers);
+		app.get("/api/users", { preHandler: authGuard }, User.getUser);
+		app.get("/api/user/history", { preHandler: authGuard }, User.getHistory);
 
 		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
 		app.patch("/api/user/password", { preHandler: authGuard }, User.updatePassword);
 		app.patch("/api/user/2fa", { preHandler: authGuard }, User.update2fa);
-
-		//delete user?
-		// routes history , game infos etc
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
@@ -143,6 +140,15 @@ class User {
 			await db.update(users).set({ twofaKey: null, twofaEnabled: 0 }).where(eq(users.id, usr.id));
 			return rep.code(STATUS.success).send({ message: "2FA disabled" });
 		}
+	}
+
+	static async getHistory(req: FastifyRequest, rep:FastifyReply) {
+		const usr = req.user!;
+		const matchesList = await db.select().from(matches).where(and(
+			(or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id),
+			eq(matches.status, "ended"))))).limit(5).orderBy(desc(matches.endedAt));
+
+		return rep.code(STATUS.success).send(matchesList);
 	}
 }
 

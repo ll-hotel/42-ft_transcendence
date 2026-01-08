@@ -22,8 +22,9 @@ export class RegisterPage implements AppPage {
 		return new RegisterPage(content);
 	}
 
-	loadInto(container: HTMLElement): void {
-//		if (localStorage.getItem("accessToken")) {
+	async loadInto(container: HTMLElement): Promise<void> {
+		const me = await api.get("/api/me");
+		if (me && me.status === Status.success) {
 			// Already connected. Redirecting to user profile page.
 //			gotoPage("profile");
 //			return;

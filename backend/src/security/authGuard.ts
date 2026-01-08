@@ -26,28 +26,20 @@ declare module "fastify" {
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 
 export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
-	const cookie = req.cookies ? req.cookies.accessToken : undefined;
-	let token = cookie;
-	if (token == undefined) {
-		token = parseCookies(req).get("accessToken");
-	}
-	if (token == undefined) {
-		// Try to get the accessToken from Authorization header.
-		const keyValue = req.headers.authorization?.split(" ");
-		if (!keyValue || keyValue.length < 2) {
-			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
-		}
-		token = keyValue[1];
-	}
+	const token = req.cookies ? req.cookies.accessToken : parseCookies(req).get("accessToken");
+	if (!token)
+		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.missing_token });
 	let payload: { uuid: string };
 	try {
 		payload = jwt.verify(token, jwtSecret, {}) as { uuid: string };
 	} catch {
+		rep.clearCookie("accessToken", { path: "/api" });
 		rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_token });
 		return;
 	}
 	const dbUsers = await db.select().from(users).where(eq(users.uuid, payload.uuid));
 	if (dbUsers.length === 0) {
+		rep.clearCookie("accessToken", { path: "/api" });
 		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
 	}
 	const user = dbUsers[0];
