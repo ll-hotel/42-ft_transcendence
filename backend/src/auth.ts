@@ -9,6 +9,7 @@ import { hashPassword, comparePassword } from './security/hash';
 import { generate2FASecret, generateQRCode, verify2FAToken } from './security/2fa';
 import fs from "fs";
 import { authGuard } from './security/authGuard';
+import socket from './socket';
 
 const SCHEMA_REGISTER = {
 	body: {
@@ -23,12 +24,7 @@ const SCHEMA_REGISTER = {
 const SCHEMA_LOGIN = SCHEMA_REGISTER;
 
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
-
-
-
 const oauthKeys = JSON.parse(fs.readFileSync("/run/secrets/oauthKeys", "utf-8").trim());
-
-
 
 const redirect42 = `https://localhost:8443/login?provider=42`;
 const redirectGoogle = `https://localhost:8443/login?provider=google`;
@@ -115,6 +111,8 @@ class AuthService {
 				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA });
 			}
 		}
+		/* if (user.isOnline === 1)
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in }); */
 		const tokenCookie = req.cookies['accessToken'];
 		if (tokenCookie) {
 			try {
@@ -147,23 +145,25 @@ class AuthService {
 
 		await db.update(users).set({ isOnline: 0 }).where(eq(users.id, user.id));
 
+		socket.disconnect(user.id);
+
 		rep.clearCookie('accessToken', { path: "/api" });
 		rep.code(STATUS.success).send({ message: MESSAGE.logged_out, loggedIn: false});
 	}
 
-	async redirectAuth42(req: FastifyRequest, rep: FastifyReply) {
+	async redirectAuth42(_req: FastifyRequest, rep: FastifyReply) {
 		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${oauthKeys.s42.clientId}&redirect_uri=${encodeURI(redirect42)}&response_type=code`
 		rep.send({ redirect: redirectURL });
 	}
 
 	async callback(req: FastifyRequest, rep: FastifyReply) {
-		const {code} = req.query as {code?: string};
+		const { code } = req.query as { code?: string };
 		if (!code)
-			return rep.code(STATUS.bad_request).send({ message: "Missing code "});
+			return rep.code(STATUS.bad_request).send({ message: "Missing code " });
 
-		const tokenResponse = await fetch('https://api.intra.42.fr/oauth/token',{
+		const tokenResponse = await fetch('https://api.intra.42.fr/oauth/token', {
 			method: 'POST',
-			headers: {'Content-type': "application/json"},
+			headers: { 'Content-type': "application/json" },
 			body: JSON.stringify({
 				grant_type: "authorization_code",
 				client_id: oauthKeys.s42.clientId,
@@ -176,8 +176,8 @@ class AuthService {
 		const token = await tokenResponse.json();
 		if (!token.access_token)
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_token });
-		const response = await fetch('https://api.intra.42.fr/v2/me',{
-			headers: {Authorization: "Bearer " + token.access_token}
+		const response = await fetch('https://api.intra.42.fr/v2/me', {
+			headers: { Authorization: "Bearer " + token.access_token }
 		});
 		const userData = await response.json();
 
@@ -187,7 +187,7 @@ class AuthService {
 			user = userExists;
 		else {
 			const uuid = uiidv4();
-			user = {uuid};
+			user = { uuid };
 			const pass = await hashPassword("42AuthUser____" + uuid);
 			await db.insert(users).values({
 				uuid,
@@ -206,19 +206,19 @@ class AuthService {
 		});
 	}
 
-	async redirectGoogle(req:FastifyRequest, rep: FastifyReply) {
+	async redirectGoogle(req: FastifyRequest, rep: FastifyReply) {
 		const redirectURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthKeys.google.clientId}&redirect_uri=${encodeURIComponent(redirectGoogle)}&response_type=code&scope=openid email profile`;
 		rep.send({ redirect: redirectURL });
 	}
 
 	async googleCallback(req: FastifyRequest, rep: FastifyReply) {
-		const {code} = req.query as {code?: string};
+		const { code } = req.query as { code?: string };
 		if (!code)
-			return rep.code(STATUS.bad_request).send({ message: "Missing code "});
+			return rep.code(STATUS.bad_request).send({ message: "Missing code " });
 
 		const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
 			method: 'POST',
-			headers: {'Content-type': "application/json"},
+			headers: { 'Content-type': "application/json" },
 			body: JSON.stringify({
 				code,
 				client_id: oauthKeys.google.clientId,
@@ -227,12 +227,12 @@ class AuthService {
 				grant_type: "authorization_code",
 			})
 		});
-		
-		const token = await tokenResponse.json();	
+
+		const token = await tokenResponse.json();
 		if (!token.access_token)
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_token });
 		const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
-			headers: {Authorization: `Bearer ${token.access_token}`}
+			headers: { Authorization: `Bearer ${token.access_token}` }
 		});
 		const userData = await response.json();
 		const [userExists] = await db.select().from(users).where(eq(users.username, userData.email));
@@ -241,7 +241,7 @@ class AuthService {
 			user = userExists;
 		else {
 			const uuid = uiidv4();
-			user = {uuid};
+			user = { uuid };
 			const pass = await hashPassword("GoogleUser___" + uuid);
 			await db.insert(users).values({
 				uuid,

@@ -1,11 +1,15 @@
-import Fastify, { FastifyInstance } from "fastify"
-import authModule from "./auth";
-import { STATUS } from "./shared";
+import fastifyCookie from "@fastify/cookie";
+import fastifyWebsocket from "@fastify/websocket";
+import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
-import { createTables } from "./db/database"
-import userModule from "./user/user";
+import authModule from "./auth";
+import { createTables } from "./db/database";
+import gameMatch from "./game/match";
+import gameQueue from "./game/queue";
+import gameTournament from "./game/tournament";
+import socketRoute from "./socketRoute";
 import { friendService } from "./user/friend";
-import fastifyCookie from '@fastify/cookie';
+import userModule from "./user/user";
 
 async function main() {
 	await createTables();
@@ -15,18 +19,18 @@ async function main() {
 		https: {
 			key: fs.readFileSync("/run/secrets/privatekey.pem"),
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
-		}
+		},
 	});
 
 	app.register(fastifyCookie);
-	
+	app.register(fastifyWebsocket);
 	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
-
-	app.get("/ping", (_req, res) => {
-		res.code(STATUS.success).send("pong");
-	});
+	app.register(gameTournament);
+	app.register(gameQueue);
+	app.register(gameMatch);
+	app.register(socketRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
 		if (err) {

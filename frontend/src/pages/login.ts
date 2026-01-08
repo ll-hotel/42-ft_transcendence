@@ -1,5 +1,6 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
+import socket from "../socket.js";
 import AppPage from "./AppPage.js";
 
 export class Login implements AppPage {
@@ -45,28 +46,11 @@ export class Login implements AppPage {
 		const params = new URLSearchParams(location.search);
 		const provider = params.get("provider");
 		const code = params.get("code");
-		let path = "";
 		if (code && provider) {
-			if (provider === "42")
-				path = "/api/auth42/callback?code=";
-			else
-				path = "/api/authGoogle/callback?code=";
-			const logging = document.createElement("p");
-			logging.className = "font-bold text-xl";
-			logging.innerText = "Logging in...";
-			container.appendChild(logging);
-			const res = await api.get(path + code);
-			if (res && res.payload.loggedIn) {
-				gotoPage("profile");
-				logging.remove();
-				return;
-			}
-			logging.remove();
+			return loginWithProvider(container, provider, code);
 		}
-		const me = await api.get("/api/me");
-		if (me && me.status === Status.success) {
-			gotoPage("profile");
-			return;
+		if (await socket.connect()) {
+			return gotoPage("profile");
 		}
 		container.appendChild(this.content);
 	}
@@ -90,6 +74,7 @@ export class Login implements AppPage {
 			this.toggleTwoFA();
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
+			socket.connect();
 			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {
@@ -120,4 +105,23 @@ export class Login implements AppPage {
 			this.twoFAHidden = true;
 		}
 	}
+}
+
+async function loginWithProvider(container: HTMLElement, provider: string, code: string) {
+	let path: string;
+	if (provider === "42")
+		path = "/api/auth42/callback?code=";
+	else
+		path = "/api/authGoogle/callback?code=";
+	const logging = document.createElement("p");
+	logging.className = "font-bold text-xl";
+	logging.innerText = "Logging in...";
+	container.appendChild(logging);
+	const res = await api.get(path + code);
+	logging.remove();
+	if (!res || !res.payload.loggedIn) {
+		return gotoPage("login");
+	}
+	await socket.connect();
+	return gotoPage("profile");
 }
