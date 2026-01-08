@@ -80,6 +80,7 @@ function createTournamentsTable() {
 	CREATE TABLE IF NOT EXISTS Tournaments (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 createdBy TEXT NOT NULL,
+	 size INTEGER,
 	 name TEXT NOT NULL,
 	 status TEXT NOT NULL DEFAULT 'pending',
 	 winnerId INTEGER,
