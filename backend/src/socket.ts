@@ -1,14 +1,14 @@
 type ClientId = string;
 type Client = {
-	sockets: WebSocket[];
+	sockets: WebSocket[],
 };
 type BaseMessage = {
-	source: string;
-	type: string;
+	source: string,
+	type: string,
 };
 type MatchMessage = BaseMessage & {
-	match: number;
-	opponent: string;
+	match: number,
+	opponent: string,
 };
 type Message = BaseMessage | MatchMessage;
 
@@ -22,14 +22,14 @@ export function isAlive(client: ClientId) {
 	return false;
 }
 
-export function connect(clientId: ClientId, socket: WebSocket) {
-	console.log("[socket]", "connect", clientId);
-	socket.addEventListener("close", () => disconnect(clientId, socket));
-	if (!clients.has(clientId)) {
-		clients.set(clientId, { sockets: [] });
+export function connect(uuid: ClientId, socket: WebSocket) {
+	console.log("[socket]", "connect", uuid);
+	socket.addEventListener("close", () => disconnect(uuid, socket));
+	if (!clients.has(uuid)) {
+		clients.set(uuid, { sockets: [] });
 	}
-	clients.get(clientId)!.sockets.push(socket);
-	socket.addEventListener("message", (ev) => onMessage(clientId, ev));
+	clients.get(uuid)!.sockets.push(socket);
+	socket.addEventListener("message", (ev) => onMessage(uuid, ev));
 }
 
 function onMessage(clientId: ClientId, ev: MessageEvent) {

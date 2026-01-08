@@ -7,6 +7,6 @@ export default function(fastify: FastifyInstance) {
 }
 
 function route(ws: WebSocket, req: FastifyRequest) {
-	const clientId = req.user!.id;
-	socket.connect(clientId, ws);
+	const uuid = req.user!.uuid;
+	socket.connect(uuid, ws);
 }

@@ -7,10 +7,10 @@ import { createTables } from "./db/database";
 import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
 import gameTournament from "./game/tournament";
+import { STATUS } from "./shared";
 import socketRoute from "./socketRoute";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
-import { STATUS } from "./shared";
 
 async function main() {
 	await createTables();

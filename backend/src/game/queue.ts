@@ -6,8 +6,8 @@ import { authGuard } from "../security/authGuard";
 import { STATUS } from "../shared";
 import socket from "../socket";
 
-function notifyUser(userId: number, match: number, opponent: string) {
-	socket.send(userId, {
+function notifyUser(uuid: string, match: number, opponent: string) {
+	socket.send(uuid, {
 		source: "matchmaking",
 		type: "found",
 		match,
@@ -68,8 +68,8 @@ class Queue {
 
 		const [user1] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p1.userId));
 		const [user2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p2.userId));
-		notifyUser(user1.id, match.id, user2.username);
-		notifyUser(user2.id, match.id, user1.username);
+		notifyUser(user1.uuid, match.id, user2.username);
+		notifyUser(user2.uuid, match.id, user1.username);
 
 		return true;
 	}

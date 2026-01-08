@@ -145,7 +145,7 @@ class AuthService {
 
 		await db.update(users).set({ isOnline: 0 }).where(eq(users.id, user.id));
 
-		socket.disconnect(user.id);
+		socket.disconnect(user.uuid);
 
 		rep.clearCookie('accessToken', { path: "/api" });
 		rep.code(STATUS.success).send({ message: MESSAGE.logged_out, loggedIn: false});
