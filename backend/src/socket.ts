@@ -1,4 +1,4 @@
-type ClientId = number;
+type ClientId = string;
 type Client = {
 	sockets: WebSocket[];
 };
@@ -55,6 +55,12 @@ export function send(target: ClientId, message: Message) {
 	}
 }
 
+export function addListener(client: ClientId, event: string, hook: () => void) {
+	if (clients.has(client)) {
+		clients.get(client)!.sockets.forEach(s => s.addEventListener(event, hook));
+	}
+}
+
 /**
  * Closes all of client websockets, or the one specified.
  * Uses the error code 4001 to manifest a voluntary disconnection.
@@ -78,4 +84,5 @@ export default {
 	send,
 	connect,
 	disconnect,
+	addListener,
 };
