@@ -16,17 +16,22 @@ export class Tournament {
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
-		const { name } = req.body as { name: string };
-		
+		const { name, size } = req.body as { name: string, size: number };
+
+		if (!name || (size !== 4 && size !== 8))
+			return rep.code(STATUS.bad_request).send({ message: "Missing name or wrong tournament's size" });
+
 		const [alreadyInTournament] = await db.select().from(tournamentPlayers).where(and(
 			eq(tournamentPlayers.userId, usr.id),
 			eq(tournamentPlayers.eliminated, 0)
 		));
 		if (alreadyInTournament)
-				return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament "});
+				return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament" });
 
 		const [tournament] = await db.insert(tournaments).values({
 			name,
+			createdBy: usr.displayName,
+			size: size,
 			createdAt: Date.now(),
 		}).returning();
 
@@ -66,7 +71,7 @@ export class Tournament {
 			return rep.code(STATUS.bad_request).send({ message: "You are already in a match" });
 
 		const players = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.tournamentId, id));
-		if (players.length === 8)
+		if (players.length === tournament.size)
 			return rep.code(STATUS.bad_request).send({ message: "Tournament full" });
 
 		await db.insert(tournamentPlayers).values({
@@ -81,11 +86,14 @@ export class Tournament {
 	}
 
 	static async startTournament(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
 		const { id } = req.params as { id: number };
 
 		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, id));
 		if (!tournament)
-			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
+			return rep.code(STATUS.not_found).send({ message: "Tournament not found" })
+		if (usr.displayName !== tournament.createdBy)
+			return rep.code(STATUS.unauthorized).send({ message: "You are not the creator of this tournament " });
 		if (tournament.status !== "pending")
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
 

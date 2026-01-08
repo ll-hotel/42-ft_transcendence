@@ -8,7 +8,7 @@ const path = "/srv/app/db/database.sqlite";
 const sqlite = new Database(path);
 export const db = drizzle(sqlite);
 
-export async function createTables() {
+export function createTables() {
 	createUserTable();
 	createFriendsTable();
 	createMatchmakingQueueTable();
@@ -18,8 +18,8 @@ export async function createTables() {
 	createTournamentMatches();
 }
 
-async function createUserTable() {
-	await db.run(sql`
+function createUserTable() {
+	db.run(sql`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       uuid TEXT UNIQUE NOT NULL,
@@ -34,8 +34,8 @@ async function createUserTable() {
 	  `);
 	}
 
-async function createFriendsTable() {
-	await db.run(sql`
+function createFriendsTable() {
+	db.run(sql`
     CREATE TABLE IF NOT EXISTS friends (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       senderId INTEGER NOT NULL,
@@ -47,8 +47,8 @@ async function createFriendsTable() {
 	  `);
 }
 
-async function createMatchmakingQueueTable() {
-		await db.run(sql`
+function createMatchmakingQueueTable() {
+		db.run(sql`
 		CREATE TABLE IF NOT EXISTS matchmakingQueue (
 		 id INTEGER PRIMARY KEY AUTOINCREMENT,
 		 userId INTEGER NOT NULL,
@@ -57,8 +57,8 @@ async function createMatchmakingQueueTable() {
 		`);
 }
 
-async function createMatchesTable() {
-	await db.run(sql`
+function createMatchesTable() {
+	db.run(sql`
 	CREATE TABLE IF NOT EXISTS matches (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 player1Id INTEGER NOT NULL, 
@@ -75,22 +75,24 @@ async function createMatchesTable() {
 		`);
 }
 
-async function createTournamentsTable() {
-	await db.run(sql`
+function createTournamentsTable() {
+	db.run(sql`
 	CREATE TABLE IF NOT EXISTS Tournaments (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
+	 createdBy TEXT NOT NULL,
 	 name TEXT NOT NULL,
 	 status TEXT NOT NULL DEFAULT 'pending',
 	 winnerId INTEGER,
 	 createdAt INTEGER,
-	 FOREIGN KEY (winnerId) REFERENCES users(id)
+	 FOREIGN KEY (winnerId) REFERENCES users(id),
+	 FOREIGN KEY (createdBy) REFERENCES users(displayName)
 
 	 );
 		`);
 }
 
-async function createTournamentPlayers() {
-	await db.run(sql`
+function createTournamentPlayers() {
+	db.run(sql`
 	CREATE TABLE IF NOT EXISTS TournamentPlayers (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 tournamentId INTEGER NOT NULL,
@@ -103,8 +105,8 @@ async function createTournamentPlayers() {
 	 `);
 }
 
-async function createTournamentMatches() {
-	await db.run(sql`
+function createTournamentMatches() {
+	db.run(sql`
 	 CREATE TABLE IF NOT EXISTS TournamentMatches (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 tournamentId INTEGER NOT NULL,

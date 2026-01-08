@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer} from "drizzle-orm/sqlite-core";
+import user from "../user/user";
 
 
 
@@ -44,6 +45,8 @@ export const matches = sqliteTable("matches", {
 
 export const tournaments = sqliteTable("tournaments", {
 	id: integer("id").primaryKey({autoIncrement : true}),
+	createdBy: text("createdBy").notNull().references(() => users.displayName),
+	size: integer("size"),
 	name: text("name").notNull(),
 	status: text("status").notNull().default("pending"),
 	winnerId: integer("winnerId").references(() => users.id),
