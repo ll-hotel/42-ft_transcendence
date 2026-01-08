@@ -48,14 +48,14 @@ abstract class PhysicObject
 	}
 }
 
-function resolution_update(canvas: HTMLCanvasElement)
+function resolution_update(canvas: HTMLCanvasElement, panel_game: HTMLDivElement)
 {
+	debug_message("Resolution " + panel_game.clientHeight);
 
-	debug_message("Resolution " + rect.width.toString() + " " + rect.height.toString());
 	const dpr = window.devicePixelRatio || 1;
 
-	canvas.width = rect.width * dpr;     // ex: 800 * 2 = 1600
-	canvas.height = rect.height * dpr;   // ex: 600 * 2 = 1200
+	canvas.width = panel_game.clientWidth * dpr;     // ex: 800 * 2 = 1600
+	canvas.height = panel_game.clientHeight * dpr;   // ex: 600 * 2 = 1200
 	const context:CanvasRenderingContext2D = canvas.getContext("2d")!;
 	context.setTransform(dpr, 0, 0, dpr, 0, 0);
 	context.imageSmoothingEnabled = false;
@@ -157,10 +157,13 @@ export class Game
 
 	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement)
 	{
+
 		this.canvas = html.querySelector("#pong-canvas")!;
+		var panel_game = html.querySelector("#panel-game")!;
+		// resolution_update(this.canvas, panel_game);
 		debug_message(this.canvas.width + " " + this.canvas.height);
-		// resolution_update(this.canvas);
-		// this.canvas.addEventListener("resize", () => resolution_update(this.canvas));
+
+		this.canvas.addEventListener("resize", () => resolution_update(this.canvas));
 
 		this.score_viewer = html.querySelector("#panel-score")!;
 		this.start_button = html.querySelector("#panel-start")!;
@@ -446,13 +449,13 @@ export class PongBall extends PhysicObject
 
 	updatePos(): void
 	{
+		this.position.x += this.speed.getX();
+		this.position.y += this.speed.getY();
 		this.test_collide({x: 0, y: 0}, this.top_normal);
 		this.test_collide({x: 0, y: this.canvas.height}, this.bottom_normal);
 		this.test_collide_paddle({x: this.paddle_p2.pos.x - (this.paddle_p2.size.w / 2), y: this.paddle_p2.pos.y}, this.right_normal);
 		this.test_collide_paddle({x: this.paddle_p1.size.w, y:this.paddle_p1.pos.y}, this.left_normal);
 		this.test_collide_score({x: 0, y: 0}, this.left_normal);
 		this.test_collide_score({x: this.canvas.width, y: 0}, this.right_normal);
-		this.position.x += this.speed.getX();
-		this.position.y += this.speed.getY();
 	}
 }

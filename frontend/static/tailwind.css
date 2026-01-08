@@ -245,9 +245,6 @@
   .h-svh {
     height: 100svh;
   }
-  .max-h-full {
-    max-height: 100%;
-  }
   .min-h-screen {
     min-height: 100vh;
   }
@@ -259,9 +256,6 @@
   }
   .w-svw {
     width: 100svw;
-  }
-  .max-w-full {
-    max-width: 100%;
   }
   .max-w-sm {
     max-width: var(--container-sm);
@@ -357,9 +351,6 @@
   .bg-\[\#04809F\] {
     background-color: #04809F;
   }
-  .bg-black {
-    background-color: var(--color-black);
-  }
   .bg-blue-800 {
     background-color: var(--color-blue-800);
   }
@@ -389,9 +380,6 @@
   }
   .bg-white {
     background-color: var(--color-white);
-  }
-  .bg-none {
-    background-image: none;
   }
   .p-2 {
     padding: calc(var(--spacing) * 2);
