@@ -160,9 +160,11 @@ export class Tournament {
 
 		const winners = finished.map(x => x.winnerId); //null check
 		if (winners.length === 1) {
-			await db.update(tournamentPlayers).set({ eliminated: 1}).where(eq(tournamentPlayers.userId, winners[0]));
-			await db.update(tournaments).set({ status: "ended", winnerId: winners[0]}).where(eq(tournaments.id, tournamentId));
-
+			const winnerId = winners[0];
+			if (winnerId !== null) {
+				await db.update(tournamentPlayers).set({ eliminated: 1 }).where(eq(tournamentPlayers.userId, winnerId));
+				await db.update(tournaments).set({ status: "ended", winnerId: winnerId}).where(eq(tournaments.id, tournamentId));
+			}
 			// notify winner tournament won
 			// notify others tournament ended
 			return; 
@@ -185,7 +187,7 @@ export class Tournament {
 		}
 
 	}
-
+	
 	static async tournamentStatus(req: FastifyRequest, rep: FastifyReply) {
 		const { id } = req.params as { id: number };
 
