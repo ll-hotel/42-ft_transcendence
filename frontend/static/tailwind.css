@@ -251,6 +251,9 @@
   .w-20 {
     width: calc(var(--spacing) * 20);
   }
+  .w-100 {
+    width: calc(var(--spacing) * 100);
+  }
   .w-full {
     width: 100%;
   }

@@ -10,7 +10,7 @@ function draw_hit_box(context: CanvasRenderingContext2D, obj:PhysicObject): void
 {
 	context.lineWidth = 1;
 	context.strokeStyle = "#ff0000";
-	context.strokeRect(obj.pos.x - (obj.size.w / 2), obj.pos.y - (obj.size.h / 2),  obj.size.w, obj.size.h);
+	context.strokeRect(obj.pos.x - Math.floor(obj.size.w / 2), obj.pos.y - Math.floor(obj.size.h / 2),  obj.size.w, obj.size.h);
 	context.strokeStyle = "#000000";
 }
 
@@ -48,28 +48,34 @@ abstract class PhysicObject
 	}
 }
 
-function resolution_update(canvas: HTMLCanvasElement, panel_game: HTMLDivElement)
+function resolution_update(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D)
 {
-	debug_message("Resolution " + panel_game.clientHeight);
+		const rect = canvas.getBoundingClientRect();
+		const dpr = window.devicePixelRatio || 1;
 
-	const dpr = window.devicePixelRatio || 1;
+		// canvas.width = rect.width * dpr;
+		// canvas.height = rect.height * dpr;
+		// canvas.style.width = `${rect.width * dpr}px`;
+		// canvas.style.height = `${rect.height * dpr}px`;
 
-	canvas.width = panel_game.clientWidth * dpr;     // ex: 800 * 2 = 1600
-	canvas.height = panel_game.clientHeight * dpr;   // ex: 600 * 2 = 1200
-	const context:CanvasRenderingContext2D = canvas.getContext("2d")!;
-	context.setTransform(dpr, 0, 0, dpr, 0, 0);
-	context.imageSmoothingEnabled = false;
+		context.setTransform(dpr, 0, 0, dpr, 0, 0);
+		context.imageSmoothingEnabled = false;
 
-	const angle = Math.PI / 2;
-	if (canvas.width < canvas.height)
-	{
-		debug_message("context rotation");
-		context.setTransform(
-			Math.cos(angle), Math.sin(angle),
-			-Math.sin(angle), Math.cos(angle),
-			0, 0
-		);
-	}
+		// const angle = Math.PI / 2;
+		// if (window.innerWidth < window.innerHeight)
+		// {
+		// 	debug_message("context rotation");
+		// 	let tmp = canvas.width;
+		// 	canvas.width = canvas.height;
+		// 	canvas.height = tmp;
+		// 	context.setTransform(
+		// 		Math.cos(angle), Math.sin(angle),
+		// 		-Math.sin(angle), Math.cos(angle),
+		// 		0, 0
+		// 	);
+		//
+		// }
+
 }
 
 export class Vector2D
@@ -138,6 +144,7 @@ export class Vector2D
 export class Game
 {
 	private canvas: HTMLCanvasElement;
+	readonly context: CanvasRenderingContext2D;
 	private ball: PongBall;
 	public paddle_p1: PongPaddle;
 	public paddle_p2: PongPaddle;
@@ -157,14 +164,13 @@ export class Game
 
 	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement)
 	{
-
 		this.canvas = html.querySelector("#pong-canvas")!;
-		var panel_game = html.querySelector("#panel-game")!;
-		// resolution_update(this.canvas, panel_game);
-		debug_message(this.canvas.width + " " + this.canvas.height);
+		// this.canvas.width = this.canvas.width * 2;
+		// this.canvas.height = this.canvas.height * 2;
+		this.context = this.canvas.getContext("2d")!;
 
-		this.canvas.addEventListener("resize", () => resolution_update(this.canvas));
-
+		// html.addEventListener('load', () => { resolution_update(this.canvas, this.context); });
+		// this.canvas.addEventListener("resize", () => resolution_update(this.canvas));
 		this.score_viewer = html.querySelector("#panel-score")!;
 		this.start_button = html.querySelector("#panel-start")!;
 		this.score = {p1: 0, p2: 0};
@@ -181,15 +187,20 @@ export class Game
 
 	update_paddle_texture() : void
 	{
-		this.paddle_p1.updateTextPos(this.canvas.getContext("2d")!);
-		this.paddle_p2.updateTextPos(this.canvas.getContext("2d")!);
+		if (DEBUG == 1)
+		{
+			draw_hit_box(this.context, this.paddle_p1);
+			draw_hit_box(this.context, this.paddle_p2);
+		}
+		this.paddle_p1.updateTextPos(this.context);
+		this.paddle_p2.updateTextPos(this.context);
 	}
 
 	update_ball_texture() : void
 	{
 		if (DEBUG == 1)
-			draw_hit_box(this.canvas.getContext("2d")!, this.ball);
-		this.ball.updateTextPos(this.canvas.getContext("2d")!);
+			draw_hit_box(this.context, this.ball);
+		this.ball.updateTextPos(this.context);
 	}
 
 	update_texture_pos()
@@ -207,9 +218,9 @@ export class Game
 				this.input.set("ArrowDown", true);
 			if (event.key === "ArrowUp")
 				this.input.set("ArrowUp", true);
-			if (event.key === "s")
+			if (event.key === "s" || event.key === "S")
 				this.input.set("s", true);
-			if (event.key === "w")
+			if (event.key === "w" || event.key === "W")
 				this.input.set("w", true);
 		}
 		);
@@ -219,21 +230,18 @@ export class Game
 				this.input.set("ArrowDown", false);
 			if (event.key === "ArrowUp")
 				this.input.set("ArrowUp", false);
-			if (event.key === "s")
+			if (event.key === "s" || event.key === "S")
 				this.input.set("s", false);
-			if (event.key === "w")
+			if (event.key === "w" || event.key === "W")
 				this.input.set("w", false);
 		}
 		);
 
-		this.start_button.addEventListener("click", (event) => {
-			this.start_button.hidden = true;
-			this.start();
-		});
 	}
 
 	start() : void
 	{
+		resolution_update(this.canvas, this.context);
 		debug_message("start");
 		this.score.p1 = 0;
 		this.score.p2 = 0;
@@ -249,7 +257,10 @@ export class Game
 		{
 			this.canvas.hidden = false;
 			this.is_running = true;
-			this.loop(this.last_timestamp);
+			requestAnimationFrame((time) => {
+				this.last_timestamp = time;
+				this.loop(this.last_timestamp);
+			});
 		}
 
 	}
@@ -281,7 +292,7 @@ export class Game
 
 	update(t: number) : void
 	{
-		this.canvas.getContext("2d")!.reset();
+		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		if (this.input.get("w") && this.paddle_p1.pos.y >= ( 5 + (this.paddle_p1.size.h / 2)))
 			this.paddle_p1.pos.y = this.paddle_p1.pos.y - 5;
 		if (this.input.get("s")  && this.paddle_p1.pos.y <= this.canvas.height - (5 +  (this.paddle_p1.size.h / 2)))
@@ -389,7 +400,7 @@ export class PongBall extends PhysicObject
 	{
 		this.pos.x = this.canvas.width / 2;
 		this.pos.y = this.canvas.height / 2;
-		// this.updateTextPos(this.canvas.getContext("2d")!);
+		// this.updateTextPos(this.canvas.context);
 		// var time_engage:number = Date.now();
 		// while (Date.now() <= time_engage + 300)
 		// 	;
@@ -430,11 +441,12 @@ export class PongBall extends PhysicObject
 			normal.getX(), normal.getY()
 		);
 
-		if ((distance_from_line < this.size.w / 2)
-			&& ((paddle_position.y - this.position.y) > - (this.paddle_p1.size.h / 2))
+		if ((distance_from_line <= this.size.w / 2)
+			&& (paddle_position.y - this.position.y > -(this.paddle_p1.size.h / 2))
 			&& (paddle_position.y - this.position.y) < (this.paddle_p1.size.h / 2))
 		{
 			debug_message("Paddle Collision at ", this.pos);
+			debug_message("Paddle coord :", this.paddle_p1)
 			var new_normal = normal;
 
 			new_normal.unit_himself();
@@ -454,8 +466,9 @@ export class PongBall extends PhysicObject
 		this.test_collide({x: 0, y: 0}, this.top_normal);
 		this.test_collide({x: 0, y: this.canvas.height}, this.bottom_normal);
 		this.test_collide_paddle({x: this.paddle_p2.pos.x - (this.paddle_p2.size.w / 2), y: this.paddle_p2.pos.y}, this.right_normal);
-		this.test_collide_paddle({x: this.paddle_p1.size.w, y:this.paddle_p1.pos.y}, this.left_normal);
+		this.test_collide_paddle({x: this.paddle_p1.pos.x + (this.paddle_p1.size.w / 2), y:this.paddle_p1.pos.y}, this.left_normal);
 		this.test_collide_score({x: 0, y: 0}, this.left_normal);
 		this.test_collide_score({x: this.canvas.width, y: 0}, this.right_normal);
+
 	}
 }
