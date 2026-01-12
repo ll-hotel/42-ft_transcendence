@@ -1,33 +1,34 @@
 import AppPage from "./pages/AppPage.js";
-import { HomePage } from "./pages/HomePage.js";
-import { PongPage } from "./pages/PongPage.js";
+import newHomePage from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
 import { ProfilePage } from "./pages/profile.js"
+import Play from "./pages/play.js";
+import PlayLocal from "./pages/play_local.js";
+import PlayMatch from "./pages/play_match.js";
+import PlayTournament from "./pages/play_tournament.js";
 
-enum Pages {
-	home = "home.html",
-	pong = "pong.html",
-	register = "register.html",
-	login = "login.html",
-	profile = "profile.html",
-};
-export type PageName = keyof typeof Pages;
+const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
+	{ name: "home", new: newHomePage },
+	{ name: "register", new: RegisterPage.new },
+	{ name: "login", new: Login.new },
+	{ name: "profile", new: ProfilePage.new },
+	{ name: "play", new: Play.new },
+	{ name: "play/local", new: PlayLocal.new },
+	{ name: "play/match", new: PlayMatch.new },
+	{ name: "play/tournament", new: PlayTournament.new },
+];
 
-export function strToPageName(str: string): PageName | null {
-	switch (str) {
-		case "home": return "home";
-		case "pong": return "pong";
-		case "register": return "register";
-		case "login": return "login";
-		case "profile": return "profile";
+export function strToPageName(str: string): string | null {
+	for (const page of pages) {
+		if (page.name == str) return str;
 	}
 	return null;
 }
 
 class PageLoader {
-	list: Map<PageName, AppPage>;
-	loaded: PageName | null;
+	list: Map<string, AppPage>;
+	loaded: string | null;
 	content: HTMLElement;
 
 	constructor(loadPlace: HTMLElement) {
@@ -37,19 +38,13 @@ class PageLoader {
 	}
 
 	async downloadPages() {
-		const downloads = [
-			this.download("home"),
-			this.download("register"),
-			this.download("login"),
-			this.download("profile"),
-			this.download("pong"),
-		];
+		const downloads = pages.map(p => this.download(p.name));
 		for (const download of downloads) {
 			await download;
 		}
 	}
 
-	load(name: PageName) {
+	load(name: string) {
 		if (!this.list.has(name)) return;
 		if (this.loaded) {
 			this.list.get(this.loaded)!.unload();
@@ -59,27 +54,22 @@ class PageLoader {
 		document.title = name;
 	}
 
-	async download(name: PageName) {
-		if (this.list.has(name)) return;
-		let newPage: (html: HTMLElement) => Promise<AppPage | null>;
-		switch (name) {
-			case "home": newPage = HomePage.new; break;
-			case "pong": newPage = PongPage.new; break;
-			case "register": newPage = RegisterPage.new; break;
-			case "login": newPage = Login.new; break;
-			case "profile": newPage = ProfilePage.new; break;
+	async download(name: string) {
+		const pageName = strToPageName(name);
+		if (pageName == null || this.list.has(pageName)) {
+			return;
 		}
-		const html = await downloadHtmlBody(Pages[name]);
-		const page = await newPage(html);
+		const html = await downloadHtmlBody(pageName);
+		const page = pages.find(p => p.name == pageName)!.new(html);
 		if (page === null) {
-			return alert("Could not load " + Pages[name]);
+			return alert("Could not load " + pageName);
 		}
 		this.list.set(name, page);
 	}
 };
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	return await fetch(`/${encodeURI(path)}`, {
+	return await fetch(`/${encodeURI(path + ".html")}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
@@ -89,23 +79,14 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
-export async function gotoPage(name: PageName) {
-	if (name != "login" && name != "register") {
-		const token = localStorage.getItem("accessToken");
-		if (!token) {
-			name = "login";
-		}
-	}
-	if (loader.loaded && loader.loaded == name) {
+export async function gotoPage(name: string, search: string = "") {
+	const pageName = strToPageName(name);
+	if (pageName == null || (loader.loaded && loader.loaded == pageName)) {
 		return;
 	}
-	if (name == "login") {
-		history.pushState(null, "", "/" + name + location.search);
-	} else {
-		history.pushState(null, "", "/" + name);
-	}
+	history.pushState(null, "", "/" + pageName + search);
 	await loader.downloadPages();
-	loader.load(name);
+	loader.load(pageName);
 }
 
 (window as any).gotoPage = gotoPage;

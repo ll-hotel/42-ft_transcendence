@@ -17,18 +17,15 @@ export class api {
 		return this.request("POST", uri, body);
 	}
 	private static async request(method: "GET" | "POST", uri: string, body: string | object = "") {
-		const token = localStorage.getItem("accessToken") || "";
 		let headers;
 		let jsonBody: string | null = null;
 		if (method == "GET") {
 			headers = {
 				"Accept": "application/json",
-				"Authorization": "Bearer " + token,
 			};
 		} else {
 			headers = {
 				"Accept": "application/json",
-				"Authorization": "Bearer " + token,
 				"Content-Type": "application/json",
 			};
 			jsonBody = JSON.stringify(body);
@@ -37,6 +34,7 @@ export class api {
 			method,
 			headers,
 			body: jsonBody,
+			credentials: "include",
 		}
 		).then(async function(response) {
 			try {
@@ -55,6 +53,7 @@ export class api {
 			} else {
 				console.log("[api]: Request rejected");
 			}
+			return null;
 		});
 	}
 }

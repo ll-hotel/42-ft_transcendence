@@ -1,4 +1,5 @@
 import { gotoPage, strToPageName } from "./PageLoader.js";
+import socket from "./socket.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -8,5 +9,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 	}
 	const uri = window.location.pathname;
 	const name = strToPageName(uri.substring(1)) || "login";
-	await gotoPage(name);
+	if (name == "login" || (await socket.connect()) == false) {
+		await gotoPage("login", location.search);
+	} else {
+		await gotoPage(name);
+	}
 });
