@@ -15,7 +15,7 @@ export class ProfilePage implements AppPage {
 		const logout = content.querySelector("#logout") as HTMLElement;
 		logout.onclick = () => this.logoutClick();
 	}
-	static async new(content: HTMLElement) {
+	static async new(content: HTMLElement): Promise<AppPage | null> {
 		const logout = content.querySelector("#logout");
 		const displayname = content.querySelector("#profile-displayname");
 		// const username = content.querySelector("#profile-username")!;

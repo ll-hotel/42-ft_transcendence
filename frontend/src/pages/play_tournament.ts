@@ -5,7 +5,7 @@ export default class PlayTournament implements AppPage {
 	constructor(html: HTMLElement) {
 		this.html = html;
 	}
-	static new(html: HTMLElement): AppPage | null {
+	static async new(html: HTMLElement) {
 		return new PlayTournament(html);
 	}
     loadInto(container: HTMLElement): void {

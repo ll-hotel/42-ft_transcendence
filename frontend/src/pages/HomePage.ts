@@ -7,7 +7,7 @@ export class HomePage implements AppPage {
 		this.html = html;
 	}
 
-	static async new(html: HTMLElement) {
+	static async new(html: HTMLElement): Promise<AppPage> {
 		return new HomePage(html);
 	}
 

@@ -15,7 +15,7 @@ export class RegisterPage implements AppPage {
 			return false;
 		});
 	}
-	static async new(content: HTMLElement) {
+	static async new(content: HTMLElement): Promise<AppPage | null> {
 		if (!content.querySelector("form")) {
 			return null;
 		}

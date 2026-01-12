@@ -7,7 +7,7 @@ export default class PlayMatch implements AppPage {
     constructor(html: HTMLElement) {
         this.html = html;
     }
-    static new(html: HTMLElement): AppPage | null {
+    static async new(html: HTMLElement): Promise<AppPage> {
         return new PlayMatch(html);
     }
     async loadInto(container: HTMLElement): Promise<void> {
