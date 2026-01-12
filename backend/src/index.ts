@@ -1,5 +1,6 @@
 import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
+import fastifyMultipart from "@fastify/multipart";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import authModule from "./auth";
@@ -24,6 +25,7 @@ async function main() {
 
 	app.register(fastifyCookie);
 	app.register(fastifyWebsocket);
+	app.register(fastifyMultipart);
 	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));

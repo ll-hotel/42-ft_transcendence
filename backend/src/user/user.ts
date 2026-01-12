@@ -7,6 +7,11 @@ import { eq, or, and, desc } from "drizzle-orm";
 import { comparePassword, hashPassword } from "../security/hash";
 import { generate2FASecret, generateQRCode } from "../security/2fa";
 
+import fs from "fs";
+import util from "util";
+import { pipeline } from "stream";
+
+
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
@@ -19,6 +24,35 @@ class User {
 		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
 		app.patch("/api/user/password", { preHandler: authGuard }, User.updatePassword);
 		app.patch("/api/user/2fa", { preHandler: authGuard }, User.update2fa);
+
+
+		app.post("/api/user/updateAvatar", /* { preHandler: authGuard }, */ User.updateAvatar)
+	}
+
+	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {	
+		const pump = util.promisify(pipeline);
+		/* const usr = req.user!; */
+		const [usr] = await db.select().from(users).where(eq(users.id, 1));
+		if (!req.isMultipart)
+			return rep.send({message : " ERROR "});
+		
+		const data = await req.file();
+		if (!data)
+			return;
+		// dimensions / size check
+
+
+		await pump(data.file, fs.createWriteStream(`./uploads/${data.filename}`));
+
+		// rm old pp from upload
+		if (usr.avatar !== `DEFAULT_AVATAR`)
+			fs.unlink(usr.avatar, (err) => {});
+
+
+		const newAvatar = `./uploads/${data.filename}`;
+		await db.update(users).set({ avatar: newAvatar }).where(eq(users.id, usr.id));
+
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: data.filename});		
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
