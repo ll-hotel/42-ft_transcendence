@@ -3,32 +3,46 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 
 enum Level {
-	warning = "(WARN)",
-	error = "(ERROR)",
-	info = "(INFO)"
+	warn = "WARN",
+	error = "ERROR",
+	info = "INFO",
+	debug = "DEBUG",
 }
 
-export async function createDirectoryIfNotExists(path: string) {
+export async function createDir(path: string) : Promise<boolean> {
 	try {
 		await mkdir(path, { recursive: true });
-		console.log(`Directory created at ${path}`);
+		return true;
 	} catch (err) {
 		console.error('Error creating directory:', err);
+		return false;
 	}
 }
 
-const LOG_FILE = join(process.cwd(), 'logs/');
+const logfileDir = join(process.cwd(), 'logs/');
 
-export function print_log(file_path: string, level: Level ,msg: string): void {
+export async function log(level: Level , msg: string, file: string = "default.log") {
 	const time = new Date().toUTCString();
-	let complete_msg = "[" + time + "]: " + level + ": " + msg + "\n";
-	appendFile(LOG_FILE + file_path, complete_msg, (err) => {
-			if (err)
-				return console.log(err);
-		});
+	const logMsg = "[" + time + "]: (" + level + "): " + msg;
+	const logFile = logfileDir + file;
+	console.log(logMsg);
+	if (!await createDir(logfileDir))
+		return;
+	appendFile(logFile, logMsg + "\n", (err) => err ? console.log(err) : null);
 }
 
-export function error(file_path:string, msg: string)
-{
-	print_log(file_path, );
+export function debug(msg: string, file?: string): void {
+	log(Level.debug, msg, file);
+}
+
+export function info(msg: string, file?: string): void {
+	log(Level.info, msg, file);
+}
+
+export function warn(msg: string, file?: string): void {
+	log(Level.warn, msg, file);
+}
+
+export function error(msg: string, file?: string): void {
+	log(Level.error, msg, file);
 }

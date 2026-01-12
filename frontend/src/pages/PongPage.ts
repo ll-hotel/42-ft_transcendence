@@ -33,6 +33,7 @@ export class PongPage implements AppPage {
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
+		console.debug("[PongPage] loadInto");
 		this.showStart();
 	}
 

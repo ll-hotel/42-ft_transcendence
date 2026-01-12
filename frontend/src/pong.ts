@@ -61,20 +61,21 @@ function resolution_update(canvas: HTMLCanvasElement, context: CanvasRenderingCo
 		context.setTransform(dpr, 0, 0, dpr, 0, 0);
 		context.imageSmoothingEnabled = false;
 
-		// const angle = Math.PI / 2;
-		// if (window.innerWidth < window.innerHeight)
-		// {
-		// 	debug_message("context rotation");
-		// 	let tmp = canvas.width;
-		// 	canvas.width = canvas.height;
-		// 	canvas.height = tmp;
-		// 	context.setTransform(
-		// 		Math.cos(angle), Math.sin(angle),
-		// 		-Math.sin(angle), Math.cos(angle),
-		// 		0, 0
-		// 	);
-		//
-		// }
+		const angle = Math.PI / 2;
+		if (window.innerWidth < window.innerHeight)
+		{
+			debug_message("context rotation");
+			let tmp = canvas.width;
+			canvas.width = canvas.height;
+			canvas.height = tmp;
+			context.translate(canvas.height, 0)
+			context.setTransform(
+				Math.cos(angle), Math.sin(angle),
+				-Math.sin(angle), Math.cos(angle),
+				0, 0
+			);
+
+		}
 
 }
 

@@ -1,8 +1,10 @@
 type PongClientData = | { type: 'input'; up: boolean; down: boolean } | { type: 'ping' };
 
-function sendInputData(up: boolean, down: boolean) {
-	console.log(JSON.stringify({ type: 'input', up, down }));
-}
+/*
+TODO
+	1 Player Input: Event listener
+	2 Player Input: Event Listener
+*/
 
 window.addEventListener("keydown", (event) => {
 	if (event.key === "ArrowDown")
@@ -30,11 +32,17 @@ window.addEventListener("keyup", (event) => {
 
 class Client {
 	readonly uuid: string;
-	socket: WebSocket;
+	readonly ws: WebSocket;
 
-	constructor() {
+	constructor(ws: WebSocket) {
 		this.uuid = crypto.randomUUID();
-		this.socket = new WebSocket('localhost:8443/pong');
+		this.ws = ws;
 	}
-};
+
+	sendInputData(up: boolean, down: boolean) {
+		this.ws.send(JSON.stringify({ type: 'input', up, down }));
+	}
+
+	//TODO revieve Game Status
+}
 

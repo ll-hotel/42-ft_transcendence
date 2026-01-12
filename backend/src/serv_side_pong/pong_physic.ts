@@ -1,4 +1,4 @@
-import {createDirectoryIfNotExists, print_log} from './myLogger';
+import * as logger from './myLogger';
 
 type Position = {x: number, y: number};
 type Size = {w: number, h: number};
@@ -34,10 +34,7 @@ abstract class PhysicObject
 	}
 }
 
-function init_pong_log(game_id: string)
-{
-	createDirectoryIfNotExists();
-}
+
 
 export class Vector2D
 {
@@ -121,7 +118,7 @@ class PongTable
 	}
 }
 
-export class Game
+export class GameServer
 {
 	private table: PongTable;
 	private ball: PongBall;
@@ -177,7 +174,6 @@ export class Game
 		{
 			this.is_running = true;
 		}
-
 	}
 
 	pause() : void
@@ -190,7 +186,6 @@ export class Game
 
 	update()
 	{
-
 		if (this.input.get("w") && this.paddle_p1.pos.y >= ( 5 + (this.paddle_p1.size.h / 2)))
 			this.paddle_p1.pos.y = this.paddle_p1.pos.y - 5;
 		if (this.input.get("s")  && this.paddle_p1.pos.y <= this.table.height - (5 +  (this.paddle_p1.size.h / 2)))
@@ -201,7 +196,6 @@ export class Game
 			this.paddle_p2.pos.y = this.paddle_p2.pos.y + 5;
 
 		this.ball.updatePos();
-
 		if (this.score.p1 >= 7) {
 			this.is_running = false;
 		}
@@ -209,9 +203,8 @@ export class Game
 		{
 			this.is_running = false;
 		}
-		print_log("pong_logs/latest_pong.log", "oui");
+		logger.error("oui", "latest_pong.log");
 	}
-
 
 	reset_game() : void
 	{

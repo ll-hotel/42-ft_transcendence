@@ -1,6 +1,6 @@
 import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
-import Fastify, { FastifyInstance } from "fastify";
+import Fastify, {FastifyInstance, FastifyRequest} from "fastify";
 import fs from "fs";
 import authModule from "./auth";
 import { createTables } from "./db/database";
@@ -10,16 +10,21 @@ import gameTournament from "./game/tournament";
 import socketRoute from "./socketRoute";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
+import * as logger from "./serv_side_pong/myLogger";
+import pongModule from "./serv_side_pong/pong_api";
 
 async function main() {
 	await createTables();
 
 	const app: FastifyInstance = Fastify({
-		logger: true,
+		// logger: true,
 		https: {
 			key: fs.readFileSync("/run/secrets/privatekey.pem"),
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
 		}
+	});
+	app.addHook("onRequest", (request: FastifyRequest) => {
+		logger.info("incoming request: " + request.url);
 	});
 
 	app.register(fastifyCookie);
@@ -31,6 +36,7 @@ async function main() {
 	app.register(gameQueue);
 	app.register(gameMatch);
 	app.register(socketRoute);
+	app.register(pongModule);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
 		if (err) {
