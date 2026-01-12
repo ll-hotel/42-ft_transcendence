@@ -13,7 +13,7 @@ import { friendService } from "./user/friend";
 import userModule from "./user/user";
 
 async function main() {
-	await createTables();
+	createTables();
 
 	const app: FastifyInstance = Fastify({
 		logger: true,

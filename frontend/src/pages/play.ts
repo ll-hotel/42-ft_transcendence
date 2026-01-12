@@ -40,7 +40,7 @@ export default class Play implements AppPage {
 			const matchMsg = message as { match: number, opponent: string };
 			alert("Match found! Playing against " + matchMsg.opponent);
 			gotoPage("play/match", `?id=${matchMsg.match}`);
-		})
+		});
 		const join = await api.post("/api/matchmaking/join");
 		if (!join || join.status != Status.success) {
 			alert(join ? join.payload.message : "Can not join queue.");
@@ -49,9 +49,35 @@ export default class Play implements AppPage {
 			alert(join.payload.message);
 		}
 	}
-	playFriend() { }
-	joinTournament() { }
-	createTournament() { }
-
-	
-};
+	playFriend() {}
+	async joinTournament() {
+		const input = prompt("Enter tournament name");
+		if (!input) {
+			alert("Missing tournament name.");
+			return;
+		}
+		return gotoPage("play/tournament", "?name=" + input);
+	}
+	async createTournament() {
+		const input = prompt("Enter tournament name");
+		if (!input) {
+			alert("Missing tournament name.");
+			return;
+		}
+		const create = await api.post("/api/tournament/create", { name: "input", size: 4 });
+		if (!create) return;
+		if (create.status == Status.unauthorized) {
+			return await gotoPage("login");
+		}
+		const { message, tournamentName, tournamentId } = create.payload;
+		if (create.status == Status.success) {
+			return gotoPage("play/tournament", "?name=" + tournamentName);
+		}
+		if (!tournamentId) return alert(message);
+		const current = await api.get("/api/tournament/" + tournamentId);
+		if (!current) return ;
+		const { tournament } = current.payload;
+		console.log(tournament);
+		alert("You are already in a tournament: " + tournament.name);
+	}
+}

@@ -1,7 +1,7 @@
 import { and, desc, eq, or } from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
-import { matches, users } from "../db/tables";
+import { matches, tournamentPlayers, tournaments, users } from "../db/tables";
 import { generate2FASecret, generateQRCode } from "../security/2fa";
 import { authGuard } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
@@ -23,12 +23,19 @@ class User {
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
 		if (!req.user) {
-			return (rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized }));
+			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized });
 		}
+		const [player] = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.userId, req.user.id));
+		if (!player) {
+			return rep.code(STATUS.internal_server_error).send({ message: "Can not find tournament player" });
+		}
+		const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, player.tournamentId));
 		rep.code(STATUS.success).send({
 			id: req.user.id,
 			displayName: req.user.displayName,
 			avatar: req.user.avatar,
+			tournamentName: tournament.name,
+			tournamentId: tournament.id,
 		});
 	}
 

@@ -1,3 +1,4 @@
+import { api } from "./api.js";
 import { gotoPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
 
@@ -12,6 +13,11 @@ document.addEventListener("DOMContentLoaded", async function() {
 	if (name == "login" || (await socket.connect()) == false) {
 		await gotoPage("login", location.search);
 	} else {
-		await gotoPage(name);
+		const me = await api.get("/api/me");
+		if (me && me.payload.tournamentName) {
+			await gotoPage("play/tournament", "?name=" + me.payload.tournamentName);
+		} else {
+			await gotoPage(name);
+		}
 	}
 });
