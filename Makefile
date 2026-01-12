@@ -8,11 +8,14 @@ export COMPOSE_FILE COMPOSE_PROJECT_NAME
 all: up
 
 .PHONY: up
-up: secrets
+up: secrets dbDir
 	$(COMPOSE) up --build --detach
 
 .PHONY: secrets
 secrets: secrets/privatekey.pem secrets/certificate.pem
+
+dbDir:
+	@mkdir -p ./backend/db
 
 secrets/privatekey.pem secrets/certificate.pem:
 	@mkdir -p $(dir $@)
