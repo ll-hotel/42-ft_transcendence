@@ -56,7 +56,7 @@ export class FriendButton {
 		switch(this.status)
 		{
 			case "add": this.button.textContent = "Add"; break;
-			case "sent": this.button.textContent = "sent"; break;
+			case "sent": this.button.textContent = "Sent"; break;
 			case "accept": this.button.textContent = "Accept"; break;
 			case "friend":
 				this.button.textContent = "Friend";

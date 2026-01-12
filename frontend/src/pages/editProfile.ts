@@ -92,9 +92,8 @@ export class editProfile implements AppPage
 		const newPassword = formData.get("new-password")?.toString();
 		const confirm = formData.get("confirm-password")?.toString();
 
-	if (!currentPassword || !newPassword || newPassword !== confirm || newPassword.length <= 8) {
+	if (!currentPassword || !newPassword || newPassword !== confirm)
 		return alert("Passwords do not match");
-	}
 
 	const res = await api.patch("/api/user/password", {currentPassword, newPassword});
 

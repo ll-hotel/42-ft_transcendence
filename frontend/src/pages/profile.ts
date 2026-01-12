@@ -44,18 +44,57 @@ export class ProfilePage implements AppPage {
 			gotoPage("login");
 			return;
 		}
-		const userInfo = res.payload as { displayName: string };
+		const userInfo = res.payload as { displayName: string, id:number };
 		this.displayname.innerHTML = userInfo.displayName;
 
-		const matchList = this.content.querySelector("#match-list");
-		if (matchList && matchList.children.length == 0) {
-			for (let i = 0; i < 5; i += 1) {
-				matchList.append(MatchInfo.new("01/01/25", "0:0:0",
-					{ name: this.displayname.innerHTML, score: 0 },
-					{ name: "Tanguos", score: 12 }
+		const contMatchList = this.content.querySelector("#match-list");
+		
+		const resMatch = await api.get("/api/me/history");
+		if (!resMatch || resMatch.status != Status.success) {
+			alert("Can't load matchs info");
+			return;
+		}
+		const MatchList = resMatch.payload;
+		if (contMatchList && contMatchList.children.length == 0) {
+		// L'user est toujours le player1 (voir api)
+			for (let i = 0; i < MatchList.length ; i++) {
+				let matchInfo = MatchList[i];
+				let date = new Date(matchInfo.match.endedAt);
+				contMatchList.append(MatchInfo.new(
+					date.toLocaleDateString("fr-FR"),
+					date.toLocaleTimeString("fr-FR"),
+					{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
+					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
+					userInfo.displayName
 				).toHTML());
 			}
+			if (!MatchList.length)
+				contMatchList.append(MatchInfo.noMatchHtml());
 		}
+
+		const infoPlayedMatch = this.content.querySelector("#played-match");
+		const infoVictoryRate = this.content.querySelector("#victory-rate");
+		const infoPointsScored = this.content.querySelector("#points-scored");
+		const infoPointsTanked = this.content.querySelector("#points-tanked");
+		const infoTourPlayed = this.content.querySelector("#tournaments-played");
+		const infoTourPlacement = this.content.querySelector("#tournament-best");
+
+		if (!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed || !infoTourPlacement)
+			return alert("Missing info in Profile.html");
+
+		const resStat = await api.get("/api/me/stats");
+
+		if (!resStat || resStat.status != Status.success)
+			return alert("Can't load my stats");
+
+		const Stat = resStat.payload;
+
+		infoPlayedMatch.textContent = Stat.matchPlayed;
+		infoVictoryRate.textContent = Stat.victoryRate + "%";
+		infoPointsScored.textContent = Stat.pointScored;
+		infoPointsTanked.textContent = Stat.pointConceded;
+		infoTourPlayed.textContent = Stat.nbTournament + " / " + Stat.nbTournamentVictory;
+		infoTourPlacement.textContent = Stat.Placement;
 	}
 
 	async logoutClick() {

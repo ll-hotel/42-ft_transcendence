@@ -149,7 +149,6 @@
     --color-red-500: oklch(63.7% 0.237 25.331);
     --color-green-100: oklch(96.2% 0.044 156.743);
     --color-green-200: oklch(92.5% 0.084 155.995);
-    --color-green-400: oklch(79.2% 0.209 151.711);
     --color-green-500: oklch(72.3% 0.219 149.579);
     --color-green-600: oklch(62.7% 0.194 149.214);
     --color-sky-200: oklch(90.1% 0.058 230.902);
@@ -672,9 +671,6 @@
   }
   .bg-green-200 {
     background-color: var(--color-green-200);
-  }
-  .bg-green-400 {
-    background-color: var(--color-green-400);
   }
   .bg-neutral-100 {
     background-color: var(--color-neutral-100);

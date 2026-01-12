@@ -34,6 +34,7 @@ async function main() {
 	app.register(gameMatch);
 	app.register(socketRoute);
 	app.register(chatRoute);
+	
 
 		await app.listen({ port: 8080, host: "0.0.0.0" });
 	} catch (err) {

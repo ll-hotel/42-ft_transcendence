@@ -16,26 +16,25 @@ namespace Chat {
 
 	export class Connection {
 	ws: WebSocket;
-	incoming: Chat.Message[];
+	user : User;
+	chat : Instance;
 
-	constructor(ws: WebSocket, onMessage: () => void) {
+	constructor(ws: WebSocket, user : User, chat: Instance) {
 		this.ws = ws;
-		this.incoming = [];
+		this.user = user;
+		this.chat = chat;
 
 		ws.addEventListener("message", (event) => {
 			try {
 				const msg = JSON.parse(event.data.toString());
-				this.incoming.push(msg);
-				onMessage();
+				this.chat.handleMessage(this.user, msg);
 			} catch {
 			}
 		});
-	}
 
-	popMessages(): Chat.Message[] {
-		const msgs = this.incoming;
-		this.incoming = [];
-		return msgs;
+		ws.addEventListener("close", () => {
+			user.connections.delete(this);
+		})
 	}
 }
 
@@ -58,15 +57,8 @@ namespace Chat {
 		}
 
 		connect(ws: WebSocket, chat: Instance) {
-			const conn = new Connection(ws, ()=> {
-				this.flushIncoming(chat);
-			});
+			const conn = new Connection(ws, this, chat);
 			this.connections.add(conn);
-
-			ws.addEventListener("close", () => 
-			{
-				this.connections.delete(conn);
-			})
 		}
 
 		disconnect() {
@@ -105,7 +97,7 @@ namespace Chat {
 			this.buffer = [];
 		}
 
-		flushIncoming(chat: Instance) {
+/*		flushIncoming(chat: Instance) {
 			for (const conn of this.connections) {
 				const messages = conn.popMessages();
 				for (const msg of messages) {
@@ -133,10 +125,10 @@ namespace Chat {
 							room.send(msg);
 						}
 						catch {};
-					}*/
+					}
 				}
 			}
-		}
+		} */
 
 	}
 
@@ -203,12 +195,6 @@ namespace Chat {
 
 		}
 
-		flush() {
-			for (const user of this.users.values()) {
-				user.flushIncoming(this);
-			}
-		}
-
 		getOrCreateUser(userId: number, username: string): User {
 			const key = "@" + username;
 			let user = this.users.get(key);
@@ -256,7 +242,6 @@ namespace Chat {
 				if (room) room.connect(user);
 			}
 
-
 			user.flushBuffer();
 
 			ws.addEventListener("close", () => {
@@ -270,6 +255,33 @@ namespace Chat {
 					user.rooms.clear();
 				}
 			});
+		}
+
+		handleMessage(sender: User, message : any)
+		{
+			if (!message || typeof message !== "object")
+				return;
+
+			const {target, content} = message;
+
+			if (!target || typeof content !== "string")
+				return;
+
+			const room = this.rooms.get(target);
+
+			if (!room)
+				return;
+
+			if (!room.users.has(sender))
+				return;
+
+			const finalMess: Message = {
+				source: sender.id,
+				target: room.id,
+				content,
+			}
+
+			room.send(finalMess);
 		}
 	}
 }

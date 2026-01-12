@@ -120,27 +120,31 @@ const loader = new PageLoader(document.body.querySelector("#content")!);
 		page.setParams(params);
 	}
 */
+async function loadPage()
+{
+		const path = location.pathname.substring(1);
+		const pageName = strToPageName(path) || "login";
+
+		await loader.downloadPages();
+		loader.load(pageName);
+
+		const page = loader.list.get(pageName);
+		if (page && page.setParams)
+			page.setParams(location.search);
+}
+
 export async function gotoPage(name: string, search: string = "") {
 	const pageName = strToPageName(name);
-	if (pageName == null || (loader.loaded && loader.loaded == pageName && pageName != "profile/other")) {
+	if (pageName == null || (loader.loaded && loader.loaded === pageName && location.search === search)) {
 		return;
 	}
 	history.pushState(null, "", "/" + pageName + search);
-	await loader.downloadPages();
-	loader.load(pageName);
+	await loadPage();
 }
 
 
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {
-	const path = location.pathname.substring(1);
-	//if (path.startsWith("user/"))
-	//	{
-	//		const displayName = path.split("/")[1];
-	//		gotoPage("profile/other", displayName);
-	//		return;
-	//	}
-		const page = strToPageName(path) || "login";
-		gotoPage(page, location.search);
-	}
+		loadPage();
+}
