@@ -14,17 +14,29 @@ export class Tournament {
 	}
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
-		const user = req.user!;
-		const { name } = req.body as { name: string };
+		const usr = req.user!;
+		const { name, size } = req.body as { name: string, size: number };
 
+		if (!name || (size !== 4 && size !== 8)) {
+			return rep.code(STATUS.bad_request).send({ message: "Missing name or wrong tournament's size" });
+		}
+		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(drizzle.and(
+			drizzle.eq(tables.tournamentPlayers.userId, usr.id),
+			drizzle.eq(tables.tournamentPlayers.eliminated, 0),
+		));
+		if (alreadyInTournament) {
+			return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament" });
+		}
 		const [tournament] = await db.insert(tables.tournaments).values({
 			name,
+			createdBy: usr.uuid,
+			size: size,
 			createdAt: Date.now(),
 		}).returning();
 		await db.insert(tables.tournamentPlayers).values({
 			tournamentId: tournament.id,
-			userId: user.id,
-			displayName: user.displayName,
+			userId: usr.id,
+			userUuid: usr.uuid,
 		});
 		return rep.code(STATUS.created).send({
 			message: "Tournament created",
@@ -34,23 +46,22 @@ export class Tournament {
 
 	static async joinTournament(req: FastifyRequest, rep: FastifyReply) {
 		const user = req.user!;
-		const { id } = req.params as { id: number };
-
-		const [tournament] = await db.select().from(tables.tournaments).where(drizzle.eq(tables.tournaments.id, id));
+		const tournamentId = (req.params as { id: number }).id;
+		const [tournament] = await db.select().from(tables.tournaments).where(
+			drizzle.eq(tables.tournaments.id, tournamentId),
+		);
 		if (!tournament) {
 			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
 		}
 		if (tournament.status !== "pending") {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
 		}
-
 		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(
 			drizzle.eq(tables.tournamentPlayers.userId, user.id),
 		);
 		if (alreadyInTournament) {
 			return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament " });
 		}
-
 		const [alreadyInMatch] = await db.select().from(tables.matches).where(drizzle.and(
 			drizzle.or(drizzle.eq(tables.matches.player1Id, user.id), drizzle.eq(tables.matches.player2Id, user.id)),
 			drizzle.or(drizzle.eq(tables.matches.status, "pending"), drizzle.eq(tables.matches.status, "ongoing")),
@@ -58,36 +69,39 @@ export class Tournament {
 		if (alreadyInMatch) {
 			return rep.code(STATUS.bad_request).send({ message: "You are already in a match" });
 		}
-
 		const players = await db.select().from(tables.tournamentPlayers).where(
-			drizzle.eq(tables.tournamentPlayers.tournamentId, id),
+			drizzle.eq(tables.tournamentPlayers.tournamentId, tournamentId),
 		);
-		if (players.length >= 4) {
+		if (players.length === 8) {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament full" });
 		}
-
 		await db.insert(tables.tournamentPlayers).values({
-			tournamentId: id,
+			tournamentId,
 			userId: user.id,
-			displayName: user.displayName,
+			userUuid: user.uuid,
 		});
-
 		return rep.code(STATUS.success).send({ message: "Joined tournament" });
 	}
 
 	static async startTournament(req: FastifyRequest, rep: FastifyReply) {
-		const { id } = req.params as { id: number };
+		const user = req.user!;
+		const tournamentId = (req.params as { id: number }).id;
 
-		const [tournament] = await db.select().from(tables.tournaments).where(drizzle.eq(tables.tournaments.id, id));
+		const [tournament] = await db.select().from(tables.tournaments).where(
+			drizzle.eq(tables.tournaments.id, tournamentId),
+		);
 		if (!tournament) {
 			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
+		}
+		if (user.uuid !== tournament.createdBy) {
+			return rep.code(STATUS.unauthorized).send({ message: "You are not the creator of this tournament " });
 		}
 		if (tournament.status !== "pending") {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
 		}
 
 		const players = await db.select().from(tables.tournamentPlayers).where(
-			drizzle.eq(tables.tournamentPlayers.tournamentId, id),
+			drizzle.eq(tables.tournamentPlayers.tournamentId, tournamentId),
 		);
 		if (players.length !== 4) {
 			return rep.code(STATUS.bad_request).send({ message: "Not enough players" });
@@ -105,11 +119,13 @@ export class Tournament {
 		}).returning();
 
 		await db.insert(tables.tournamentMatches).values([
-			{ tournamentId: id, matchId: m1.id, round: 1 },
-			{ tournamentId: id, matchId: m2.id, round: 1 },
+			{ tournamentId, matchId: m1.id, round: 1 },
+			{ tournamentId, matchId: m2.id, round: 1 },
 		]);
 
-		await db.update(tables.tournaments).set({ status: "ongoing" }).where(drizzle.eq(tables.tournaments.id, id));
+		await db.update(tables.tournaments).set({ status: "ongoing" }).where(
+			drizzle.eq(tables.tournaments.id, tournamentId),
+		);
 
 		// notifyUser TOURNAMENT_STARTED
 
@@ -189,7 +205,7 @@ export class Tournament {
 		);
 		const players = playersLink.map(x => ({
 			userId: x.userId,
-			displayName: x.displayName,
+			userUuid: x.userUuid,
 			eliminated: x.eliminated,
 		}));
 		const matchLinks = await db.select().from(tables.tournamentMatches).where(
@@ -216,8 +232,8 @@ export class Tournament {
 			}
 			rounds[matchLinks[i].round].push({
 				matchId: match.id,
-				player1: p1 ? p1.displayName : null,
-				player2: p2 ? p2.displayName : null,
+				player1Uuid: p1 ? p1.userUuid : null,
+				player2Uuid: p2 ? p2.userUuid : null,
 				status: match.status,
 				winnerId: match.winnerId,
 				scoreP1: match.scoreP1,
