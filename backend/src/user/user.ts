@@ -1,7 +1,7 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
-import { matches, tournamentMatches, tournamentPlayers, tournaments, users } from "../db/tables";
+import { matches, tournamentMatches, tournaments, users } from "../db/tables";
 import { generate2FASecret, generateQRCode } from "../security/2fa";
 import { authGuard } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
@@ -50,8 +50,7 @@ class User {
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
-		})
-			.from(users).where(eq(users.displayName, displayName));
+		}).from(users).where(orm.eq(users.displayName, displayName));
 
 		if (usr.length === 0) {
 			return rep.code(STATUS.not_found).send({ message: MESSAGE.user_notfound });
@@ -60,24 +59,21 @@ class User {
 		return rep.code(STATUS.success).send({ user: usr[0] });
 	}
 
-	static async getallUsers(req: FastifyRequest, rep: FastifyReply) {
-
+	static async getallUsers(_req: FastifyRequest, rep: FastifyReply) {
 		const allUsers = await db.select({
 			uuid: users.uuid,
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
-
 		})
 			.from(users);
 
-		if (allUsers.length === 0)
+		if (allUsers.length === 0) {
 			return rep.code(STATUS.not_found).send({ message: MESSAGE.not_found });
+		}
 
 		return rep.code(STATUS.success).send({ users: allUsers });
 	}
-
-
 
 	static async updateProfile(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user;
@@ -92,7 +88,7 @@ class User {
 			if (REGEX_USERNAME.test(displayName) === false) {
 				return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName }));
 			}
-			const exists = await db.select().from(users).where(eq(users.displayName, displayName));
+			const exists = await db.select().from(users).where(orm.eq(users.displayName, displayName));
 			if (exists.length != 0) {
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.displayName_taken });
 			}
@@ -102,7 +98,7 @@ class User {
 			data.avatar = avatar;
 		}
 
-		await db.update(users).set(data).where(eq(users.id, usr!.id));
+		await db.update(users).set(data).where(orm.eq(users.id, usr!.id));
 
 		return rep.code(STATUS.success).send({ message: "Profile updated" });
 	}
@@ -118,7 +114,7 @@ class User {
 			return rep.code(STATUS.bad_request).send({ message: "Invalid new password" });
 		}
 
-		const [usr] = await db.select().from(users).where(eq(users.id, usrId));
+		const [usr] = await db.select().from(users).where(orm.eq(users.id, usrId));
 
 		if (await comparePassword(currentPassword, usr.password) === false) {
 			return rep.code(STATUS.bad_request).send({ message: "Current password is incorrect" });
@@ -129,7 +125,7 @@ class User {
 		}
 
 		const hashed = await hashPassword(newPassword);
-		await db.update(users).set({ password: hashed }).where(eq(users.id, usrId));
+		await db.update(users).set({ password: hashed }).where(orm.eq(users.id, usrId));
 
 		rep.code(STATUS.success).send({ message: "Password updated" });
 	}
@@ -149,16 +145,18 @@ class User {
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.fail_gen2FAurl });
 			}
 			const qrCode = await generateQRCode(secret.otpauth_url);
-			await db.update(users).set({ twofaKey: secret.base32, twofaEnabled: 1 }).where(eq(users.id, usr.id));
+			await db.update(users).set({ twofaKey: secret.base32, twofaEnabled: 1 }).where(
+				orm.eq(users.id, usr.id),
+			);
 
 			return rep.code(STATUS.success).send({ message: "2FA enabled", qrCode });
 		} else {
-			await db.update(users).set({ twofaKey: null, twofaEnabled: 0 }).where(eq(users.id, usr.id));
+			await db.update(users).set({ twofaKey: null, twofaEnabled: 0 }).where(orm.eq(users.id, usr.id));
 			return rep.code(STATUS.success).send({ message: "2FA disabled" });
 		}
 	}
 
-	//L'user actuel est toujours le Player1
+	// L'user actuel est toujours le Player1
 	static async getMyHistory(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 		const matchesList = await db.select({
@@ -166,17 +164,17 @@ class User {
 			opponent: {
 				id: users.id,
 				displayName: users.displayName,
-			}
+			},
 		}).from(matches).innerJoin(
 			users,
-			or(
-				and(eq(matches.player1Id, usr.id), eq(users.id, matches.player2Id)),
-				and(eq(matches.player2Id, usr.id), eq(users.id, matches.player1Id))
-			)
-		).where(and(
-			or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
-			eq(matches.status, "ended")))
-			.limit(5).orderBy(desc(matches.endedAt));
+			orm.or(
+				orm.and(orm.eq(matches.player1Id, usr.id), orm.eq(users.id, matches.player2Id)),
+				orm.and(orm.eq(matches.player2Id, usr.id), orm.eq(users.id, matches.player1Id)),
+			),
+		).where(orm.and(
+			orm.or(orm.eq(matches.player2Id, usr.id), orm.eq(matches.player1Id, usr.id)),
+			orm.eq(matches.status, "ended"),
+		)).limit(5).orderBy(orm.desc(matches.endedAt));
 
 		matchesList.forEach(match => {
 			if (match.match.player1Id !== usr.id) {
@@ -191,29 +189,32 @@ class User {
 	static async getUserHistory(req: FastifyRequest, rep: FastifyReply) {
 		const { displayName } = req.query as { displayName?: string };
 
-		if (!displayName)
+		if (!displayName) {
 			return rep.code(STATUS.bad_request).send({ message: "Missing displayName" });
+		}
 
-		const [usr] = await db.select({ id: users.id }).from(users).where(eq(users.displayName, displayName));
-		if (!usr)
+		const [usr] = await db.select({ id: users.id }).from(users).where(orm.eq(users.displayName, displayName));
+		if (!usr) {
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
+		}
 
 		const matchesList = await db.select({
 			match: matches,
 			opponent: {
 				id: users.id,
 				displayName: users.displayName,
-			}
+			},
 		}).from(matches).innerJoin(
 			users,
-			or(
-				and(eq(matches.player1Id, usr.id), eq(users.id, matches.player2Id)),
-				and(eq(matches.player2Id, usr.id), eq(users.id, matches.player1Id))
-			)
-		).where(and(
-			or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
-			eq(matches.status, "ended")))
-			.limit(5).orderBy(desc(matches.endedAt));
+			orm.or(
+				orm.and(orm.eq(matches.player1Id, usr.id), orm.eq(users.id, matches.player2Id)),
+				orm.and(orm.eq(matches.player2Id, usr.id), orm.eq(users.id, matches.player1Id)),
+			),
+		).where(orm.and(
+			orm.or(orm.eq(matches.player2Id, usr.id), orm.eq(matches.player1Id, usr.id)),
+			orm.eq(matches.status, "ended"),
+		))
+			.limit(5).orderBy(orm.desc(matches.endedAt));
 
 		matchesList.forEach(match => {
 			if (match.match.player1Id !== usr.id) {
@@ -235,28 +236,26 @@ class User {
 				winnerId: tournaments.winnerId,
 				round: tournamentMatches.round,
 			},
-			opponentId: users.id
+			opponentId: users.id,
 		}).from(matches).innerJoin(
 			users,
-			or(
-				and(eq(matches.player1Id, usr.id), eq(users.id, matches.player2Id)),
-				and(eq(matches.player2Id, usr.id), eq(users.id, matches.player1Id))
-			)
-		).leftJoin(tournamentMatches,
-			eq(matches.id, tournamentMatches.matchId)
-		).leftJoin(tournaments,
-			eq(tournamentMatches.tournamentId, tournaments.id)
-		)
-			.where(and(
-				or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
-				eq(matches.status, "ended")))
-			.orderBy(desc(matches.endedAt));
+			orm.or(
+				orm.and(orm.eq(matches.player1Id, usr.id), orm.eq(users.id, matches.player2Id)),
+				orm.and(orm.eq(matches.player2Id, usr.id), orm.eq(users.id, matches.player1Id)),
+			),
+		).leftJoin(tournamentMatches, orm.eq(matches.id, tournamentMatches.matchId)).leftJoin(
+			tournaments,
+			orm.eq(tournamentMatches.tournamentId, tournaments.id),
+		).where(orm.and(
+			orm.or(orm.eq(matches.player2Id, usr.id), orm.eq(matches.player1Id, usr.id)),
+			orm.eq(matches.status, "ended"),
+		)).orderBy(orm.desc(matches.endedAt));
 
 		let nbMatchVictory: number = 0;
 		let nbTournament: number = 0;
 		let nbTournamentVictory: number = 0;
 		let pointScored: number = 0;
-		let pointConceded: number = 0
+		let pointConceded: number = 0;
 		let bestRank: number = 0;
 		let participatedTournament: Map<number, { winnerId: number, round: number, size: number }> = new Map();
 
@@ -265,29 +264,31 @@ class User {
 				[match.match.player1Id, match.match.player2Id] = [match.match.player2Id, match.match.player1Id];
 				[match.match.scoreP1, match.match.scoreP2] = [match.match.scoreP2, match.match.scoreP1];
 			}
-			if (match.match.winnerId === usr.id)
+			if (match.match.winnerId === usr.id) {
 				nbMatchVictory++;
+			}
 			pointScored += match.match.scoreP1;
 			pointConceded += match.match.scoreP2;
 			if (match.tournament.id) {
-				const keyT = participatedTournament.get(match.tournament.id) ??
-				{
-					winnerId: match.tournament.winnerId!,
-					round: match.tournament.round!,
-					size: match.tournament.size!,
-				};
+				const keyT = participatedTournament.get(match.tournament.id)
+					?? {
+						winnerId: match.tournament.winnerId!,
+						round: match.tournament.round!,
+						size: match.tournament.size!,
+					};
 
 				if (match.tournament.round && keyT.round && keyT.round <= match.tournament.round) {
 					keyT.round = match.tournament.round;
 				}
-				if (!participatedTournament.has(match.tournament.id))
+				if (!participatedTournament.has(match.tournament.id)) {
 					participatedTournament.set(match.tournament.id, {
 						winnerId: match.tournament.winnerId!,
 						round: match.tournament.round!,
-						size: match.tournament.size!
-					})
-				else
+						size: match.tournament.size!,
+					});
+				} else {
 					participatedTournament.set(match.tournament.id, keyT);
+				}
 			}
 		});
 
@@ -296,39 +297,42 @@ class User {
 				[0, "nothing"],
 				[1, "quarter-final"],
 				[2, "semi-final"],
-				[3, "final"]
-			]
-		)
+				[3, "final"],
+			],
+		);
 
 		for (const key of participatedTournament.keys()) {
 			let t = participatedTournament.get(key)!;
-			if (t.winnerId && t.winnerId === usr.id)
+			if (t.winnerId && t.winnerId === usr.id) {
 				nbTournamentVictory++;
+			}
 
 			let tempRank = 0;
 			switch (t.round) {
 				case (1):
-					if (t.size == 4)
+					if (t.size == 4) {
 						tempRank = 2;
-					else if (t.size == 8)
+					} else if (t.size == 8) {
 						tempRank = 1;
+					}
 					break;
 				case (2):
-					if (t.size == 4)
+					if (t.size == 4) {
 						tempRank = 3;
-					else if (t.size == 8)
+					} else if (t.size == 8) {
 						tempRank = 2;
+					}
 					break;
 				case (3):
 					tempRank = 3;
-					break
+					break;
 			}
-			if (bestRank < tempRank)
+			if (bestRank < tempRank) {
 				bestRank = tempRank;
+			}
 		}
 
 		nbTournament = participatedTournament.size;
-
 
 		const finalList = {
 			matchPlayed: matchesList.length,
@@ -338,22 +342,22 @@ class User {
 			nbTournament: nbTournament,
 			nbTournamentVictory: nbTournamentVictory,
 			Placement: rankingPlacement.get(bestRank),
-		}
+		};
 
 		return rep.code(STATUS.success).send(finalList);
-
 	}
 
 	static async getUserStat(req: FastifyRequest, rep: FastifyReply) {
 		const { displayName } = req.query as { displayName?: string };
 
-		if (!displayName)
+		if (!displayName) {
 			return rep.code(STATUS.bad_request).send({ message: "Missing displayName" });
+		}
 
-		const [usr] = await db.select({ id: users.id }).from(users).where(eq(users.displayName, displayName));
-		if (!usr)
+		const [usr] = await db.select({ id: users.id }).from(users).where(orm.eq(users.displayName, displayName));
+		if (!usr) {
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
-
+		}
 
 		const matchesList = await db.select({
 			match: matches,
@@ -363,28 +367,26 @@ class User {
 				winnerId: tournaments.winnerId,
 				round: tournamentMatches.round,
 			},
-			opponentId: users.id
+			opponentId: users.id,
 		}).from(matches).innerJoin(
 			users,
-			or(
-				and(eq(matches.player1Id, usr.id), eq(users.id, matches.player2Id)),
-				and(eq(matches.player2Id, usr.id), eq(users.id, matches.player1Id))
-			)
-		).leftJoin(tournamentMatches,
-			eq(matches.id, tournamentMatches.matchId)
-		).leftJoin(tournaments,
-			eq(tournamentMatches.tournamentId, tournaments.id)
-		)
-			.where(and(
-				or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
-				eq(matches.status, "ended")))
-			.orderBy(desc(matches.endedAt));
+			orm.or(
+				orm.and(orm.eq(matches.player1Id, usr.id), orm.eq(users.id, matches.player2Id)),
+				orm.and(orm.eq(matches.player2Id, usr.id), orm.eq(users.id, matches.player1Id)),
+			),
+		).leftJoin(tournamentMatches, orm.eq(matches.id, tournamentMatches.matchId)).leftJoin(
+			tournaments,
+			orm.eq(tournamentMatches.tournamentId, tournaments.id),
+		).where(orm.and(
+			orm.or(orm.eq(matches.player2Id, usr.id), orm.eq(matches.player1Id, usr.id)),
+			orm.eq(matches.status, "ended"),
+		)).orderBy(orm.desc(matches.endedAt));
 
 		let nbMatchVictory: number = 0;
 		let nbTournament: number = 0;
 		let nbTournamentVictory: number = 0;
 		let pointScored: number = 0;
-		let pointConceded: number = 0
+		let pointConceded: number = 0;
 		let bestRank: number = 0;
 		let participatedTournament: Map<number, { winnerId: number, round: number, size: number }> = new Map();
 
@@ -393,29 +395,31 @@ class User {
 				[match.match.player1Id, match.match.player2Id] = [match.match.player2Id, match.match.player1Id];
 				[match.match.scoreP1, match.match.scoreP2] = [match.match.scoreP2, match.match.scoreP1];
 			}
-			if (match.match.winnerId === usr.id)
+			if (match.match.winnerId === usr.id) {
 				nbMatchVictory++;
+			}
 			pointScored += match.match.scoreP1;
 			pointConceded += match.match.scoreP2;
 			if (match.tournament.id) {
-				const keyT = participatedTournament.get(match.tournament.id) ??
-				{
-					winnerId: match.tournament.winnerId!,
-					round: match.tournament.round!,
-					size: match.tournament.size!,
-				};
+				const keyT = participatedTournament.get(match.tournament.id)
+					?? {
+						winnerId: match.tournament.winnerId!,
+						round: match.tournament.round!,
+						size: match.tournament.size!,
+					};
 
 				if (match.tournament.round && keyT.round && keyT.round <= match.tournament.round) {
 					keyT.round = match.tournament.round;
 				}
-				if (!participatedTournament.has(match.tournament.id))
+				if (!participatedTournament.has(match.tournament.id)) {
 					participatedTournament.set(match.tournament.id, {
 						winnerId: match.tournament.winnerId!,
 						round: match.tournament.round!,
-						size: match.tournament.size!
-					})
-				else
+						size: match.tournament.size!,
+					});
+				} else {
 					participatedTournament.set(match.tournament.id, keyT);
+				}
 			}
 		});
 
@@ -424,39 +428,42 @@ class User {
 				[0, "nothing"],
 				[1, "quarter-final"],
 				[2, "semi-final"],
-				[3, "final"]
-			]
-		)
+				[3, "final"],
+			],
+		);
 
 		for (const key of participatedTournament.keys()) {
 			let t = participatedTournament.get(key)!;
-			if (t.winnerId && t.winnerId === usr.id)
+			if (t.winnerId && t.winnerId === usr.id) {
 				nbTournamentVictory++;
+			}
 
 			let tempRank = 0;
 			switch (t.round) {
 				case (1):
-					if (t.size == 4)
+					if (t.size == 4) {
 						tempRank = 2;
-					else if (t.size == 8)
+					} else if (t.size == 8) {
 						tempRank = 1;
+					}
 					break;
 				case (2):
-					if (t.size == 4)
+					if (t.size == 4) {
 						tempRank = 3;
-					else if (t.size == 8)
+					} else if (t.size == 8) {
 						tempRank = 2;
+					}
 					break;
 				case (3):
 					tempRank = 3;
-					break
+					break;
 			}
-			if (bestRank < tempRank)
+			if (bestRank < tempRank) {
 				bestRank = tempRank;
+			}
 		}
 
 		nbTournament = participatedTournament.size;
-
 
 		const finalList = {
 			matchPlayed: matchesList.length,
@@ -466,22 +473,18 @@ class User {
 			nbTournament: nbTournament,
 			nbTournamentVictory: nbTournamentVictory,
 			Placement: rankingPlacement.get(bestRank),
-		}
+		};
 
 		return rep.code(STATUS.success).send(finalList);
 	}
 }
 
-
 export async function getUserIdByUsername(username: string): Promise<number | null> {
-	const [user] = await db.select({ id: users.id }).from(users).where(eq(users.username, username));
+	const [user] = await db.select({ id: users.id }).from(users).where(orm.eq(users.username, username));
 	return user ? user.id : null;
 }
 
-//export async function getUserUuidByUsername(use)
-
-
-export default async function (fastify: FastifyInstance) {
+export default async function(fastify: FastifyInstance) {
 	User.setup(fastify);
 	await db.update(users).set({ isOnline: 0 });
 }
