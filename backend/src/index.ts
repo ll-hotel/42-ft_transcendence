@@ -14,8 +14,6 @@ import userModule from "./user/user";
 
 async function main() {
 	createTables();
-	try {
-		await createTables();
 
 	const app: FastifyInstance = Fastify({
 		logger: true,
@@ -37,11 +35,12 @@ async function main() {
 	app.register(chatRoute);
 	
 
-		await app.listen({ port: 8080, host: "0.0.0.0" });
-	} catch (err) {
-		console.log("Could not start server:", err);
-		process.exit(1);
-	}
+	app.listen({ port: 8080, host: "0.0.0.0" }, (err) => {
+		if (err) {
+			console.log("Could not start server:", err);
+			process.exit(1);
+		}
+	});
 }
 
 main();
