@@ -25,6 +25,20 @@ export class editProfile implements AppPage
 			this.submitPasswordForm();
 			return (false);
 		});
+
+		const avatarInput = this.userForm.querySelector<HTMLInputElement>("[name=avatar]")!;
+		const avatarPreview = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview")!;
+
+		avatarInput.addEventListener("change", () => {
+			const file = avatarInput.files?.[0];
+			if (!file) return;
+		
+			const reader = new FileReader();
+			reader.onload = () => {
+				avatarPreview.src = reader.result as string;
+			};
+			reader.readAsDataURL(file);
+		});
 	}
 
 	static new(content: HTMLElement) {
@@ -70,18 +84,36 @@ export class editProfile implements AppPage
 		const userFormData = new FormData(this.userForm);
 
 		const displayName = userFormData.get("displayname")?.toString();
-		const avatar = userFormData.get("avatar")?.toString();
-
-		if (!displayName && !avatar)
+//		const avatar = userFormData.get("avatar")?.toString();
+		const avatarFile = userFormData.get("avatar") as File | null;
+		
+		if (!displayName && (!avatarFile || avatarFile.size === 0))
 			return alert("No user info to update");
+		
+		if (displayName) {
+			const res = await api.patch("/api/user/profile", {displayName});
+			if (!res || !res.payload)
+				return;
+			if (res.status !== Status.success)
+				return alert("Error when editing user info: " + res.payload.message);
+			this.updatePreview(displayName);
+		}
 
-		const res = await api.patch("/api/user/profile", {displayName, avatar});
-		if (!res || !res.payload)
-			return;
-		if (res.status !== Status.success)
-			return alert("Error when editing user info: " + res.payload.message);
+		if (avatarFile && avatarFile.size > 0) {
+			const fd = new FormData();
+			fd.append("avatar", avatarFile);
 
-		this.updatePreview(displayName, avatar);
+			const res = await fetch("/api/user/updateAvatar", {
+				method: "POST",
+				credentials: "include",
+				body: fd,
+			});
+			if (!res.ok)
+				return alert("Error when uploading avatar");
+			
+			const data = await res.json();
+			this.updatePreview(undefined, `/uploads/${data.file}`);
+		}
 		this.userForm.reset();
 	}
 
@@ -104,7 +136,7 @@ export class editProfile implements AppPage
 
 	this.passwordForm.reset();
 	alert("Password updated");
-}
+	}
 
 	updatePreview(displayName?: string, avatar?: string) {
 		if (displayName) {
@@ -114,11 +146,12 @@ export class editProfile implements AppPage
 		}
 
 		if (avatar) {
-			const avatarEl = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview");
-			//if (avatarEl)
-			//	avatarEl.src = avatar; Besoin d'avoir une image bien implanté dans le back !
+		const avatarEl = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview");
+		if (avatarEl)
+			avatarEl.src = avatar.startsWith("/") ? avatar : "/" + avatar;
 		}
+	}
+
 }
 
 
-}
