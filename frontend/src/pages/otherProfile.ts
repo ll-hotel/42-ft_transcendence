@@ -1,9 +1,10 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
+import { FriendButton } from "../friendButton.js";
 import AppPage from "./AppPage.js"
 import { MatchInfo } from "./profile/matches.js";
 
-export class ProfilePage implements AppPage {
+export class OtherProfilePage implements AppPage {
 	content: HTMLElement;
 	displayname: HTMLElement;
 	username: HTMLElement;
@@ -12,48 +13,70 @@ export class ProfilePage implements AppPage {
 		this.content = content;
 		this.displayname = content.querySelector("#profile-displayname")!;
 		this.username = content.querySelector("#profile-username")!;
-		const logout = content.querySelector("#logout") as HTMLElement;
-		const edit = content.querySelector("#edit") as HTMLElement;
-		logout.onclick = () => this.logoutClick();
-		edit.onclick = () => this.editClick();
 	}
 	static new(content: HTMLElement) {
-		const logout = content.querySelector("#logout");
-		const edit = content.querySelector("#edit");
 		const displayname = content.querySelector("#profile-displayname");
 		// const username = content.querySelector("#profile-username")!;
 		// if (!content || !logout || !displayname || !username) {
-		if (!content || !logout || !displayname || !edit) {
+		if (!content || !displayname) {
 			return null;
 		}
-		return new ProfilePage(content! as HTMLElement);
+		return new OtherProfilePage(content! as HTMLElement);
 	}
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
-		return this.loadUserInfo();
+		const params = new URLSearchParams(location.search);
+
+		const newDisplayName = params.get("displayName");
+		this.loadUserInfo(newDisplayName);
 	}
 
 	unload(): void {
 		this.content.remove();
 	}
 
-	async loadUserInfo() {
-		const res = await api.get("/api/me");
-		if (!res || res.status != Status.success) {
-			gotoPage("login");
+	async loadUserInfo(displayName :any) {
+			const res = await api.get(`/api/user?displayName=${displayName}`);
+			if (!res || !res.payload) return;
+			if (res.status != Status.success) {
+				return alert("Error: " + res.payload.message);
+			}
+			let userinfo;
+		try {
+			userinfo = res.payload.user;
+			this.displayname.innerHTML = userinfo.displayName;
+		} catch {
+		}
+		const statusDot = this.content.querySelector("#status-dot");
+		const statusText = this.content.querySelector("#status-text");
+		const contMatchList = this.content.querySelector("#match-list");
+		const cntFriendButton = this.content.querySelector(".friend-buttons");
+		
+		if (!contMatchList || !statusDot || !statusText)
+		{
 			return;
 		}
-		const userInfo = res.payload as { displayName: string, id:number };
-		this.displayname.innerHTML = userInfo.displayName;
-
-		const contMatchList = this.content.querySelector("#match-list");
 		
-		const resMatch = await api.get("/api/me/history");
+		statusText.innerHTML = "";
+		contMatchList.innerHTML = "";
+		const isOnline = userinfo.isOnline;
+		statusDot.className = isOnline ? "friend-round-online" : "friend-round-offline";
+		statusText.className = isOnline ? "friend-text-online" : "friend-text-offline";
+		statusText.textContent = isOnline ? "Online" : "Offline";
+		
+		const resMatch = await api.get(`/api/user/history?displayName=${displayName}`);
 		if (!resMatch || resMatch.status != Status.success) {
 			alert("Can't load matchs info");
 			return;
 		}
+
+		const resMe = await api.get(`/api/me`);
+		if (!resMe || resMe.status != Status.success) {
+			alert("Can't load my info");
+			return;
+		}
+
 		const MatchList = resMatch.payload;
 		if (contMatchList && contMatchList.children.length == 0) {
 		// L'user est toujours le player1 (voir api)
@@ -65,7 +88,7 @@ export class ProfilePage implements AppPage {
 					date.toLocaleTimeString("fr-FR"),
 					{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
 					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
-					userInfo.displayName
+					resMe.payload.displayName
 				).toHTML());
 			}
 			if (!MatchList.length)
@@ -82,7 +105,7 @@ export class ProfilePage implements AppPage {
 		if (!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed || !infoTourPlacement)
 			return alert("Missing info in Profile.html");
 
-		const resStat = await api.get("/api/me/stats");
+		const resStat = await api.get(`/api/user/stats?displayName=${displayName}`);
 
 		if (!resStat || resStat.status != Status.success)
 			return alert("Can't load my stats");
@@ -95,17 +118,16 @@ export class ProfilePage implements AppPage {
 		infoPointsTanked.textContent = Stat.pointConceded;
 		infoTourPlayed.textContent = Stat.nbTournament + " / " + Stat.nbTournamentVictory;
 		infoTourPlacement.textContent = Stat.Placement;
-	}
 
-	async logoutClick() {
-		const reply = await api.post("/api/auth/logout");
-		if (!reply || reply.status == Status.unauthorized) {
-			// Unauthorized = not logged in or wrong user.
+		if (cntFriendButton)
+		{
+			const oldButton = cntFriendButton.querySelector("#friend-buttons-cnt");
+			if (oldButton)
+				oldButton.remove();
 		}
-		await gotoPage("login");
-	}
-
-	async editClick() {
-		await gotoPage("profile/edit");
+		
+		const friendButton = new FriendButton(displayName);
+		friendButton.container.id= "friend-buttons-cnt";
+		cntFriendButton?.appendChild(friendButton.getFriendButton());
 	}
 };

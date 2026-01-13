@@ -15,6 +15,11 @@ export function createTables() {
 	createTournamentsTable();
 	createTournamentPlayers();
 	createTournamentMatches();
+	createMatchmakingQueueTable();
+	createMatchesTable();
+	createTournamentsTable();
+	createTournamentPlayers();
+	createTournamentMatches();
 }
 
 function createUserTable() {

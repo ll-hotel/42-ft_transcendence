@@ -16,7 +16,13 @@ export class api {
 	static async post(uri: string, body: object = {}) {
 		return this.request("POST", uri, body);
 	}
-	private static async request(method: "GET" | "POST", uri: string, body: string | object = "") {
+	static async delete(uri: string, body: object = {}) {
+		return this.request("DELETE", uri, body);
+	}
+	static async patch(uri: string, body: object = {}) {
+		return this.request("PATCH", uri, body);
+	}
+	private static async request(method: "GET" | "POST" | "DELETE" | "PATCH", uri: string, body: string | object = "") {
 		let headers;
 		let jsonBody: string | null = null;
 		if (method == "GET") {

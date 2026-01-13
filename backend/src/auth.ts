@@ -123,11 +123,11 @@ class AuthService {
 					accessToken: tokenCookie,
 				});
 			} catch {
+//				await db.update(users).set({ isOnline: 0 }).where(eq(users.id, user.id));
 				// token expired, process reconnection
 			}
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
-		await db.update(users).set({ isOnline: 1 }).where(eq(users.id, user.id));
 		rep.setCookie('accessToken', accessToken, {
 			httpOnly: true, secure: true, sameSite: 'strict',
 			path: "/api"
@@ -199,7 +199,6 @@ class AuthService {
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		rep.setCookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'strict', path: '/api' });
-		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));
 		rep.code(STATUS.success).send({
 		  	message: MESSAGE.logged_in,
 		  	loggedIn: true,
@@ -253,7 +252,7 @@ class AuthService {
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		rep.setCookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'strict', path: '/api' });
-		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));
+//		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));
 		rep.code(STATUS.success).send({
 		  	message: MESSAGE.logged_in,
 		  	loggedIn: true,

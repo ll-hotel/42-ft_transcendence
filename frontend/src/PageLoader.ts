@@ -1,18 +1,22 @@
 import AppPage from "./pages/AppPage.js";
 import newHomePage from "./pages/HomePage.js";
+import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
-import Play from "./pages/play.js";
 import { ProfilePage } from "./pages/profile.js";
 import { RegisterPage } from "./pages/register.js";
 import { Tournaments } from "./pages/tournaments.js";
+import { OtherProfilePage } from "./pages/otherProfile.js";
+import { editProfile } from "./pages/editProfile.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "home", new: newHomePage },
 	{ name: "register", new: RegisterPage.new },
 	{ name: "login", new: Login.new },
 	{ name: "profile", new: ProfilePage.new },
-	{ name: "play", new: Play.new },
 	{ name: "tournaments", new: Tournaments.new },
+	{ name: "profile/other", new: OtherProfilePage.new},
+	{ name: "profile/edit", new: editProfile.new},
+	{ name: "friends", new: FriendPage.new},
 ];
 
 export function strToPageName(str: string): string | null {
@@ -73,14 +77,26 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 	}).then(res => res.text().then(text => (new DOMParser()).parseFromString(text, "text/html").body));
 }
 
+export async function gotoUserPage( displayName : string)
+{
+	await gotoPage("profile/other", "?displayName=" + displayName);
+}
 const loader = new PageLoader(document.body.querySelector("#content")!);
+
 
 export async function gotoPage(name: string, search: string = "") {
 	const pageName = strToPageName(name);
-	if (pageName == null || (loader.loaded && loader.loaded == pageName)) {
+	if (pageName == null || (loader.loaded && loader.loaded === pageName && location.search === search)) {
 		return;
 	}
 	history.pushState(null, "", "/" + pageName + search);
+	await loadPage();
+}
+
+async function loadPage() {
+	const path = location.pathname.substring(1);
+	const pageName = strToPageName(path) || "login";
+
 	await loader.downloadPages();
 	loader.load(pageName);
 }
@@ -88,6 +104,5 @@ export async function gotoPage(name: string, search: string = "") {
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {
-	const page = strToPageName(location.pathname.substring(1)) || "login";
-	loader.load(page);
-};
+	loadPage();
+}

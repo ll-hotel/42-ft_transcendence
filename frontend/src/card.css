@@ -1,0 +1,76 @@
+.friend-card {
+	@apply w-full h-20 bg-white flex justify-between items-center px-4;
+}
+
+.request-card {
+	@apply w-full h-20 text-white bg-[#04809F] flex justify-between items-center px-4 ;
+}
+
+.request-buttons {
+	@apply flex justify-between items-center
+}
+
+.request-decline {
+	@apply px-2 py-1 bg-red-500 border-white rounded
+}
+
+.request-accept {
+	@apply px-2 py-1 bg-green-500 border-white rounded
+}
+
+.friend-card-select {
+	@apply bg-[#04809F];
+}
+
+.friend-card-unselect 
+{
+	@apply bg-white;
+}
+
+.friend-avatar {
+	@apply w-12 h-12 rounded-full;
+}
+
+.friend-status {
+	@apply flex items-center gap-2 px-2 bg-white border rounded-full;
+}
+
+.friend-round-online {
+	@apply h-3 w-3 rounded-full bg-green-500;
+}
+
+.friend-round-offline {
+	@apply h-3 w-3 rounded-full bg-red-400;
+}
+
+.friend-text-online {
+	@apply font-semibold text-green-600;
+}
+
+.friend-text-offline {
+	@apply font-semibold text-gray-500;
+}
+
+.user-result {
+	@apply flex items-center p-2 bg-white rounded shadow hover:bg-gray-50 cursor-pointer
+}
+
+.result-avatar{
+	@apply w-10 h-10 rounded-full border border-gray-300
+}
+
+.result-name{
+	@apply ml-3 font-medium text-gray-800
+}
+
+#chat-content {
+  @apply flex flex-col gap-2 overflow-y-auto p-2;
+}
+
+.msg-me {
+  @apply self-end bg-[#04809F] text-white rounded-lg px-3 py-1 max-w-xs break-words;
+}
+
+.msg-target {
+  @apply self-start bg-red-500 text-white rounded-lg px-3 py-1 max-w-xs break-words;
+}

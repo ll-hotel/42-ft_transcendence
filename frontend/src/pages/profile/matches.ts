@@ -1,4 +1,5 @@
 import { api, Status } from "../../api.js";
+import { gotoPage, gotoUserPage } from "../../PageLoader.js";
 
 export class MatchInfo {
 	day: string;
@@ -11,22 +12,26 @@ export class MatchInfo {
 		name: string;
 		score: number;
 	};
+	connectedUserName : string;
 
 	private constructor(day: string, time: string,
 		me: { name: string, score: number },
-		opponent: { name: string, score: number }
+		opponent: { name: string, score: number },
+		connectedUserName : string
 	) {
 		this.day = day;
 		this.time = time;
 		this.me = me;
 		this.opponent = opponent;
+		this.connectedUserName = connectedUserName;
 	}
 
 	static new(day: string, time: string,
 		me: { name: string, score: number },
-		opponent: { name: string, score: number }
+		opponent: { name: string, score: number },
+		connectedUserName : string
 	) {
-		return new MatchInfo(day, time, me, opponent);
+		return new MatchInfo(day, time, me, opponent, connectedUserName);
 	}
 
 	toHTML(): HTMLElement {
@@ -45,24 +50,23 @@ export class MatchInfo {
 			<p name="me">${this.me.name}</p>
 			<p name="score">${this.me.score} - ${this.opponent.score}</p>
 			<p name="opponent">${this.opponent.name}</p>
-			<button name="add-friend" title="Send friend request" class="ml-auto p-2 bg-green-400 rounded-xl w-fit">+ Add</button>
+			<button name="go-to" title="Send friend request" class="ml-auto p-2 bg-[#04809F] text-white rounded-xl w-fit">See</button>
 		`;
-		const addFriendButton = h.querySelector("button")!;
-		addFriendButton.onclick = async () => {
-			if (await addFriend(this.opponent.name)) {
-				addFriendButton.innerText = "Sent";
-				addFriendButton.onclick = null;
-			}
+		const goToButton = h.querySelector("button")!;
+		goToButton.onclick = async () => {
+			if (this.connectedUserName == this.opponent.name)
+				await gotoPage("profile");
+			else
+				await gotoUserPage(this.opponent.name);
 		}
 		return h;
 	}
-};
-
-async function addFriend(displayName: string): Promise<boolean> {
-	const res = await api.post("/api/friend/request", { displayName });
-	if (!res || res.status != Status.success) {
-		alert(res ? res.payload.message : "Request failed");
-		return false;
+	static noMatchHtml() : HTMLElement {
+		const h = document.createElement("div");
+		h.className = "grid grid-cols-1 bg-white place-content-evenly items-center text-center rounded-2xl p-2 min-w-fit";
+		h.innerHTML = `
+			<p name = "me" >There is no match...</p>
+		`;
+		return h;
 	}
-	return true;
-}
+};
