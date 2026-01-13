@@ -1,12 +1,10 @@
 import AppPage from "./pages/AppPage.js";
 import newHomePage from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
-import { RegisterPage } from "./pages/register.js";
-import { ProfilePage } from "./pages/profile.js"
 import Play from "./pages/play.js";
-import PlayLocal from "./pages/play_local.js";
-import PlayMatch from "./pages/play_match.js";
-import PlayTournament from "./pages/play_tournament.js";
+import { ProfilePage } from "./pages/profile.js";
+import { RegisterPage } from "./pages/register.js";
+import { Tournaments } from "./pages/tournaments.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "home", new: newHomePage },
@@ -14,9 +12,7 @@ const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "login", new: Login.new },
 	{ name: "profile", new: ProfilePage.new },
 	{ name: "play", new: Play.new },
-	{ name: "play/local", new: PlayLocal.new },
-	{ name: "play/match", new: PlayMatch.new },
-	{ name: "play/tournament", new: PlayTournament.new },
+	{ name: "tournaments", new: Tournaments.new },
 ];
 
 export function strToPageName(str: string): string | null {
@@ -66,7 +62,7 @@ class PageLoader {
 		}
 		this.list.set(name, page);
 	}
-};
+}
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
 	return await fetch(`/${encodeURI(path + ".html")}`, {
@@ -74,7 +70,7 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 		headers: { "Accept": "text/html" },
 		credentials: "include",
 		cache,
-	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body));
+	}).then(res => res.text().then(text => (new DOMParser()).parseFromString(text, "text/html").body));
 }
 
 const loader = new PageLoader(document.body.querySelector("#content")!);
@@ -94,4 +90,4 @@ export async function gotoPage(name: string, search: string = "") {
 window.onpopstate = function() {
 	const page = strToPageName(location.pathname.substring(1)) || "login";
 	loader.load(page);
-}
+};
