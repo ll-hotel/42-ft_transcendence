@@ -75,23 +75,26 @@ async function createMatchesTable() {
 		`);
 }
 
-async function createTournamentsTable() {
-	await db.run(sql`
-	CREATE TABLE IF NOT EXISTS Tournaments (
-	 id INTEGER PRIMARY KEY AUTOINCREMENT,
-	 name TEXT NOT NULL,
-	 status TEXT NOT NULL DEFAULT 'pending',
-	 winnerId INTEGER,
-	 createdAt INTEGER,
-	 FOREIGN KEY (winnerId) REFERENCES users(id)
-
-	 );
-		`);
+function createTournamentsTable() {
+	db.run(sql`
+	CREATE TABLE IF NOT EXISTS tournaments (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		createdBy TEXT NOT NULL,
+		size INTEGER,
+		name TEXT NOT NULL,
+		status TEXT NOT NULL DEFAULT 'pending',
+		winnerId INTEGER,
+		createdAt INTEGER,
+		FOREIGN KEY (winnerId) REFERENCES users(id),
+		FOREIGN KEY (createdBy) REFERENCES users(uuid)
+	);
+	`);
 }
+
 
 async function createTournamentPlayers() {
 	await db.run(sql`
-	CREATE TABLE IF NOT EXISTS TournamentPlayers (
+	CREATE TABLE IF NOT EXISTS tournamentPlayers (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 tournamentId INTEGER NOT NULL,
 	 userId INTEGER NOT NULL,
@@ -104,7 +107,7 @@ async function createTournamentPlayers() {
 
 async function createTournamentMatches() {
 	await db.run(sql`
-	 CREATE TABLE IF NOT EXISTS TournamentMatches (
+	 CREATE TABLE IF NOT EXISTS tournamentMatches (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 tournamentId INTEGER NOT NULL,
 	 matchId INTEGER NOT NULL,

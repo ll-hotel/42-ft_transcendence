@@ -1,5 +1,6 @@
 import AppPage from "./pages/AppPage.js";
 import newHomePage from "./pages/HomePage.js";
+import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
 import { ProfilePage } from "./pages/profile.js"
@@ -7,12 +8,17 @@ import Play from "./pages/play.js";
 import PlayLocal from "./pages/play_local.js";
 import PlayMatch from "./pages/play_match.js";
 import PlayTournament from "./pages/play_tournament.js";
+import { OtherProfilePage } from "./pages/otherProfile.js";
+import { editProfile } from "./pages/editProfile.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "home", new: newHomePage },
 	{ name: "register", new: RegisterPage.new },
 	{ name: "login", new: Login.new },
 	{ name: "profile", new: ProfilePage.new },
+	{ name: "profile/other", new: OtherProfilePage.new},
+	{ name: "profile/edit", new: editProfile.new},
+	{ name: "friends", new: FriendPage.new},
 	{ name: "play", new: Play.new },
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
@@ -69,29 +75,76 @@ class PageLoader {
 };
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	return await fetch(`/${encodeURI(path + ".html")}`, {
+	const element = await fetch(`/${encodeURI(path + ".html")}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
 		cache,
-	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body));
+	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body.firstElementChild));
+
+	if (!element)
+		throw new Error(`No elements fond at ${path}`);
+	return element as HTMLElement;
+	
 }
 
+export async function gotoUserPage( displayName : string)
+{
+	await gotoPage("profile/other", "?displayName=" + displayName);
+}
 const loader = new PageLoader(document.body.querySelector("#content")!);
+
+/*export async function gotoPage(name: PageName, params?: any) {
+//	if (name != "login" && name != "register") {
+//		const token = localStorage.getItem("accessToken");
+//		if (!token) {
+//			name = "login";
+//		}
+//	}
+	if (loader.loaded && loader.loaded == name) {
+		const current = loader.list.get(name);
+		if (current && current.setParams)
+			current.setParams(params);
+		return;
+	}
+	if (name == "login")
+		history.pushState(null, "", "/" + name + location.search);
+	else if (name != "otherProfile")
+		history.pushState({ page: name}, "", "/" + name);
+	await loader.download(name);
+	loader.load(name);
+
+	const page = loader.list.get(name);
+	if (page && page.setParams)
+	{
+		page.setParams(params);
+	}
+*/
+async function loadPage()
+{
+		const path = location.pathname.substring(1);
+		const pageName = strToPageName(path) || "login";
+
+		await loader.downloadPages();
+		loader.load(pageName);
+
+		const page = loader.list.get(pageName);
+		if (page && page.setParams)
+			page.setParams(location.search);
+}
 
 export async function gotoPage(name: string, search: string = "") {
 	const pageName = strToPageName(name);
-	if (pageName == null || (loader.loaded && loader.loaded == pageName)) {
+	if (pageName == null || (loader.loaded && loader.loaded === pageName && location.search === search)) {
 		return;
 	}
 	history.pushState(null, "", "/" + pageName + search);
-	await loader.downloadPages();
-	loader.load(pageName);
+	await loadPage();
 }
+
 
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {
-	const page = strToPageName(location.pathname.substring(1)) || "login";
-	loader.load(page);
+		loadPage();
 }
