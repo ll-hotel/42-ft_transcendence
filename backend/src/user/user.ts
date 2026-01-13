@@ -6,10 +6,6 @@ import { generate2FASecret, generateQRCode } from "../security/2fa";
 import { authGuard } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
 import { MESSAGE, STATUS } from "../shared";
-import tournament, { Tournament } from "../game/tournament";
-import { boolean } from "drizzle-orm/gel-core";
-import { mapColumnsInAliasedSQLToAlias } from "drizzle-orm";
-import { utimesSync } from "fs";
 
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
@@ -21,8 +17,8 @@ class User {
 		app.get("/api/users/all", { preHandler: authGuard }, User.getallUsers);
 		app.get("/api/me/history", { preHandler: authGuard }, User.getMyHistory);
 		app.get("/api/user/history", { preHandler: authGuard }, User.getUserHistory);
-		app.get("/api/me/stats", { preHandler : authGuard }, User.getMyStat);
-		app.get("/api/user/stats", { preHandler : authGuard }, User.getUserStat);
+		app.get("/api/me/stats", { preHandler: authGuard }, User.getMyStat);
+		app.get("/api/user/stats", { preHandler: authGuard }, User.getUserStat);
 
 		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
 		app.patch("/api/user/password", { preHandler: authGuard }, User.updatePassword);
@@ -32,10 +28,6 @@ class User {
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
 		if (!req.user) {
 			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized });
-		}
-		const [player] = await db.select().from(tournamentPlayers).where(eq(tournamentPlayers.userId, req.user.id));
-		if (!player) {
-			return rep.code(STATUS.internal_server_error).send({ message: "Can not find tournament player" });
 		}
 		rep.code(STATUS.success).send({
 			id: req.user.id,
@@ -167,13 +159,13 @@ class User {
 	}
 
 	//L'user actuel est toujours le Player1
-	static async getMyHistory(req: FastifyRequest, rep:FastifyReply) {
+	static async getMyHistory(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 		const matchesList = await db.select({
 			match: matches,
-			opponent : {
-				id : users.id,
-				displayName : users.displayName,
+			opponent: {
+				id: users.id,
+				displayName: users.displayName,
 			}
 		}).from(matches).innerJoin(
 			users,
@@ -184,11 +176,10 @@ class User {
 		).where(and(
 			or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
 			eq(matches.status, "ended")))
-		.limit(5).orderBy(desc(matches.endedAt));
+			.limit(5).orderBy(desc(matches.endedAt));
 
 		matchesList.forEach(match => {
-			if (match.match.player1Id !== usr.id)
-			{
+			if (match.match.player1Id !== usr.id) {
 				[match.match.player1Id, match.match.player2Id] = [match.match.player2Id, match.match.player1Id];
 				[match.match.scoreP1, match.match.scoreP2] = [match.match.scoreP2, match.match.scoreP1];
 			}
@@ -197,8 +188,8 @@ class User {
 		return rep.code(STATUS.success).send(matchesList);
 	}
 
-	static async getUserHistory(req: FastifyRequest, rep:FastifyReply) {
-		const {displayName} = req.query as {displayName?: string };
+	static async getUserHistory(req: FastifyRequest, rep: FastifyReply) {
+		const { displayName } = req.query as { displayName?: string };
 
 		if (!displayName)
 			return rep.code(STATUS.bad_request).send({ message: "Missing displayName" });
@@ -209,9 +200,9 @@ class User {
 
 		const matchesList = await db.select({
 			match: matches,
-			opponent : {
-				id : users.id,
-				displayName : users.displayName,
+			opponent: {
+				id: users.id,
+				displayName: users.displayName,
 			}
 		}).from(matches).innerJoin(
 			users,
@@ -222,11 +213,10 @@ class User {
 		).where(and(
 			or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
 			eq(matches.status, "ended")))
-		.limit(5).orderBy(desc(matches.endedAt));
+			.limit(5).orderBy(desc(matches.endedAt));
 
 		matchesList.forEach(match => {
-			if (match.match.player1Id !== usr.id)
-			{
+			if (match.match.player1Id !== usr.id) {
 				[match.match.player1Id, match.match.player2Id] = [match.match.player2Id, match.match.player1Id];
 				[match.match.scoreP1, match.match.scoreP2] = [match.match.scoreP2, match.match.scoreP1];
 			}
@@ -235,17 +225,17 @@ class User {
 		return rep.code(STATUS.success).send(matchesList);
 	}
 
-	static async getMyStat(req : FastifyRequest, rep : FastifyReply) {
+	static async getMyStat(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 		const matchesList = await db.select({
 			match: matches,
-			tournament : {
-				id : tournaments.id,
-				size : tournaments.size,
-				winnerId : tournaments.winnerId,
-				round : tournamentMatches.round,
+			tournament: {
+				id: tournaments.id,
+				size: tournaments.size,
+				winnerId: tournaments.winnerId,
+				round: tournamentMatches.round,
 			},
-			opponentId : users.id
+			opponentId: users.id
 		}).from(matches).innerJoin(
 			users,
 			or(
@@ -257,84 +247,79 @@ class User {
 		).leftJoin(tournaments,
 			eq(tournamentMatches.tournamentId, tournaments.id)
 		)
-		.where(and(
-			or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
-			eq(matches.status, "ended")))
-		.orderBy(desc(matches.endedAt));
+			.where(and(
+				or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
+				eq(matches.status, "ended")))
+			.orderBy(desc(matches.endedAt));
 
-	let nbMatchVictory : number = 0;
-	let nbTournament : number = 0;
-	let nbTournamentVictory : number = 0;
-	let pointScored : number = 0;
-	let pointConceded : number = 0
-	let bestRank : number = 0;
-	let participatedTournament : Map<number, {winnerId :number, round : number, size : number}> = new Map();
+		let nbMatchVictory: number = 0;
+		let nbTournament: number = 0;
+		let nbTournamentVictory: number = 0;
+		let pointScored: number = 0;
+		let pointConceded: number = 0
+		let bestRank: number = 0;
+		let participatedTournament: Map<number, { winnerId: number, round: number, size: number }> = new Map();
 
-	matchesList.forEach(match => {
-		if (match.match.player1Id !== usr.id)
-		{
-			[match.match.player1Id, match.match.player2Id] = [match.match.player2Id, match.match.player1Id];
-			[match.match.scoreP1, match.match.scoreP2] = [match.match.scoreP2, match.match.scoreP1];
-		}
-		if (match.match.winnerId === usr.id)
-			nbMatchVictory++;
-		pointScored += match.match.scoreP1;
-		pointConceded += match.match.scoreP2;
-		if (match.tournament.id )
-		{
-			const keyT = participatedTournament.get(match.tournament.id) ??
-			{
-				winnerId : match.tournament.winnerId!,
-				round : match.tournament.round!,
-				size : match.tournament.size!,
-			};
-
-			if (match.tournament.round && keyT.round && keyT.round <= match.tournament.round)
-			{
-					keyT.round = match.tournament.round;
+		matchesList.forEach(match => {
+			if (match.match.player1Id !== usr.id) {
+				[match.match.player1Id, match.match.player2Id] = [match.match.player2Id, match.match.player1Id];
+				[match.match.scoreP1, match.match.scoreP2] = [match.match.scoreP2, match.match.scoreP1];
 			}
-			if (!participatedTournament.has(match.tournament.id))
-				participatedTournament.set(match.tournament.id, {
-					winnerId : match.tournament.winnerId!,
-					round : match.tournament.round!,
-					size : match.tournament.size!
-				})
-			else
-				participatedTournament.set(match.tournament.id, keyT);
-		}
-	});
+			if (match.match.winnerId === usr.id)
+				nbMatchVictory++;
+			pointScored += match.match.scoreP1;
+			pointConceded += match.match.scoreP2;
+			if (match.tournament.id) {
+				const keyT = participatedTournament.get(match.tournament.id) ??
+				{
+					winnerId: match.tournament.winnerId!,
+					round: match.tournament.round!,
+					size: match.tournament.size!,
+				};
 
-	const rankingPlacement = new Map<number, string>(
-		[
-			[0, "nothing"],
-			[1, "quarter-final"],
-			[2, "semi-final"],
-			[3, "final"]
-		]
-	)
+				if (match.tournament.round && keyT.round && keyT.round <= match.tournament.round) {
+					keyT.round = match.tournament.round;
+				}
+				if (!participatedTournament.has(match.tournament.id))
+					participatedTournament.set(match.tournament.id, {
+						winnerId: match.tournament.winnerId!,
+						round: match.tournament.round!,
+						size: match.tournament.size!
+					})
+				else
+					participatedTournament.set(match.tournament.id, keyT);
+			}
+		});
 
-	for (const key of participatedTournament.keys())
-		{
+		const rankingPlacement = new Map<number, string>(
+			[
+				[0, "nothing"],
+				[1, "quarter-final"],
+				[2, "semi-final"],
+				[3, "final"]
+			]
+		)
+
+		for (const key of participatedTournament.keys()) {
 			let t = participatedTournament.get(key)!;
 			if (t.winnerId && t.winnerId === usr.id)
 				nbTournamentVictory++;
 
 			let tempRank = 0;
-			switch (t.round)
-			{
-				case (1) : 
+			switch (t.round) {
+				case (1):
 					if (t.size == 4)
 						tempRank = 2;
-					else if(t.size == 8)
+					else if (t.size == 8)
 						tempRank = 1;
 					break;
-				case(2) :
+				case (2):
 					if (t.size == 4)
 						tempRank = 3;
-					else if(t.size == 8)
+					else if (t.size == 8)
 						tempRank = 2;
 					break;
-				case(3) :
+				case (3):
 					tempRank = 3;
 					break
 			}
@@ -346,21 +331,21 @@ class User {
 
 
 		const finalList = {
-			matchPlayed : matchesList.length,
-			victoryRate : matchesList.length ? (nbMatchVictory / matchesList.length) * 100 : matchesList.length,
-			pointScored : matchesList.length ? pointScored / matchesList.length : matchesList.length,
-			pointConceded : matchesList.length ? pointConceded / matchesList.length : matchesList.length,
-			nbTournament : nbTournament,
-			nbTournamentVictory : nbTournamentVictory,
-			Placement : rankingPlacement.get(bestRank),
+			matchPlayed: matchesList.length,
+			victoryRate: matchesList.length ? (nbMatchVictory / matchesList.length) * 100 : matchesList.length,
+			pointScored: matchesList.length ? pointScored / matchesList.length : matchesList.length,
+			pointConceded: matchesList.length ? pointConceded / matchesList.length : matchesList.length,
+			nbTournament: nbTournament,
+			nbTournamentVictory: nbTournamentVictory,
+			Placement: rankingPlacement.get(bestRank),
 		}
 
 		return rep.code(STATUS.success).send(finalList);
 
 	}
 
-	static async getUserStat(req : FastifyRequest, rep : FastifyReply) {
-		const {displayName} = req.query as {displayName?: string };
+	static async getUserStat(req: FastifyRequest, rep: FastifyReply) {
+		const { displayName } = req.query as { displayName?: string };
 
 		if (!displayName)
 			return rep.code(STATUS.bad_request).send({ message: "Missing displayName" });
@@ -368,17 +353,17 @@ class User {
 		const [usr] = await db.select({ id: users.id }).from(users).where(eq(users.displayName, displayName));
 		if (!usr)
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
-		
+
 
 		const matchesList = await db.select({
 			match: matches,
-			tournament : {
-				id : tournaments.id,
-				size : tournaments.size,
-				winnerId : tournaments.winnerId,
-				round : tournamentMatches.round,
+			tournament: {
+				id: tournaments.id,
+				size: tournaments.size,
+				winnerId: tournaments.winnerId,
+				round: tournamentMatches.round,
 			},
-			opponentId : users.id
+			opponentId: users.id
 		}).from(matches).innerJoin(
 			users,
 			or(
@@ -390,84 +375,79 @@ class User {
 		).leftJoin(tournaments,
 			eq(tournamentMatches.tournamentId, tournaments.id)
 		)
-		.where(and(
-			or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
-			eq(matches.status, "ended")))
-		.orderBy(desc(matches.endedAt));
+			.where(and(
+				or(eq(matches.player2Id, usr.id), eq(matches.player1Id, usr.id)),
+				eq(matches.status, "ended")))
+			.orderBy(desc(matches.endedAt));
 
-	let nbMatchVictory : number = 0;
-	let nbTournament : number = 0;
-	let nbTournamentVictory : number = 0;
-	let pointScored : number = 0;
-	let pointConceded : number = 0
-	let bestRank : number = 0;
-	let participatedTournament : Map<number, {winnerId :number, round : number, size : number}> = new Map();
+		let nbMatchVictory: number = 0;
+		let nbTournament: number = 0;
+		let nbTournamentVictory: number = 0;
+		let pointScored: number = 0;
+		let pointConceded: number = 0
+		let bestRank: number = 0;
+		let participatedTournament: Map<number, { winnerId: number, round: number, size: number }> = new Map();
 
-	matchesList.forEach(match => {
-		if (match.match.player1Id !== usr.id)
-		{
-			[match.match.player1Id, match.match.player2Id] = [match.match.player2Id, match.match.player1Id];
-			[match.match.scoreP1, match.match.scoreP2] = [match.match.scoreP2, match.match.scoreP1];
-		}
-		if (match.match.winnerId === usr.id)
-			nbMatchVictory++;
-		pointScored += match.match.scoreP1;
-		pointConceded += match.match.scoreP2;
-		if (match.tournament.id )
-		{
-			const keyT = participatedTournament.get(match.tournament.id) ??
-			{
-				winnerId : match.tournament.winnerId!,
-				round : match.tournament.round!,
-				size : match.tournament.size!,
-			};
-
-			if (match.tournament.round && keyT.round && keyT.round <= match.tournament.round)
-			{
-					keyT.round = match.tournament.round;
+		matchesList.forEach(match => {
+			if (match.match.player1Id !== usr.id) {
+				[match.match.player1Id, match.match.player2Id] = [match.match.player2Id, match.match.player1Id];
+				[match.match.scoreP1, match.match.scoreP2] = [match.match.scoreP2, match.match.scoreP1];
 			}
-			if (!participatedTournament.has(match.tournament.id))
-				participatedTournament.set(match.tournament.id, {
-					winnerId : match.tournament.winnerId!,
-					round : match.tournament.round!,
-					size : match.tournament.size!
-				})
-			else
-				participatedTournament.set(match.tournament.id, keyT);
-		}
-	});
+			if (match.match.winnerId === usr.id)
+				nbMatchVictory++;
+			pointScored += match.match.scoreP1;
+			pointConceded += match.match.scoreP2;
+			if (match.tournament.id) {
+				const keyT = participatedTournament.get(match.tournament.id) ??
+				{
+					winnerId: match.tournament.winnerId!,
+					round: match.tournament.round!,
+					size: match.tournament.size!,
+				};
 
-	const rankingPlacement = new Map<number, string>(
-		[
-			[0, "nothing"],
-			[1, "quarter-final"],
-			[2, "semi-final"],
-			[3, "final"]
-		]
-	)
+				if (match.tournament.round && keyT.round && keyT.round <= match.tournament.round) {
+					keyT.round = match.tournament.round;
+				}
+				if (!participatedTournament.has(match.tournament.id))
+					participatedTournament.set(match.tournament.id, {
+						winnerId: match.tournament.winnerId!,
+						round: match.tournament.round!,
+						size: match.tournament.size!
+					})
+				else
+					participatedTournament.set(match.tournament.id, keyT);
+			}
+		});
 
-	for (const key of participatedTournament.keys())
-		{
+		const rankingPlacement = new Map<number, string>(
+			[
+				[0, "nothing"],
+				[1, "quarter-final"],
+				[2, "semi-final"],
+				[3, "final"]
+			]
+		)
+
+		for (const key of participatedTournament.keys()) {
 			let t = participatedTournament.get(key)!;
 			if (t.winnerId && t.winnerId === usr.id)
 				nbTournamentVictory++;
 
 			let tempRank = 0;
-			switch (t.round)
-			{
-				case (1) : 
+			switch (t.round) {
+				case (1):
 					if (t.size == 4)
 						tempRank = 2;
-					else if(t.size == 8)
+					else if (t.size == 8)
 						tempRank = 1;
 					break;
-				case(2) :
+				case (2):
 					if (t.size == 4)
 						tempRank = 3;
-					else if(t.size == 8)
+					else if (t.size == 8)
 						tempRank = 2;
 					break;
-				case(3) :
+				case (3):
 					tempRank = 3;
 					break
 			}
@@ -479,13 +459,13 @@ class User {
 
 
 		const finalList = {
-			matchPlayed : matchesList.length,
-			victoryRate : matchesList.length ? (nbMatchVictory / matchesList.length) * 100 : matchesList.length,
-			pointScored : matchesList.length ? pointScored / matchesList.length : matchesList.length,
-			pointConceded : matchesList.length ? pointConceded / matchesList.length : matchesList.length,
-			nbTournament : nbTournament,
-			nbTournamentVictory : nbTournamentVictory,
-			Placement : rankingPlacement.get(bestRank),
+			matchPlayed: matchesList.length,
+			victoryRate: matchesList.length ? (nbMatchVictory / matchesList.length) * 100 : matchesList.length,
+			pointScored: matchesList.length ? pointScored / matchesList.length : matchesList.length,
+			pointConceded: matchesList.length ? pointConceded / matchesList.length : matchesList.length,
+			nbTournament: nbTournament,
+			nbTournamentVictory: nbTournamentVictory,
+			Placement: rankingPlacement.get(bestRank),
 		}
 
 		return rep.code(STATUS.success).send(finalList);
@@ -501,7 +481,7 @@ export async function getUserIdByUsername(username: string): Promise<number | nu
 //export async function getUserUuidByUsername(use)
 
 
-export default async function(fastify: FastifyInstance) {
+export default async function (fastify: FastifyInstance) {
 	User.setup(fastify);
 	await db.update(users).set({ isOnline: 0 });
 }
