@@ -1,6 +1,8 @@
 import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
 import fastifyMultipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
+import fastifyCors from "@fastify/cors";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import authModule from "./auth";
@@ -12,6 +14,8 @@ import socketRoute from "./socketRoute";
 import { friendService } from "./user/friend";
 import { chatRoute } from "./routes/chat";
 import userModule from "./user/user";
+import path from "path";
+
 
 async function main() {
 	try {
@@ -23,6 +27,15 @@ async function main() {
 			key: fs.readFileSync("/run/secrets/privatekey.pem"),
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
 		},
+	});
+	app.register(fastifyCors, {
+		origin: "https://localhost:8443",
+		credentials: true,
+	});
+
+	app.register(fastifyStatic, {
+  		root: path.join(__dirname, "..", "uploads"),
+  		prefix: "/uploads/",
 	});
 
 	app.register(fastifyCookie);
@@ -37,6 +50,8 @@ async function main() {
 	app.register(socketRoute);
 	app.register(chatRoute);
 	
+
+	console.log(app.printRoutes());
 
 		await app.listen({ port: 8080, host: "0.0.0.0" });
 	} catch (err) {
