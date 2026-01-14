@@ -44,9 +44,11 @@ export class ProfilePage implements AppPage {
 			gotoPage("login");
 			return;
 		}
-		const userInfo = res.payload as { displayName: string, id:number };
+		const userInfo = res.payload as { displayName: string, id:number, avatar: string };
 		this.displayname.innerHTML = userInfo.displayName;
-
+		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
+		if (avatarImg)
+			avatarImg.src = userInfo.avatar.startsWith("/") ? userInfo.avatar : `/${userInfo.avatar}`;
 		const contMatchList = this.content.querySelector("#match-list");
 		
 		const resMatch = await api.get("/api/me/history");

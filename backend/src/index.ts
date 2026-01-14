@@ -2,7 +2,6 @@ import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
-import fastifyCors from "@fastify/cors";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import authModule from "./auth";
@@ -16,7 +15,6 @@ import { chatRoute } from "./routes/chat";
 import userModule from "./user/user";
 import path from "path";
 
-
 async function main() {
 	try {
 		await createTables();
@@ -27,10 +25,6 @@ async function main() {
 			key: fs.readFileSync("/run/secrets/privatekey.pem"),
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
 		},
-	});
-	app.register(fastifyCors, {
-		origin: "https://localhost:8443",
-		credentials: true,
 	});
 
 	app.register(fastifyStatic, {

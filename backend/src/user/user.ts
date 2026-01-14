@@ -53,7 +53,7 @@ class User {
 		await pump(data.file, fs.createWriteStream(`./uploads/${data.filename}`));
 
 		// rm old pp from upload
-		if (usr.avatar !== `DEFAULT_AVATAR` && usr.avatar !== `uploads/${data.filename}`)
+		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}`)
 			fs.unlink(usr.avatar, (err) => {});
 
 

@@ -112,7 +112,7 @@ export class editProfile implements AppPage
 				return alert("Error when uploading avatar");
 			
 			const data = await res.json();
-			this.updatePreview(undefined, `https://localhost:8080/uploads/${data.file}`);
+			this.updatePreview(undefined, `uploads/${data.file}`);
 		}
 		this.userForm.reset();
 	}
@@ -146,13 +146,10 @@ export class editProfile implements AppPage
 		}
 
 		if (avatar) {
-		const avatarEl = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview");
-		if (!avatarEl)
-			return;
-		if (avatar.startsWith("https"))
-			avatarEl.src = avatar;
-		else
-			avatarEl.src = `https://localhost:8080/${avatar}`;
+			const avatarEl = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview");
+			if (!avatarEl)
+				return;
+			avatarEl.src = avatar.startsWith("/") ? avatar : `/${avatar}`;
 		}
 	}
 
