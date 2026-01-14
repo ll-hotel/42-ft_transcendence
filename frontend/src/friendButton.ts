@@ -30,6 +30,8 @@ export class FriendButton {
 			if (resRequest?.status === Status.success)
 			{
 				const statusRequest = resRequest.payload.status;
+				if (statusRequest ==="not sent")
+					console.log("Friend status not send");
 				if (statusRequest === "not sent" || statusRequest === "declined")
 					this.status= "add";
 				else if (statusRequest === "pending_in")

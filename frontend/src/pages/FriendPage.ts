@@ -30,7 +30,6 @@ export class FriendPage implements AppPage
 	chatContainer: HTMLElement;
 	selectedCard: HTMLElement | null;
 	renderInterval: number | null = null;
-	mounted : boolean;
 	chat: FriendChat;
 
 	constructor(content: HTMLElement)
@@ -39,7 +38,6 @@ export class FriendPage implements AppPage
 		this.listContainer = content.querySelector("#friend-list-content")!;
 		this.chatContainer = content.querySelector("#friend-chat")!;
 		this.selectedCard = null;
-		this.mounted = false;
 		this.chat = new FriendChat();
 		if (!this.listContainer || !this.chatContainer)
 					console.log("Error in html");
@@ -47,16 +45,16 @@ export class FriendPage implements AppPage
 
 	static new(content:HTMLElement)
 	{
-		if (!content)
+		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#friend-chat"))
+		{
+			console.log("Missing Friend list or Friend chat in html");
 			return null;
+		}
 		return new FriendPage(content);
 	}
 
 	async loadInto(container: HTMLElement)
 	{
-		if (this.mounted)
-			return;
-		this.mounted = true;
 		container.appendChild(this.content);
 		await this.chat.connect(`/api/chat/connect`);
 		await this.loadFriends();
@@ -72,18 +70,17 @@ export class FriendPage implements AppPage
 		this.chat.reset();
 		this.selectedCard = null;
 		this.content.remove();
-		this.mounted = false;
-
-		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
+		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content");
+		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name");
+		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block")!;
+		if (!chatList || !chatName || !blockBtn)
+			return;
 		chatList.innerHTML= "";
-
-		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name")!;
 		chatName.textContent = chatName.dataset.default!;
 		chatName.classList.remove("hover:text-[#04809F]");
 		chatName.classList.remove("cursor-pointer");
 		chatName.onclick = null;
 
-		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block")!;
 		blockBtn.disabled = true;
 	}
 
@@ -105,29 +102,17 @@ export class FriendPage implements AppPage
 		const requests = requestRes.payload.requests
 		this.listContainer.innerHTML = "";
 		
-/*		const card = document.createElement("div");
-		card.className = "friend-card";
-
-		card.innerHTML = `
-			<img class="friend-avatar" src="/default_pp.png" alt="Antoine" />
-			<div class="text-m font-semibold">
-				Antoine
-			</div>
-			<div class="friend-status">
-				<div class="friend-round-online">
-				</div>
-				<span class="friend-text-online">
-					Online
-				</span>
-			</div>
-		`;
-		this.listContainer.appendChild(card); */
-		
 		if(!friends || friends.length == 0)
-			console.log("No Friend"); //Afficher une div qui dit que t'as pas de potes
+			console.log("No Friend");
 
 		if(!requests || requests.length == 0)
 			console.log("No Requests");
+
+		if ((!friends || friends.length == 0) && (!requests || requests.length))
+		{
+			this.listContainer.innerHTML = `<div class="no-friend" >Go get some friends dude :)</div>`;
+			return;
+		}
 
 		requests.forEach((request: any) => {
 			const card:HTMLElement = this.createRequestCard(request)
@@ -241,15 +226,20 @@ export class FriendPage implements AppPage
 		if (targetUsername == this.chat.targetUsername)
 			return;
 		
+		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name")!;
 		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
-		chatList.innerHTML= "";
+		
+		if (!chatName || !chatList)
+		{
+			console.log("Missing chatName or chatList in html");
+			return;
+		}
 
+		chatList.innerHTML= "";
 		this.chat.cleanRoomState();
 		await this.chat.openRoom(targetUsername);
 		await this.chat.loadHistory();
-
-		console.log("Current Room ID:", this.chat.currentRoomId);
-		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name")!;
+		
 		chatName.textContent = targetDisplayname;
 		chatName.classList.add("hover:text-[#04809F]");
 		chatName.classList.add("cursor-pointer");

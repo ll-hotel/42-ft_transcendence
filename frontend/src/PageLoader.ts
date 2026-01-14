@@ -1,5 +1,5 @@
 import AppPage from "./pages/AppPage.js";
-import newHomePage from "./pages/HomePage.js";
+import {HomePage} from "./pages/HomePage.js";
 import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
 import { RegisterPage } from "./pages/register.js";
@@ -12,7 +12,7 @@ import { OtherProfilePage } from "./pages/otherProfile.js";
 import { editProfile } from "./pages/editProfile.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
-	{ name: "home", new: newHomePage },
+	{ name: "home", new: HomePage.new },
 	{ name: "register", new: RegisterPage.new },
 	{ name: "login", new: Login.new },
 	{ name: "profile", new: ProfilePage.new },
@@ -92,34 +92,9 @@ export async function gotoUserPage( displayName : string)
 {
 	await gotoPage("profile/other", "?displayName=" + displayName);
 }
+
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
-/*export async function gotoPage(name: PageName, params?: any) {
-//	if (name != "login" && name != "register") {
-//		const token = localStorage.getItem("accessToken");
-//		if (!token) {
-//			name = "login";
-//		}
-//	}
-	if (loader.loaded && loader.loaded == name) {
-		const current = loader.list.get(name);
-		if (current && current.setParams)
-			current.setParams(params);
-		return;
-	}
-	if (name == "login")
-		history.pushState(null, "", "/" + name + location.search);
-	else if (name != "otherProfile")
-		history.pushState({ page: name}, "", "/" + name);
-	await loader.download(name);
-	loader.load(name);
-
-	const page = loader.list.get(name);
-	if (page && page.setParams)
-	{
-		page.setParams(params);
-	}
-*/
 async function loadPage()
 {
 		const path = location.pathname.substring(1);
@@ -129,8 +104,6 @@ async function loadPage()
 		loader.load(pageName);
 
 		const page = loader.list.get(pageName);
-		if (page && page.setParams)
-			page.setParams(location.search);
 }
 
 export async function gotoPage(name: string, search: string = "") {
