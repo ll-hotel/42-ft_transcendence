@@ -24,11 +24,11 @@ export class Tournaments implements AppPage {
 		await this.loadTournamentList();
 	}
 	unload(): void {
-		this.html.remove();
 		this.emptyTournamentList();
+		this.html.remove();
 	}
 	emptyTournamentList() {
-		const listUl = this.html.querySelector("") as HTMLUListElement | null;
+		const listUl = this.html.querySelector("#tournament-list") as HTMLUListElement | null;
 		if (!listUl) return;
 		listUl.childNodes.forEach(node => node.remove());
 	}
@@ -45,11 +45,11 @@ export class Tournaments implements AppPage {
 			alert("Can not create tournament: " + rep?.payload.message);
 			return;
 		}
-		this.emptyTournamentList();
 		await this.loadTournamentList();
 		await this.joinTournament(name);
 	}
 	async loadTournamentList() {
+		this.emptyTournamentList();
 		const listUl = this.html.querySelector("#tournament-list") as HTMLUListElement | null;
 		if (!listUl) return;
 
