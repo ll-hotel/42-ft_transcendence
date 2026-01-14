@@ -12,8 +12,7 @@ import { mapColumnsInAliasedSQLToAlias } from "drizzle-orm";
 import { utimesSync } from "fs";
 
 import fs from "fs";
-import util from "util";
-import { pipeline } from "stream";
+import sharp from "sharp";
 
 
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
@@ -38,7 +37,6 @@ class User {
 	}
 
 	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {	
-		const pump = util.promisify(pipeline);
 		const usr = req.user!;
 		
 		if (!req.isMultipart())
@@ -48,9 +46,9 @@ class User {
 		if (!data)
 			return;
 		// dimensions / size check
+		const buffer = await data.toBuffer();
+		await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${data.filename}`);
 
-
-		await pump(data.file, fs.createWriteStream(`./uploads/${data.filename}`));
 
 		// rm old pp from upload
 		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}`)
