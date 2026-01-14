@@ -2,7 +2,7 @@
 	<div class="grid grid-cols-1 gap-4 place-content-evenly xl:grid-cols-2 w-4/5 h-4/5 sm:pt-4 pt-14">
 		
 		<div id="user-info" class="bg-[#04809F] text-white rounded-2xl p-6 flex flex-col items-center justify-center gap-4 w-full h-full">
-			<img id="edit-avatar-preview" src="/default_pp.png" class="rounded-full w-20 sm:w-32">
+			<img id="edit-avatar-preview" src="/uploads/default_pp.png" class="rounded-full w-20 sm:w-32 object-cover">
 			<p class="font-bold text-2xl" id="edit-displayname-preview">DisplayName</p>
 		</div>
 
@@ -13,8 +13,8 @@
 				<input id="edit-displayname" name="displayname" placeholder="Display name" class="p-2 border rounded text-black"/>
 			</div>
 			<div class="flex flex-col">
-				<label for="edit-avatar" class="font-bold mb-1">Avatar URL</label>
-				<input id="edit-avatar" name="avatar" placeholder="Avatar URL" class="p-2 border rounded text-black"/>
+				<label for="edit-avatar" class="font-bold mb-1">Avatar</label>
+				<input id="edit-avatar" name="avatar" type="file" accept="image/*" class="p-2 border rounded text-black"/>
 			</div>
 			<button type="submit" class="btn-profile w-full py-2 bg-white text-[#04809F] font-bold rounded hover:bg-[#03657a] hover:text-white transition">Save</button>
 		</form>

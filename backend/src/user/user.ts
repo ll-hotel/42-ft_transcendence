@@ -11,6 +11,10 @@ import { boolean } from "drizzle-orm/gel-core";
 import { mapColumnsInAliasedSQLToAlias } from "drizzle-orm";
 import { utimesSync } from "fs";
 
+import fs from "fs";
+import sharp from "sharp";
+
+
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
@@ -27,6 +31,34 @@ class User {
 		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
 		app.patch("/api/user/password", { preHandler: authGuard }, User.updatePassword);
 		app.patch("/api/user/2fa", { preHandler: authGuard }, User.update2fa);
+
+
+		app.post("/api/user/updateAvatar", { preHandler: authGuard }, User.updateAvatar)
+	}
+
+	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {	
+		const usr = req.user!;
+		
+		if (!req.isMultipart())
+			return rep.send({message : " ERROR "});
+		
+		const data = await req.file();
+		if (!data)
+			return;
+		// dimensions / size check
+		const buffer = await data.toBuffer();
+		await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${data.filename}`);
+
+
+		// rm old pp from upload
+		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}`)
+			fs.unlink(usr.avatar, (err) => {});
+
+
+		const newAvatar = `uploads/${data.filename}`;
+		await db.update(users).set({ avatar: newAvatar }).where(eq(users.id, usr.id));
+
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: data.filename});		
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {

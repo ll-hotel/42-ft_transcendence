@@ -1,5 +1,7 @@
 import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
+import fastifyMultipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import authModule from "./auth";
@@ -11,6 +13,7 @@ import socketRoute from "./socketRoute";
 import { friendService } from "./user/friend";
 import { chatRoute } from "./routes/chat";
 import userModule from "./user/user";
+import path from "path";
 
 async function main() {
 	try {
@@ -24,8 +27,14 @@ async function main() {
 		},
 	});
 
+	app.register(fastifyStatic, {
+  		root: path.join(__dirname, "..", "uploads"),
+  		prefix: "/uploads/",
+	});
+
 	app.register(fastifyCookie);
 	app.register(fastifyWebsocket);
+	app.register(fastifyMultipart);
 	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
@@ -35,6 +44,8 @@ async function main() {
 	app.register(socketRoute);
 	app.register(chatRoute);
 	
+
+	console.log(app.printRoutes());
 
 		await app.listen({ port: 8080, host: "0.0.0.0" });
 	} catch (err) {
