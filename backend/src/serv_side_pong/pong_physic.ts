@@ -1,5 +1,47 @@
 import * as logger from './myLogger';
 
+enum TypeMsg
+{
+	state = 'state',
+	input = 'input',
+	error = 'error',
+}
+
+enum State
+{
+	ended = "ended",
+	paused = "paused",
+	stopped = "stopped",
+	not_started = "not_started"
+}
+
+type BaseMessage = {
+	source: string;
+	type: string;
+};
+
+type StateMessage = BaseMessage &
+{
+	"type": "state",
+	"ball": {
+		"x": number, "y": number
+	},
+	"paddles": {
+		"p1_Y": number,
+		"p2_Y": number
+	},
+	"score": { "p1": number, "p2": number },
+	"status": State;
+}
+
+type InputMessage = BaseMessage & {
+	type: "input",
+	up: boolean,
+	down: boolean
+}
+
+type Message = BaseMessage | StateMessage | InputMessage ;
+
 type Position = {x: number, y: number};
 type Size = {w: number, h: number};
 type Score = {p1: number, p2: number};
@@ -33,7 +75,6 @@ abstract class PhysicObject
 		return this.position;
 	}
 }
-
 
 
 export class Vector2D
@@ -126,6 +167,8 @@ export class GameServer
 	public paddle_p2: PongPaddle;
 	readonly score: Score;
 	public input: Map<string, boolean>;
+	readonly p1_ws: WebSocket;
+	readonly p2_ws: WebSocket;
 
 	//loop
 	private last_timestamp: number;
@@ -134,9 +177,9 @@ export class GameServer
 	private tick_rate: number;
 	private is_running: Boolean;
 
-	constructor()
+	constructor(p1ws: WebSocket, p2ws: WebSocket)
 	{
-		this.table = new PongTable({w: 1920, h: 1080});
+		this.table = new PongTable({w: 1000, h: 500});
 		this.score = {p1: 0, p2: 0};
 		this.paddle_p1 = new PongPaddle({x: 0, y: this.table.height / 2});
 		this.paddle_p2 = new PongPaddle({x: this.table.width, y: this.table.height / 2});
@@ -147,12 +190,36 @@ export class GameServer
 		this.tick_rate = 60;
 		this.tick_interval = 1000 / this.tick_rate;
 		this.input = new Map([["w", false], ["s", false], ["ArrowUp", false], ["ArrowDown", false]]);
+
+		this.p1_ws = p1ws;
+		this.p2_ws = p2ws;
+	}
+
+	send_to_players(state: State)
+	{
+		let init_msg : StateMessage = {
+			source: "pong",
+			type: TypeMsg.state,
+			ball: {x: this.ball.pos.x, y: this.ball.pos.y},
+			paddles: {p1_Y: this.paddle_p1.pos.y, p2_Y: this.paddle_p2.pos.y},
+			status: state,
+		} as StateMessage;
+
 	}
 
 	game_init() : void
 	{
+		let init_msg : StateMessage = {
+			source: "pong",
+			type: TypeMsg.state,
+			ball: {x: this.ball.pos.x, y: this.ball.pos.y},
+			paddles: {p1_Y: this.paddle_p1.pos.y, p2_Y: this.paddle_p2.pos.y},
+			status: State.not_started,
+		} as StateMessage;
 
 		this.is_running = false;
+		this.p1_ws.send(JSON.stringify(init_msg.toString()));
+		this.p2_ws.send(JSON.stringify(init_msg.toString()));
 	}
 
 	start() : void

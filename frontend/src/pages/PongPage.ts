@@ -1,5 +1,7 @@
 import { Game } from "../pong.js";
 import AppPage from "./AppPage.js";
+import * as socket from "../socket"
+
 
 export class PongPage implements AppPage {
 	content: HTMLElement;
@@ -34,6 +36,7 @@ export class PongPage implements AppPage {
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
 		console.debug("[PongPage] loadInto");
+
 		this.showStart();
 	}
 

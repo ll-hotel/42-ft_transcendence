@@ -1,6 +1,7 @@
 import {FastifyInstance, FastifyReply, FastifyRequest} from "fastify";
 import {authGuard} from "../security/authGuard";
 import {MESSAGE, STATUS} from "../shared";
+import * as log from "./myLogger"
 
 class PongApi {
 	static setup(app: FastifyInstance)
@@ -13,7 +14,7 @@ class PongApi {
 			return (rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized }));
 		}
 		rep.code(STATUS.success).send({
-			
+
 		});
 	}
 }
