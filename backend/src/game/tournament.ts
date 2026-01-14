@@ -26,14 +26,19 @@ export class Tournament {
 			{ preHandler: authGuard, schema: schema.params({ id: "number" }) },
 			Tournament.getTournament,
 		);
+		app.get("/api/tournament/list", { preHandler: authGuard }, Tournament.getTournamentList);
 	}
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
 		const user = req.user!;
 		const { name, size } = req.body as { name: string, size: number };
 
-		if (!name || (size !== 4 && size !== 8)) {
-			return rep.code(STATUS.bad_request).send({ message: "Missing name or wrong tournament size" });
+		// Sanitization.
+		if (name.length > 16 || /(?:[a-zA-Z].*)\w+/.test(name) == false) {
+			return rep.code(STATUS.bad_request).send({ message: "Bad tournament name" });
+		}
+		if (size !== 4 && size !== 8) {
+			return rep.code(STATUS.bad_request).send({ message: "Bad tournament size" });
 		}
 		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(drizzle.and(
 			drizzle.eq(tables.tournamentPlayers.userId, user.id),
@@ -265,6 +270,34 @@ export class Tournament {
 			players: playerNames,
 			rounds,
 		});
+	}
+
+	static async getTournamentList(_req: FastifyRequest, rep: FastifyReply) {
+		const dbList = await db.select()
+			.from(tables.tournaments)
+			.where(drizzle.eq(tables.tournaments.status, "pending"));
+
+		const promiseList = dbList.map(async (tournament) => {
+			const [creator] = await db.select()
+				.from(tables.users)
+				.where(drizzle.eq(tables.users.uuid, tournament.createdBy));
+			const players = await db.select()
+				.from(tables.tournamentPlayers)
+				.where(drizzle.eq(tables.tournamentPlayers.tournamentId, tournament.id));
+			return {
+				name: tournament.name,
+				size: tournament.size || 4,
+				createdBy: creator.displayName,
+				playersWaiting: players.length,
+			};
+		});
+
+		const list = [];
+		for (const promise of promiseList) {
+			list.push(await promise);
+		}
+
+		rep.code(STATUS.success).send({ list });
 	}
 }
 

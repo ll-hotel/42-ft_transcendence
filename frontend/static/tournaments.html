@@ -27,7 +27,7 @@
 							</select>
 						</div>
 						<div class="w-3/5 flex place-content-center">
-							<button id="tournament-create"
+							<button id="tournament-create" type="submit"
 								class="flex size-fit p-2 gap-2 bg-[#04809f] text-white rounded-md items-center">
 								<img src="vertical-cross.svg" class="size-4" />
 								<p>Create</p>
@@ -39,22 +39,9 @@
 		</section>
 		<section class="flex flex-col bg-gray-300 size-full rounded-2xl px-8 py-4 space-y-4">
 			<h1 class="text-black text-xl font-bold">Tournament list</h1>
-			<div class="grid xl:grid-rows-1 xl:grid-cols-8 gap-8 w-full h-4/5">
-				<div class="col-span-5 bg-white rounded-md">
-					<div class="grid grid-rows-2 grid-cols-3 border-b-2 border-b-[#04809f] gap-2 py-2 px-4">
-						<h2>Tournament name</h2>
-						<p class="ml-auto italic text-[#04809f]">Players</p>
-						<div class="row-span-2 flex">
-							<button id="tournament-join"
-								class="flex my-auto ml-auto size-fit p-2 gap-2 bg-[#04809f] text-white rounded-md">
-								<img src="play-icon.svg" class="size-4 my-auto" />
-								<p>Join</p>
-							</button>
-						</div>
-						<p class="italic text-[#04809f]">Created by User</p>
-						<p class="ml-auto">Info</p>
-					</div>
-				</div>
+			<div class="grid xl:grid-rows-1 xl:grid-cols-8 gap-8">
+				<ul id="tournament-list" class="col-span-5 bg-white rounded-md">
+				</ul>
 				<div class="col-span-4 xl:col-span-3 bg-white p-8 space-y-4 rounded-md">
 					<h2 class="text-lg">Join a tournament!</h2>
 					<li class="ml-4">Click on the associated button to join your chosen tournament.</li>
