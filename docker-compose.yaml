@@ -10,6 +10,7 @@ services:
       - frontend-static:/srv/app/static
       - frontend-src:/srv/app/src
       - secrets:/run/secrets:ro
+
   backend:
     container_name: backend
     restart: on-failure
@@ -28,7 +29,41 @@ services:
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
 
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: on-failure
+    ports:
+      - 3000:3000
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    privileged: true
+    restart: on-failure
+    ports:
+      - 8098:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+
+  prometheus:
+    image: docker.io/prom/prometheus:latest
+    container_name: prometheus
+    restart: on-failure
+    ports:
+      - 9090:9090
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+
 volumes:
+  prometheus-data:
   frontend-static:
     driver: local
     driver_opts:
