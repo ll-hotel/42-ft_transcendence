@@ -71,6 +71,7 @@ class Queue {
 		const [user2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p2.userId));
 		notifyUser(user1.uuid, match.id, user2.username);
 		notifyUser(user2.uuid, match.id, user1.username);
+		init_game(match.id, user1.uuid, user2.uuid);
 		return true;
 	}
 

@@ -1,7 +1,8 @@
 import { Game } from "../pong.js";
 import AppPage from "./AppPage.js";
 import * as socket from "../socket"
-
+import {api, Status} from "../api";
+import * as matchmaking from "./matchmaking"
 
 export class PongPage implements AppPage {
 	content: HTMLElement;
@@ -36,7 +37,6 @@ export class PongPage implements AppPage {
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
 		console.debug("[PongPage] loadInto");
-
 		this.showStart();
 	}
 
@@ -56,7 +56,7 @@ export class PongPage implements AppPage {
 		this.onclick = () => this.showPause();
 		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
-		this.game.start();
+		// this.game.start();
 		//setTimeout(() => this.showScore(), 5000);
 	}
 	showPause() {

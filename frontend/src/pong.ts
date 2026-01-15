@@ -1,4 +1,49 @@
-let DEBUG = 1;
+import socket, {Message} from "./socket.js";
+import {api} from "./api";
+let DEBUG = 0;
+type Speed = {dx: number; dy: number};
+
+enum TypeMsg
+{
+	state = 'state',
+	input = 'input',
+	error = 'error',
+}
+
+enum State
+{
+	ended = "ended",
+	paused = "paused",
+	stopped = "stopped",
+	not_started = "not_started"
+}
+
+type BaseMessage = {
+	source: string;
+	type: string;
+};
+
+type StateMessage = BaseMessage &
+	{
+		"type": "state",
+		"ball": {
+			"x": number, "y": number, "speed": Vector2D,
+		},
+		"paddles": {
+			"p1_Y": number,
+			"p2_Y": number
+		},
+		"score": { "p1": number, "p2": number },
+		"status": State;
+	}
+
+type InputMessage = BaseMessage & {
+	type: "input",
+	up: boolean,
+	down: boolean
+}
+
+type PongMessage = InputMessage | StateMessage | Message;
 
 function debug_message(msg: string, obj?: any): void
 {
@@ -27,55 +72,51 @@ function dot_product(x1: number, y1: number, x2: number, y2: number) : number
 abstract class PhysicObject
 {
 	protected	position: Position;
-	protected	speed: Vector2D;
+	protected	_speed: Vector2D;
 	readonly	size: Size
 
 	constructor(position: Position, size: Size, speed: Vector2D)
 	{
 		this.size = size;
 		this.position = position;
-		this.speed = speed;
+		this._speed = speed;
 	}
 
 	updatePos() : void
 	{
-		this.position.x += this.speed.getX();
-		this.position.y += this.speed.getY();
+		console.debug("updatePos" + this._speed);
+		this.position.x += this._speed.getX();
+		this.position.y += this._speed.getY();
 	}
 
 	public get pos() : Position{
 		return this.position;
 	}
+
+	set speed(speed: Vector2D)
+	{
+		this._speed = speed;
+	}
 }
 
 function resolution_update(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D)
 {
-		const rect = canvas.getBoundingClientRect();
-		const dpr = window.devicePixelRatio || 1;
 
-		// canvas.width = rect.width * dpr;
-		// canvas.height = rect.height * dpr;
-		// canvas.style.width = `${rect.width * dpr}px`;
-		// canvas.style.height = `${rect.height * dpr}px`;
-
-		context.setTransform(dpr, 0, 0, dpr, 0, 0);
-		context.imageSmoothingEnabled = false;
-
-		const angle = Math.PI / 2;
-		if (window.innerWidth < window.innerHeight)
-		{
-			debug_message("context rotation");
-			let tmp = canvas.width;
-			canvas.width = canvas.height;
-			canvas.height = tmp;
-			context.translate(canvas.height, 0)
-			context.setTransform(
-				Math.cos(angle), Math.sin(angle),
-				-Math.sin(angle), Math.cos(angle),
-				0, 0
-			);
-
-		}
+		// const angle = Math.PI / 2;
+		// if (window.innerWidth < window.innerHeight)
+		// {
+		// 	debug_message("context rotation");
+		// 	let tmp = canvas.width;
+		// 	canvas.width = canvas.height;
+		// 	canvas.height = tmp;
+		// 	context.translate(canvas.height, 0)
+		// 	context.setTransform(
+		// 		Math.cos(angle), Math.sin(angle),
+		// 		-Math.sin(angle), Math.cos(angle),
+		// 		0, 0
+		// 	);
+		//
+		// }
 
 }
 
@@ -184,6 +225,25 @@ export class Game
 		this.tick_rate = 60;
 		this.tick_interval = 1000 / this.tick_rate;
 		this.input = new Map([["w", false], ["s", false], ["ArrowUp", false], ["ArrowDown", false]]);
+
+		socket.addListener("pong", (msg) => {this.pong_event_listener(msg)});
+
+	}
+
+	pong_event_listener(msg: PongMessage): void
+	{
+		if (msg.type !== "state")
+			return;
+		// console.debug("pong_event_listener :", msg);
+		this.update_state(msg as StateMessage);
+	}
+
+	update_state(msg: StateMessage)
+	{
+		this.ball.speed = msg.ball.speed;
+		this.paddle_p2.pos.y = msg.paddles.p2_Y;
+		this.paddle_p1.pos.y = msg.paddles.p1_Y;
+		this.update();
 	}
 
 	update_paddle_texture() : void
@@ -246,9 +306,7 @@ export class Game
 		debug_message("start");
 		this.score.p1 = 0;
 		this.score.p2 = 0;
-		this.ball.spawn_ball((Math.random() < 0.5 ? -1 : 1));
 		this.is_running = true;
-		this.loop(this.last_timestamp);
 	}
 
 	resume() : void
@@ -258,10 +316,6 @@ export class Game
 		{
 			this.canvas.hidden = false;
 			this.is_running = true;
-			requestAnimationFrame((time) => {
-				this.last_timestamp = time;
-				this.loop(this.last_timestamp);
-			});
 		}
 
 	}
@@ -276,33 +330,9 @@ export class Game
 		}
 	}
 
-	private loop = (timestamp: number) =>
-	{
-		if (!this.is_running)
-			return;
-		const frame_time = timestamp - this.last_timestamp;
-		this.last_timestamp = timestamp;
-		this.buffer += frame_time;
-		while (this.buffer >= this.tick_interval)
-		{
-			this.update(this.tick_interval);
-			this.buffer -= this.tick_interval;
-		}
-		requestAnimationFrame(this.loop);
-	}
-
-	update(t: number) : void
+	update() : void
 	{
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-		if (this.input.get("w") && this.paddle_p1.pos.y >= ( 5 + (this.paddle_p1.size.h / 2)))
-			this.paddle_p1.pos.y = this.paddle_p1.pos.y - 5;
-		if (this.input.get("s")  && this.paddle_p1.pos.y <= this.canvas.height - (5 +  (this.paddle_p1.size.h / 2)))
-			this.paddle_p1.pos.y = this.paddle_p1.pos.y + 5;
-		if (this.input.get("ArrowUp") && this.paddle_p2.pos.y >= (5 +  (this.paddle_p1.size.h / 2)))
-			this.paddle_p2.pos.y = this.paddle_p2.pos.y - 5;
-		if (this.input.get("ArrowDown") && this.paddle_p2.pos.y <= this.canvas.height - (5 +  (this.paddle_p1.size.h / 2)))
-			this.paddle_p2.pos.y = this.paddle_p2.pos.y + 5;
-
 		this.ball.updatePos();
 		this.score_viewer.innerHTML = this.score.p1.toString() + " - " + this.score.p2.toString();
 		this.update_texture_pos();
@@ -319,7 +349,6 @@ export class Game
 			this.start_button.hidden = false;
 		}
 	}
-
 
 	reset_game() : void
 	{
@@ -373,103 +402,5 @@ export class PongBall extends PhysicObject
 
 	updateTextPos(context : CanvasRenderingContext2D): void {
 		context.drawImage(this.texture, this.pos.x - (this.size.w / 2), this.pos.y - (this.size.w / 2), this.size.w, this.size.w);
-	}
-
-	addSpeed(new_vec: Vector2D) : void
-	{
-		this.speed.addVector2D(new_vec);
-	}
-
-	test_collide(line_position: Position,normal: Vector2D)
-	{
-		var distance_from_line = dot_product(
-			this.position.x - line_position.x,
-			this.position.y - line_position.y,
-			normal.getX(), normal.getY()
-		);
-		if (distance_from_line < this.size.w / 2)
-		{
-			debug_message("Wall Collision at ", this.pos);
-			let speed_normal:number = dot_product(this.speed.getX(), this.speed.getY(), normal.getX(), normal.getY());
-			let speed_tangent:number = dot_product(this.speed.getX(), this.speed.getY(), normal.getY(), -normal.getX());
-			this.speed.setX = -(speed_normal * normal.getX()) + (speed_tangent * normal.getY());
-			this.speed.setY = -(speed_normal * normal.getY()) + (speed_tangent * -normal.getX());
-		}
-	}
-
-	spawn_ball(side:number)
-	{
-		this.pos.x = this.canvas.width / 2;
-		this.pos.y = this.canvas.height / 2;
-		// this.updateTextPos(this.canvas.context);
-		// var time_engage:number = Date.now();
-		// while (Date.now() <= time_engage + 300)
-		// 	;
-		let new_dir:number = Math.random() * 5 * ((Math.random() * 2) - 1);
-		this.speed.setX = (3 * side);
-		this.speed.setY = (new_dir);
-	}
-
-	test_collide_score(line_position: Position,normal: Vector2D)
-	{
-		var distance_from_line = dot_product(
-			this.position.x - line_position.x,
-			this.position.y - line_position.y,
-			normal.getX(), normal.getY()
-		);
-
-		var next_side;
-		if (distance_from_line < this.size.w / 2)
-		{
-			debug_message("Score Collision at ", this.pos);
-			next_side = 1;
-			if (this.pos.x <= this.size.w)
-				this.score.p2++;
-			else if (this.pos.x >= this.canvas.width - this.size.w)
-			{
-				this.score.p1++;
-				next_side = -1;
-			}
-			this.spawn_ball(next_side);
-		}
-	}
-
-	test_collide_paddle(paddle_position: Position,normal: Vector2D)
-	{
-		var distance_from_line = dot_product(
-			this.position.x - paddle_position.x,
-			this.position.y - paddle_position.y,
-			normal.getX(), normal.getY()
-		);
-
-		if ((distance_from_line <= this.size.w / 2)
-			&& (paddle_position.y - this.position.y > -(this.paddle_p1.size.h / 2))
-			&& (paddle_position.y - this.position.y) < (this.paddle_p1.size.h / 2))
-		{
-			debug_message("Paddle Collision at ", this.pos);
-			debug_message("Paddle coord :", this.paddle_p1)
-			var new_normal = normal;
-
-			new_normal.unit_himself();
-			this.position.x = paddle_position.x + ((this.size.w / 2) * normal.getX());
-			let speed_normal:number = dot_product(this.speed.getX(), this.speed.getY(), new_normal.getX(), new_normal.getY());
-			let speed_tangent:number = dot_product(this.speed.getX(), this.speed.getY(), new_normal.getY(), -new_normal.getX());
-			this.speed.setX = -(speed_normal * new_normal.getX()) + (speed_tangent * (new_normal.getY()));
-			this.speed.setY = -(speed_normal * (new_normal.getY())) + (speed_tangent * -new_normal.getX());
-			this.speed.coef_product(1.05);
-		}
-	}
-
-	updatePos(): void
-	{
-		this.position.x += this.speed.getX();
-		this.position.y += this.speed.getY();
-		this.test_collide({x: 0, y: 0}, this.top_normal);
-		this.test_collide({x: 0, y: this.canvas.height}, this.bottom_normal);
-		this.test_collide_paddle({x: this.paddle_p2.pos.x - (this.paddle_p2.size.w / 2), y: this.paddle_p2.pos.y}, this.right_normal);
-		this.test_collide_paddle({x: this.paddle_p1.pos.x + (this.paddle_p1.size.w / 2), y:this.paddle_p1.pos.y}, this.left_normal);
-		this.test_collide_score({x: 0, y: 0}, this.left_normal);
-		this.test_collide_score({x: this.canvas.width, y: 0}, this.right_normal);
-
 	}
 }

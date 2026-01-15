@@ -1,55 +1,47 @@
-import {GameServer} from "./pong_physic";
+import {ServerSidedGame} from "./pong_physic";
+import socket from "../socket"
 
 class Player
 {
 	readonly playerNumber: number;
-	readonly _ws: WebSocket;
+	readonly uuid: string;
 
-	constructor(playerNumber: number, ws: WebSocket)
+	constructor(playerNumber: number, uuid: string)
 	{
 		this.playerNumber = playerNumber;
-		this._ws = ws;
-	}
-
-	get ws() : WebSocket
-	{
-		return this._ws;
-	}
-
-	get pNumber() : number
-	{
-		return this.playerNumber;
+		this.uuid = uuid;
 	}
 }
 
 class GameInstance {
-	readonly game_id: string;
+	readonly game_id: number;
 	readonly _player_1 : Player;
 	readonly _player_2 : Player;
-	private _game: GameServer;
+	private _game: ServerSidedGame;
 
-	constructor(game_id: string, p1: Player, p2: Player)
+	constructor(game_id: number, p1: Player, p2: Player)
 	{
 		this.game_id = game_id;
 		this._player_1 = p1;
 		this._player_2 = p2;
-		this._game = new GameServer(p1.ws, p2.ws);
+		this._game = new ServerSidedGame(p1.uuid, p2.uuid);
 	}
 
 	play()
 	{
 		this._game.game_init();
+		this._game.start();
 	}
 }
 
-export function init_game(game_id: string, ws_p1:WebSocket, ws_p2:WebSocket)
+export function init_game(game_id: number, p1_uuid:string, p2_uuid:string)
 {
 /*TODO reception info du match:
 	- ws player 1
 	- ws player 2
 */
-	let p1 = new Player(1, ws_p1);
-	let p2 = new Player(2, ws_p2);
+	let p1 = new Player(1, p1_uuid);
+	let p2 = new Player(2, p2_uuid);
 	let game = new GameInstance(game_id, p1, p2);
 	game.play();
 /*

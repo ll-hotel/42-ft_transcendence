@@ -36,7 +36,6 @@ TODO
 
 class Client {
 	readonly uuid: string;
-	readonly ws: WebSocket;
 
 	constructor(ws: WebSocket) {
 		this.uuid = crypto.randomUUID();

@@ -23,9 +23,9 @@ async function main() {
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
 		}
 	});
-	app.addHook("onRequest", (request: FastifyRequest) => {
-		logger.info("incoming request: " + request.url);
-	});
+	// app.addHook("onRequest", (request: FastifyRequest) => {
+	// 	logger.info("incoming request: " + request.url);
+	// });
 
 	app.register(fastifyCookie);
 	app.register(fastifyWebsocket);

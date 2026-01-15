@@ -81,7 +81,7 @@ class AuthService {
 		await db.insert(users).values({
 			uuid: uiidv4(),
 			username,
-			displayName,
+			displayName: username,
 			password: hashedPass,
 			twofaKey,
 			twofaEnabled,

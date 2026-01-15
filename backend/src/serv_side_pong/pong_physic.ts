@@ -1,4 +1,9 @@
 import * as logger from './myLogger';
+import socket from "../socket";
+import {setInterval} from "node:timers";
+
+
+type Speed = {dx: number, dy: number};
 
 enum TypeMsg
 {
@@ -12,7 +17,8 @@ enum State
 	ended = "ended",
 	paused = "paused",
 	stopped = "stopped",
-	not_started = "not_started"
+	not_started = "not_started",
+	on_going = "on_going",
 }
 
 type BaseMessage = {
@@ -24,7 +30,7 @@ type StateMessage = BaseMessage &
 {
 	"type": "state",
 	"ball": {
-		"x": number, "y": number
+		"x": number, "y": number, "speed": Speed,
 	},
 	"paddles": {
 		"p1_Y": number,
@@ -159,7 +165,7 @@ class PongTable
 	}
 }
 
-export class GameServer
+export class ServerSidedGame
 {
 	private table: PongTable;
 	private ball: PongBall;
@@ -167,8 +173,8 @@ export class GameServer
 	public paddle_p2: PongPaddle;
 	readonly score: Score;
 	public input: Map<string, boolean>;
-	readonly p1_ws: WebSocket;
-	readonly p2_ws: WebSocket;
+	readonly p1_ws: string;
+	readonly p2_ws: string;
 
 	//loop
 	private last_timestamp: number;
@@ -177,7 +183,7 @@ export class GameServer
 	private tick_rate: number;
 	private is_running: Boolean;
 
-	constructor(p1ws: WebSocket, p2ws: WebSocket)
+	constructor(p1ws: string, p2ws: string)
 	{
 		this.table = new PongTable({w: 1000, h: 500});
 		this.score = {p1: 0, p2: 0};
@@ -204,7 +210,8 @@ export class GameServer
 			paddles: {p1_Y: this.paddle_p1.pos.y, p2_Y: this.paddle_p2.pos.y},
 			status: state,
 		} as StateMessage;
-
+		socket.send(this.p1_ws, init_msg);
+		socket.send(this.p2_ws, init_msg);
 	}
 
 	game_init() : void
@@ -218,8 +225,7 @@ export class GameServer
 		} as StateMessage;
 
 		this.is_running = false;
-		this.p1_ws.send(JSON.stringify(init_msg.toString()));
-		this.p2_ws.send(JSON.stringify(init_msg.toString()));
+
 	}
 
 	start() : void
@@ -229,9 +235,7 @@ export class GameServer
 		this.ball.spawn_ball((Math.random() < 0.5 ? -1 : 1));
 		this.is_running = true;
 		setInterval(() => {
-			setTimeout(() => {
 				this.update();
-			}, 1000);
 		}, 1000 / this.tick_rate);
 	}
 
@@ -270,6 +274,7 @@ export class GameServer
 		{
 			this.is_running = false;
 		}
+		this.send_to_players(State.on_going);
 		logger.error("oui", "latest_pong.log");
 	}
 
@@ -335,9 +340,13 @@ export class PongBall extends PhysicObject
 	{
 		this.pos.x = this.table.width / 2;
 		this.pos.y = this.table.height / 2;
-		let new_dir:number = Math.random() * 5 * ((Math.random() * 2) - 1);
-		this.speed.setX = (3 * side);
-		this.speed.setY = (new_dir);
+		//TODO remettre l'angle aleatoire
+
+		// let new_dir:number = Math.random() * 5 * ((Math.random() * 2) - 1);
+		// this.speed.setX = (3 * side);
+		// this.speed.setY = (new_dir);
+		this.speed.setX = 0;
+		this.speed.setY = 1;
 	}
 
 	test_collide_score(line_position: Position,normal: Vector2D)
