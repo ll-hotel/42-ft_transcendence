@@ -132,7 +132,6 @@ export class Tournament implements AppPage {
 			const { user } = res.payload as { user: { avatar: string } };
 			if (user.avatar == "DEFAULT_AVATAR") user.avatar = "default_pp.png";
 			else avatar = user.avatar;
-			console.log(user, avatar);
 		}
 		const playerCard = createElement(
 			`<div name="@${name}" class="tournament-player-card bg-[#04809f] text-white">

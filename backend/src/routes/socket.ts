@@ -1,10 +1,10 @@
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { db } from "./db/database";
-import * as dbM from "./db/methods";
-import * as tables from "./db/tables";
-import { authGuard } from "./security/authGuard";
-import socket from "./socket";
+import { db } from "../db/database";
+import * as dbM from "../db/methods";
+import * as tables from "../db/tables";
+import { authGuard } from "../security/authGuard";
+import socket from "../socket";
 
 export default function(fastify: FastifyInstance) {
 	fastify.get("/api/websocket", { preHandler: authGuard, websocket: true }, route);
@@ -31,8 +31,10 @@ async function route(ws: WebSocket, req: FastifyRequest) {
 				return;
 			}
 			const offlineDuration = Date.now() - client.lastOnlineTime;
-			if (offlineDuration < 5) {
-				return setTimeout(checkOfflineDuration, 1000);
+			// Since client sends a ping message with a 4sec interval, let's add double that and add 2.
+			if (offlineDuration <= 10) {
+				setTimeout(checkOfflineDuration, 1000);
+				return;
 			}
 			dbM.removeUserFromTournaments(uuid);
 			if (client.sockets.length == 0) {
