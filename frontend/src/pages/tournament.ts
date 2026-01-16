@@ -24,11 +24,15 @@ export class Tournament implements AppPage {
 			return gotoPage("tournaments");
 		}
 		socket.addListener("tournament", (message) => {
-			if (message.type != "left") return;
+			if (message.type != "left" && message.type != "join") return;
 			const { name } = message as unknown as { name: string };
-			this.removePlayer(name);
-		})
-		this.displayTournament(result.info, result.avatars);
+			if (message.type == "left") {
+				this.removeWaitingPlayer(name);
+			} else {
+				this.addWaitingPlayer(name);
+			}
+		});
+		this.displayTournament(result.info);
 	}
 	unload(): void {
 		this.html.remove();
@@ -40,42 +44,27 @@ export class Tournament implements AppPage {
 			return null;
 		}
 		const info = res.payload as TournamentInfo;
-		const avatars = new Map<string, string | undefined>();
-		for (const playerName of info.players) {
-			res = await api.get("/api/user?displayName=" + playerName);
-			if (res && res.status == Status.success) {
-				// const user = res.payload.user as { avatar?: string };
-				// avatars.set(playerName, user.avatar);
-				avatars.set(playerName, "default_pp.png");
-			}
-		}
-		return { info, avatars };
+		return { info };
 	}
-	displayTournament(info: TournamentInfo, avatars: Map<string, string | undefined>) {
+	displayTournament(info: TournamentInfo) {
 		if (info.rounds.length > 0) {
-			this.displayRounds(info, avatars);
+			this.displayRounds(info);
 		} else {
-			this.displayWaitingList(info, avatars);
+			this.displayWaitingList(info);
 		}
 	}
-	displayWaitingList(info: TournamentInfo, avatars: Map<string, string | undefined>) {
+	displayWaitingList(info: TournamentInfo) {
 		this.html.querySelector("#round-0")?.setAttribute("hidden", "");
 		this.html.querySelector("#round-1")?.setAttribute("hidden", "");
 		this.html.querySelector("#round-2")?.setAttribute("hidden", "");
 		const waitingList = this.html.querySelector("#waiting-players")!;
 		waitingList.removeAttribute("hidden");
 		waitingList.innerHTML = "";
-		for (const playerName of info.players) {
-			const playerCard = createElement(
-				`<div name="@${playerName}" class="tournament-player-card bg-[#04809f] text-white">
-					<img src="${avatars.get(playerName)}" class="tournament-player-pic" />
-					<p class="tournament-player-username">${playerName}</p>
-				</div>`,
-			);
-			waitingList.appendChild(playerCard!);
+		for (const name of info.players) {
+			this.addWaitingPlayer(name);
 		}
 	}
-	displayRounds(info: TournamentInfo, avatars: Map<string, string | undefined>) {
+	async displayRounds(info: TournamentInfo) {
 		this.html.querySelector("#waiting-players")!.setAttribute("hidden", "");
 		const round0 = this.html.querySelector("#round-0") as HTMLElement | null;
 		const round1 = this.html.querySelector("#round-1") as HTMLElement | null;
@@ -101,15 +90,25 @@ export class Tournament implements AppPage {
 			const round = info.rounds[roundI];
 			const roundElement = htmlItems[roundI];
 			for (const match of round) {
+				let avatar1 = "default_pp.png";
+				const res1 = await api.get("/api/user?displayName=" + match.p1.name);
+				if (res1 && res1.status == Status.success) {
+					avatar1 = res1.payload.avatar;
+				}
+				let avatar2 = "default_pp.png";
+				const res2 = await api.get("/api/user?displayName=" + match.p2.name);
+				if (res2 && res2.status == Status.success) {
+					avatar2 = res2.payload.avatar;
+				}
 				const matchDiv = createElement(`
 					<div class="tournament-match">
 						<div name="@${match.p1.name}" class="tournament-player-card">
-							<img src="${avatars.get(match.p1.name)}" class="tournament-player-pic" />
+							<img src="${avatar1}" class="tournament-player-pic" />
 							<p class="tournament-player-username">${match.p1.name}</p>
 							<p class="tournament-player-score">${match.p1.score}</p>
 						</div>,
 						<div name="@${match.p2.name}" class="tournament-player-card">
-							<img src="${avatars.get(match.p2.name)}" class="tournament-player-pic" />
+							<img src="${avatar2}" class="tournament-player-pic" />
 							<p class="tournament-player-username">${match.p2.name}</p>
 							<p class="tournament-player-score">${match.p2.score}</p>
 						</div>,
@@ -119,10 +118,29 @@ export class Tournament implements AppPage {
 			}
 		}
 	}
-	removePlayer(name: string) {
-		const waitingplayerCard = this.html.querySelector(`#waiting-players [name="@${name}"]`);
-		if (!waitingplayerCard) return;
-		waitingplayerCard.remove();
+	removeWaitingPlayer(name: string) {
+		const playerCard = this.html.querySelector(`#waiting-players [name="@${name}"]`);
+		if (!playerCard) return;
+		playerCard.remove();
+	}
+	async addWaitingPlayer(name: string) {
+		const playerList = this.html.querySelector(`#waiting-players`);
+		if (!playerList) return;
+		let avatar: string = "default_pp.png";
+		const res = await api.get("/api/user?displayName=" + name);
+		if (res && res.status == Status.success) {
+			const { user } = res.payload as { user: { avatar: string } };
+			if (user.avatar == "DEFAULT_AVATAR") user.avatar = "default_pp.png";
+			else avatar = user.avatar;
+			console.log(user, avatar);
+		}
+		const playerCard = createElement(
+			`<div name="@${name}" class="tournament-player-card bg-[#04809f] text-white">
+				<img src="${avatar}" class="tournament-player-pic" />
+				<p class="tournament-player-username">${name}</p>
+			</div>`,
+		)!;
+		playerList.appendChild(playerCard);
 	}
 }
 

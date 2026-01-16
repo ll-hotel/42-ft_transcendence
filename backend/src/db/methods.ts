@@ -6,13 +6,15 @@ import socket from "../socket";
 export type TournamentPlayer = {
 	id: number,
 	uuid: string,
+	displayName: string,
 };
 
-/**
- * Inserts a new row in the tournament players table.
- * If the user disconnects and did not reconnect in 10sec, removes him from all tournaments.
- */
 export async function addTournamentPlayer(tournamentId: number, user: TournamentPlayer) {
+	const players = await selectTournamentPlayers(tournamentId);
+	const message = { source: "tournament", type: "join", name: user.displayName };
+	for (const player of players) {
+		socket.send(player.uuid, message);
+	}
 	await db.insert(tables.tournamentPlayers).values({
 		tournamentId,
 		userId: user.id,
@@ -20,9 +22,6 @@ export async function addTournamentPlayer(tournamentId: number, user: Tournament
 	});
 }
 
-/**
- * Remove user from all tournaments.
- */
 export async function removeUserFromTournaments(userUUID: string) {
 	const tournaments = await db.select({ id: tables.tournamentPlayers.tournamentId }).from(tables.tournamentPlayers)
 		.where(
@@ -31,14 +30,14 @@ export async function removeUserFromTournaments(userUUID: string) {
 	await db.delete(tables.tournamentPlayers).where(
 		orm.eq(tables.tournamentPlayers.userUuid, userUUID),
 	);
+	const [user] = await db.select().from(tables.users).where(
+		orm.eq(tables.users.uuid, userUUID)
+	);
 	for (const tournament of tournaments) {
 		const players = await selectTournamentPlayers(tournament.id);
 		if (players.length == 0) {
 			await deleteTournament(tournament.id);
 		}
-		const [user] = await db.select().from(tables.users).where(
-			orm.eq(tables.users.uuid, userUUID)
-		);
 		const message = { source: "tournament", type: "left", name: user.displayName };
 		for (const player of players) {
 			socket.send(player.uuid, message);

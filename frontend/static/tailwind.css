@@ -153,6 +153,7 @@
 }
 .tournament-player-pic {
   width: calc(var(--spacing) * 20);
+  height: calc(var(--spacing) * 20);
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -160,6 +161,7 @@
   background-color: transparent;
   @media (width >= 48rem) {
     width: calc(var(--spacing) * 24);
+    height: calc(var(--spacing) * 24);
   }
 }
 .tournament-player-username {

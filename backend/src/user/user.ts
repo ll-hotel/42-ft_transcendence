@@ -5,7 +5,7 @@ import { matches, tournamentMatches, tournaments, users } from "../db/tables";
 import { generate2FASecret, generateQRCode } from "../security/2fa";
 import { authGuard } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
-import { MESSAGE, STATUS } from "../shared";
+import { MESSAGE, schema, STATUS } from "../shared";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
@@ -13,7 +13,7 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 class User {
 	static setup(app: FastifyInstance) {
 		app.get("/api/me", { preHandler: authGuard }, User.getMe);
-		app.get("/api/user", { preHandler: authGuard }, User.getUser);
+		app.get("/api/user", { preHandler: authGuard, schema: schema.query({ displayName: "string" }) }, User.getUser);
 		app.get("/api/users/all", { preHandler: authGuard }, User.getallUsers);
 		app.get("/api/me/history", { preHandler: authGuard }, User.getMyHistory);
 		app.get("/api/user/history", { preHandler: authGuard }, User.getUserHistory);
@@ -44,19 +44,17 @@ class User {
 			return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName }));
 		}
 
-		const usr = await db.select({
-			id: users.id,
-			uuid: users.uuid,
+		const [user] = await db.select({
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
 		}).from(users).where(orm.eq(users.displayName, displayName));
 
-		if (usr.length === 0) {
+		if (user == undefined) {
 			return rep.code(STATUS.not_found).send({ message: MESSAGE.user_notfound });
 		}
 
-		return rep.code(STATUS.success).send({ user: usr[0] });
+		return rep.code(STATUS.success).send({ user });
 	}
 
 	static async getallUsers(_req: FastifyRequest, rep: FastifyReply) {
@@ -270,8 +268,8 @@ class User {
 			pointScored += match.match.scoreP1;
 			pointConceded += match.match.scoreP2;
 			if (match.tournament.id) {
-				const keyT = participatedTournament.get(match.tournament.id)
-					?? {
+				const keyT = participatedTournament.get(match.tournament.id) ??
+					{
 						winnerId: match.tournament.winnerId!,
 						round: match.tournament.round!,
 						size: match.tournament.size!,
@@ -401,8 +399,8 @@ class User {
 			pointScored += match.match.scoreP1;
 			pointConceded += match.match.scoreP2;
 			if (match.tournament.id) {
-				const keyT = participatedTournament.get(match.tournament.id)
-					?? {
+				const keyT = participatedTournament.get(match.tournament.id) ??
+					{
 						winnerId: match.tournament.winnerId!,
 						round: match.tournament.round!,
 						size: match.tournament.size!,
