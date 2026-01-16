@@ -26,8 +26,12 @@ const SCHEMA_LOGIN = SCHEMA_REGISTER;
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 const oauthKeys = JSON.parse(fs.readFileSync("/run/secrets/oauthKeys", "utf-8").trim());
 
-const redirect42 = `https://localhost:8443/login?provider=42`;
-const redirectGoogle = `https://localhost:8443/login?provider=google`;
+if (!process.env.HOSTNAME) {
+	throw new Error("Missing server hostname");
+}
+
+const redirect42 = `https://${process.env.HOSTNAME}:8443/login?provider=42`;
+const redirectGoogle = `https://${process.env.HOSTNAME}:8443/login?provider=google`;
 
 /// Usernames are formed of alphanumerical characters ONLY.
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
@@ -39,9 +43,9 @@ class AuthService {
 		app.post('/api/auth/register', { schema: SCHEMA_REGISTER }, this.register);
 		app.post('/api/auth/login', { schema: SCHEMA_LOGIN }, this.login);
 		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
-		app.get('/api/auth42', this.redirectAuth42);
-		app.get('/api/auth42/callback', this.callback);
-		app.get('/api/authGoogle', this.redirectGoogle);
+		app.get('/api/auth42', this.auth42Redirect);
+		app.get('/api/auth42/callback', this.auth42Callback);
+		app.get('/api/authGoogle', this.googleRedirect);
 		app.get('/api/authGoogle/callback', this.googleCallback);
 	}
 
@@ -151,12 +155,13 @@ class AuthService {
 		rep.code(STATUS.success).send({ message: MESSAGE.logged_out, loggedIn: false});
 	}
 
-	async redirectAuth42(_req: FastifyRequest, rep: FastifyReply) {
+
+	async auth42Redirect(req: FastifyRequest, rep: FastifyReply) {
 		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${oauthKeys.s42.clientId}&redirect_uri=${encodeURI(redirect42)}&response_type=code`
 		rep.send({ redirect: redirectURL });
 	}
 
-	async callback(req: FastifyRequest, rep: FastifyReply) {
+	async auth42Callback(req: FastifyRequest, rep: FastifyReply) {
 		const { code } = req.query as { code?: string };
 		if (!code)
 			return rep.code(STATUS.bad_request).send({ message: "Missing code " });
@@ -170,7 +175,6 @@ class AuthService {
 				client_secret: oauthKeys.s42.clientSecret,
 				code,
 				redirect_uri: redirect42,
-
 			})
 		});
 		const token = await tokenResponse.json();
@@ -205,7 +209,7 @@ class AuthService {
 		});
 	}
 
-	async redirectGoogle(req: FastifyRequest, rep: FastifyReply) {
+	async googleRedirect(req: FastifyRequest, rep: FastifyReply) {
 		const redirectURL = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthKeys.google.clientId}&redirect_uri=${encodeURIComponent(redirectGoogle)}&response_type=code&scope=openid email profile`;
 		rep.send({ redirect: redirectURL });
 	}

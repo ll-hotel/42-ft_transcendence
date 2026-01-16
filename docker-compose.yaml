@@ -33,6 +33,7 @@ services:
       - secrets:/run/secrets:ro
     networks:
       - api
+    env_file: .env
 
 volumes:
   frontend-static:
