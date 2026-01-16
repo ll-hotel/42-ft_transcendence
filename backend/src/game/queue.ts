@@ -7,12 +7,13 @@ import { STATUS } from "../shared";
 import socket from "../socket";
 
 function notifyUser(uuid: string, match: number, opponent: string) {
-	socket.send(uuid, {
+	const message = {
 		source: "matchmaking",
 		type: "found",
 		match,
 		opponent,
-	});
+	};
+	socket.send(uuid, message);
 }
 
 class Queue {

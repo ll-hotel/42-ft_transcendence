@@ -1,5 +1,6 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
+import socket from "../socket.js";
 import AppPage from "./AppPage.js";
 
 export class Tournament implements AppPage {
@@ -22,10 +23,16 @@ export class Tournament implements AppPage {
 			alert("No such tournament");
 			return gotoPage("tournaments");
 		}
+		socket.addListener("tournament", (message) => {
+			if (message.type != "left") return;
+			const { name } = message as unknown as { name: string };
+			this.removePlayer(name);
+		})
 		this.displayTournament(result.info, result.avatars);
 	}
 	unload(): void {
 		this.html.remove();
+		socket.removeListener("tournament");
 	}
 	async retrieveTournamentInfo(name: string) {
 		let res = await api.get("/api/tournament?name=" + name);
@@ -60,8 +67,8 @@ export class Tournament implements AppPage {
 		waitingList.innerHTML = "";
 		for (const playerName of info.players) {
 			const playerCard = createElement(
-				`<div class="tournament-player-card bg-[#04809f] text-white">
-					<img src="/${avatars.get(playerName)}" class="tournament-player-pic" />
+				`<div name="@${playerName}" class="tournament-player-card bg-[#04809f] text-white">
+					<img src="${avatars.get(playerName)}" class="tournament-player-pic" />
 					<p class="tournament-player-username">${playerName}</p>
 				</div>`,
 			);
@@ -96,12 +103,12 @@ export class Tournament implements AppPage {
 			for (const match of round) {
 				const matchDiv = createElement(`
 					<div class="tournament-match">
-						<div class="tournament-player-card">
+						<div name="@${match.p1.name}" class="tournament-player-card">
 							<img src="${avatars.get(match.p1.name)}" class="tournament-player-pic" />
 							<p class="tournament-player-username">${match.p1.name}</p>
 							<p class="tournament-player-score">${match.p1.score}</p>
 						</div>,
-						<div class="tournament-player-card">
+						<div name="@${match.p2.name}" class="tournament-player-card">
 							<img src="${avatars.get(match.p2.name)}" class="tournament-player-pic" />
 							<p class="tournament-player-username">${match.p2.name}</p>
 							<p class="tournament-player-score">${match.p2.score}</p>
@@ -111,6 +118,11 @@ export class Tournament implements AppPage {
 				roundElement.appendChild(matchDiv!);
 			}
 		}
+	}
+	removePlayer(name: string) {
+		const waitingplayerCard = this.html.querySelector(`#waiting-players [name="@${name}"]`);
+		if (!waitingplayerCard) return;
+		waitingplayerCard.remove();
 	}
 }
 

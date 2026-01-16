@@ -145,20 +145,22 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: calc(var(--spacing) * 2);
+  gap: calc(var(--spacing) * 4);
   border-radius: var(--radius-sm);
   border-style: var(--tw-border-style);
   border-width: 1px;
   padding: calc(var(--spacing) * 4);
 }
 .tournament-player-pic {
-  display: flex;
-  width: calc(var(--spacing) * 24);
+  width: calc(var(--spacing) * 20);
   align-items: center;
   justify-content: center;
   overflow: hidden;
   border-radius: 100%;
   background-color: transparent;
+  @media (width >= 48rem) {
+    width: calc(var(--spacing) * 24);
+  }
 }
 .tournament-player-username {
   width: 100%;
