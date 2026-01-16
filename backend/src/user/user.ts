@@ -7,7 +7,7 @@ import { authGuard } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
 import { MESSAGE, STATUS } from "../shared";
 
-const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
+const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class User {
