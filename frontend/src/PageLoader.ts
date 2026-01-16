@@ -1,22 +1,24 @@
 import AppPage from "./pages/AppPage.js";
-import newHomePage from "./pages/HomePage.js";
+import { editProfile } from "./pages/editProfile.js";
 import { FriendPage } from "./pages/FriendPage.js";
+import newHomePage from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
+import { OtherProfilePage } from "./pages/otherProfile.js";
 import { ProfilePage } from "./pages/profile.js";
 import { RegisterPage } from "./pages/register.js";
+import { Tournament } from "./pages/tournament.js";
 import { Tournaments } from "./pages/tournaments.js";
-import { OtherProfilePage } from "./pages/otherProfile.js";
-import { editProfile } from "./pages/editProfile.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "home", new: newHomePage },
 	{ name: "register", new: RegisterPage.new },
 	{ name: "login", new: Login.new },
 	{ name: "profile", new: ProfilePage.new },
+	{ name: "tournament", new: Tournament.new },
 	{ name: "tournaments", new: Tournaments.new },
-	{ name: "profile/other", new: OtherProfilePage.new},
-	{ name: "profile/edit", new: editProfile.new},
-	{ name: "friends", new: FriendPage.new},
+	{ name: "profile/other", new: OtherProfilePage.new },
+	{ name: "profile/edit", new: editProfile.new },
+	{ name: "friends", new: FriendPage.new },
 ];
 
 export function strToPageName(str: string): string | null {
@@ -77,12 +79,10 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 	}).then(res => res.text().then(text => (new DOMParser()).parseFromString(text, "text/html").body));
 }
 
-export async function gotoUserPage( displayName : string)
-{
+export async function gotoUserPage(displayName: string) {
 	await gotoPage("profile/other", "?displayName=" + displayName);
 }
 const loader = new PageLoader(document.body.querySelector("#content")!);
-
 
 export async function gotoPage(name: string, search: string = "") {
 	const pageName = strToPageName(name);
@@ -105,4 +105,4 @@ async function loadPage() {
 
 window.onpopstate = function() {
 	loadPage();
-}
+};

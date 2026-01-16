@@ -137,6 +137,36 @@
   overflow-wrap: break-word;
   color: var(--color-white);
 }
+.tournament-match {
+  width: fit-content;
+  height: fit-content;
+}
+.tournament-player-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: calc(var(--spacing) * 2);
+  border-radius: var(--radius-sm);
+  border-style: var(--tw-border-style);
+  border-width: 1px;
+  padding: calc(var(--spacing) * 4);
+}
+.tournament-player-pic {
+  width: calc(var(--spacing) * 24);
+  justify-self: flex-start;
+  overflow: hidden;
+  border-radius: 1/1;
+}
+.tournament-player-username {
+  width: 100%;
+  text-align: left;
+}
+.tournament-player-score {
+  height: 100%;
+  justify-self: flex-end;
+  --tw-font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-bold);
+}
 @layer theme, base, components, utilities;
 @layer theme {
   :root, :host {
@@ -510,6 +540,9 @@
   .w-20 {
     width: calc(var(--spacing) * 20);
   }
+  .w-24 {
+    width: calc(var(--spacing) * 24);
+  }
   .w-fit {
     width: fit-content;
   }
@@ -616,6 +649,12 @@
       margin-inline-end: calc(calc(var(--spacing) * 3) * calc(1 - var(--tw-space-x-reverse)));
     }
   }
+  .justify-self-end {
+    justify-self: flex-end;
+  }
+  .justify-self-start {
+    justify-self: flex-start;
+  }
   .overflow-auto {
     overflow: auto;
   }
@@ -633,6 +672,9 @@
   }
   .rounded-2xl {
     border-radius: var(--radius-2xl);
+  }
+  .rounded-\[1\/1\] {
+    border-radius: 1/1;
   }
   .rounded-\[50\%\] {
     border-radius: 50%;

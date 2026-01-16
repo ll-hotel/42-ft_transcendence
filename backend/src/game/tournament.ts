@@ -22,9 +22,9 @@ export class Tournament {
 			Tournament.startTournament,
 		);
 		app.get(
-			"/api/tournament/:id",
-			{ preHandler: authGuard, schema: schema.params({ id: "number" }) },
-			Tournament.getTournament,
+			"/api/tournament",
+			{ preHandler: authGuard, schema: schema.query({ name: "string" }) },
+			Tournament.queryTournament,
 		);
 		app.get("/api/tournament/list", { preHandler: authGuard }, Tournament.getTournamentList);
 	}
@@ -83,6 +83,10 @@ export class Tournament {
 		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(
 			drizzle.eq(tables.tournamentPlayers.userId, user.id),
 		);
+		const userInWantedTournament: boolean = alreadyInTournament.tournamentId == tournament.id;
+		if (userInWantedTournament) {
+			return rep.code(STATUS.success).send({ message: "Tournament joined.", joined: true });
+		}
 		if (alreadyInTournament) {
 			return rep.code(STATUS.bad_request).send({ message: "You are already in a Tournament", joined: true });
 		}
@@ -220,56 +224,11 @@ export class Tournament {
 	static async getTournament(req: FastifyRequest, rep: FastifyReply) {
 		const tournamentId = (req.params as { id: number }).id;
 
-		const [tournament] = await db.select().from(tables.tournaments).where(
-			drizzle.eq(tables.tournaments.id, tournamentId),
-		);
-		if (!tournament) {
-			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
+		const info = await searchTournamentInfo(tournamentId);
+		if (!info) {
+			return rep.code(STATUS.not_found).send({ message: "No such tournament" });
 		}
-		const playerLinks = await db.select().from(tables.tournamentPlayers).where(
-			drizzle.eq(tables.tournamentPlayers.tournamentId, tournamentId),
-		);
-		const players = await db.select().from(tables.users).where(
-			drizzle.inArray(tables.users.uuid, playerLinks.map(link => link.userUuid)),
-		);
-		const playerNames = playerLinks.map(link => players.find(player => player.uuid == link.userUuid)!.displayName);
-		const matchLinks = await db.select().from(tables.tournamentMatches).where(
-			drizzle.eq(tables.tournamentMatches.tournamentId, tournamentId),
-		);
-		if (matchLinks.length === 0) {
-			return rep.code(STATUS.success).send({
-				tournament,
-				players: playerNames,
-				rounds: [],
-			});
-		}
-		const matchIdList = matchLinks.map(x => x.matchId);
-		const allMatches = await db.select().from(tables.matches).where(
-			drizzle.inArray(tables.matches.id, matchIdList),
-		);
-		const rounds: any[][] = [];
-
-		for (let i = 0; i < matchLinks.length; i++) {
-			const match = allMatches.find(x => x.id === matchLinks[i].matchId);
-			if (!match) continue;
-			const uuid1 = playerLinks.find(x => x.userId === match.player1Id)!.userUuid;
-			const uuid2 = playerLinks.find(x => x.userId === match.player2Id)!.userUuid;
-			if (!rounds[matchLinks[i].round]) {
-				rounds[matchLinks[i].round] = [];
-			}
-			rounds[matchLinks[i].round].push({
-				matchId: match.id,
-				status: match.status,
-				winnerId: match.winnerId,
-				p1: { name: players.find(player => player.uuid == uuid1)!.displayName, score: match.scoreP1 },
-				p2: { name: players.find(player => player.uuid == uuid2)!.displayName, score: match.scoreP2 },
-			});
-		}
-		return rep.code(STATUS.success).send({
-			tournament,
-			players: playerNames,
-			rounds,
-		});
+		return rep.code(STATUS.success).send(info);
 	}
 
 	static async getTournamentList(_req: FastifyRequest, rep: FastifyReply) {
@@ -299,8 +258,91 @@ export class Tournament {
 
 		rep.code(STATUS.success).send({ list });
 	}
+
+	static async queryTournament(req: FastifyRequest, rep: FastifyReply) {
+		const { name: tournamentName } = req.query as { name: string };
+		const [tournament] = await db.select()
+			.from(tables.tournaments)
+			.where(drizzle.eq(tables.tournaments.name, tournamentName));
+		if (!tournament) {
+			rep.code(STATUS.not_found).send({ message: "No such tournament" });
+			return;
+		}
+		const info = await searchTournamentInfo(tournament.id);
+		if (!info) {
+			// Can not happen as the tournament exists.
+			return;
+		}
+		rep.code(STATUS.success).send(info);
+	}
 }
 
 export default function(fastify: FastifyInstance) {
 	Tournament.setup(fastify);
 }
+
+async function searchTournamentInfo(tournamentId: number): Promise<TournamentInfo | null> {
+	const [tournament] = await db.select().from(tables.tournaments).where(
+		drizzle.eq(tables.tournaments.id, tournamentId),
+	);
+	if (!tournament) {
+		return null;
+	}
+	const playerLinks = await db.select().from(tables.tournamentPlayers).where(
+		drizzle.eq(tables.tournamentPlayers.tournamentId, tournamentId),
+	);
+	const players = await db.select().from(tables.users).where(
+		drizzle.inArray(tables.users.id, playerLinks.map(link => link.userId)),
+	);
+	const info: TournamentInfo = {
+		name: tournament.name,
+		players: players.map((player) => player.displayName),
+		rounds: [],
+	};
+	const matchLinks = await db.select().from(tables.tournamentMatches).where(
+		drizzle.eq(tables.tournamentMatches.tournamentId, tournamentId),
+	);
+	if (matchLinks.length === 0) {
+		return info;
+	}
+
+	const matchIds = matchLinks.map(x => x.matchId);
+	const dbMatchs = await db.select().from(tables.matches).where(drizzle.inArray(tables.matches.id, matchIds));
+	const matchs: TournamentMatch[] = dbMatchs.map((match) => {
+		// Both players exists because the `players` list is made from the tournament players list.
+		const player1 = players.find((player) => player.id == match.player1Id)!;
+		const player2 = players.find((player) => player.id == match.player2Id)!;
+		let winner = null;
+		if (match.winnerId) {
+			winner = player1.id == match.winnerId ? 1 : 2;
+		}
+		return {
+			matchId: match.id,
+			status: match.status,
+			winner,
+			p1: { name: player1.displayName, score: match.scoreP1 },
+			p2: { name: player2.displayName, score: match.scoreP2 },
+		};
+	});
+
+	info.rounds = [];
+	for (let round = 0; Math.pow(2, round) <= tournament.size!; round += 1) {
+		const roundMatchs = matchLinks.filter((link) => link.round == round)
+			.map((link) => matchs.find((match) => match.matchId == link.matchId)!);
+		info.rounds.push(roundMatchs);
+	}
+	return info;
+}
+
+type TournamentInfo = {
+	name: string,
+	players: string[],
+	rounds: TournamentMatch[][],
+};
+type TournamentMatch = {
+	matchId: number,
+	status: string,
+	winner: number | null,
+	p1: { name: string, score: number },
+	p2: { name: string, score: number },
+};

@@ -1,4 +1,5 @@
 import { api, Status } from "../api.js";
+import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js";
 
 export class Tournaments implements AppPage {
@@ -88,7 +89,12 @@ export class Tournaments implements AppPage {
 		}
 	}
 	async joinTournament(name: string) {
-		alert("Not implemented");
+		const joinRep = await api.post("/api/tournament/join", { name });
+		if (!joinRep) return;
+		if (joinRep.status == Status.success) {
+			return gotoPage("tournament", "?name=" + name);
+		}
+		alert("Can not join tournament: " + joinRep.payload.message);
 	}
 }
 
