@@ -7,7 +7,7 @@
   @apply border rounded-sm flex flex-row p-4 items-center gap-2;
 }
 .tournament-player-pic {
-  @apply flex rounded-[100%] w-24 overflow-hidden justify-content-center items-center bg-transparent;
+  @apply flex rounded-[100%] w-24 overflow-hidden justify-center items-center bg-transparent;
 }
 .tournament-player-username {
   @apply w-full text-left;
