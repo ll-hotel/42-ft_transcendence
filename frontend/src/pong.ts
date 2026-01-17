@@ -1,13 +1,17 @@
 import socket, {Message} from "./socket.js";
 import {api} from "./api";
-let DEBUG = 0;
-type Speed = {dx: number; dy: number};
+let DEBUG = 1;
+
+type Position = {x: number, y: number};
+type Score = {p1: number, p2: number};
+type Size = {w: number, h: number};
 
 enum TypeMsg
 {
 	state = 'state',
 	input = 'input',
 	error = 'error',
+	score = "score"
 }
 
 enum State
@@ -15,7 +19,8 @@ enum State
 	ended = "ended",
 	paused = "paused",
 	stopped = "stopped",
-	not_started = "not_started"
+	not_started = "not_started",
+	on_going = "on_going",
 }
 
 type BaseMessage = {
@@ -43,6 +48,12 @@ type InputMessage = BaseMessage & {
 	down: boolean
 }
 
+type ScoreMessage = BaseMessage & {
+	type: "score",
+	p1_score: number,
+	p2_score: number
+}
+
 type PongMessage = InputMessage | StateMessage | Message;
 
 function debug_message(msg: string, obj?: any): void
@@ -59,11 +70,6 @@ function draw_hit_box(context: CanvasRenderingContext2D, obj:PhysicObject): void
 	context.strokeStyle = "#000000";
 }
 
-type Position = {x: number, y: number};
-type Size = {w: number, h: number};
-type Score = {p1: number, p2: number};
-type Input = {name: string, value: boolean};
-
 function dot_product(x1: number, y1: number, x2: number, y2: number) : number
 {
 	return ((x1 * x2) + (y1 * y2));
@@ -72,36 +78,47 @@ function dot_product(x1: number, y1: number, x2: number, y2: number) : number
 abstract class PhysicObject
 {
 	protected	position: Position;
-	protected	_speed: Vector2D;
+	public 		speed: Vector2D;
 	readonly	size: Size
 
 	constructor(position: Position, size: Size, speed: Vector2D)
 	{
 		this.size = size;
 		this.position = position;
-		this._speed = speed;
+		this.speed = speed;
 	}
 
 	updatePos() : void
 	{
-		console.debug("updatePos" + this._speed);
-		this.position.x += this._speed.getX();
-		this.position.y += this._speed.getY();
+		this.position.x += this.speed.x;
+		this.position.y += this.speed.y;
 	}
 
 	public get pos() : Position{
 		return this.position;
 	}
 
-	set speed(speed: Vector2D)
+	public set pos(pos : Position)
 	{
-		this._speed = speed;
+		this.position = pos;
 	}
 }
 
-function resolution_update(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D)
+function resolution_update(canvas: HTMLCanvasElement) : CanvasRenderingContext2D
 {
 
+	const rect = canvas.getBoundingClientRect();
+	const dpr = (window.devicePixelRatio / 2) || 1;
+	canvas.width = rect.width * dpr;
+	canvas.height = rect.height * dpr;
+	canvas.style.width = rect.width + "px";
+	canvas.style.height = rect.height + "px";
+	let context = canvas.getContext("2d")!;
+	context.setTransform(dpr, 0, 0, dpr, 0, 0);
+	context.imageSmoothingEnabled = false;
+	// context.imageSmoothingQuality = "high";?
+
+	return context;
 		// const angle = Math.PI / 2;
 		// if (window.innerWidth < window.innerHeight)
 		// {
@@ -117,76 +134,30 @@ function resolution_update(canvas: HTMLCanvasElement, context: CanvasRenderingCo
 		// 	);
 		//
 		// }
-
 }
 
 export class Vector2D
 {
-	private x: number;
-	private y: number;
-	private norm: number;
+	public x: number;
+	public y: number;
 
 	constructor(x: number, y: number)
 	{
 		this.x = x;
 		this.y = y;
-		this.norm = Math.sqrt(this.x * this.x + this.y * this.y);
 	}
+}
 
-	addVector2D(other: Vector2D)
-	{
-		this.x += other.x;
-		this.y += other.y;
-		this.updateValue();
-	}
-
-	coef_product(coef: number)
-	{
-		this.x *= coef;
-		this.y *= coef;
-		this.updateValue();
-	}
-
-	private updateValue()
-	{
-		this.norm = Math.sqrt(this.x * this.x + this.y * this.y);
-	}
-
-	unitVector()
-	{
-		return ({x: (this.x / this.norm), y: (this.y / this.norm), norm: 1});
-	}
-
-	unit_himself()
-	{
-		this.x = this.x / this.norm;
-		this.y = this.y / this.norm;
-		this.updateValue();
-	}
-
-	getX()
-	{
-		return this.x;
-	}
-
-	getY()
-	{
-		return this.y;
-	}
-
-	public set setY(value: number) {
-		this.y = value;
-	}
-
-	public set setX(value: number) {
-	this.x = value;
-	}
+function	coef_product(vec: Vector2D, coef: number)
+{
+	vec.x *= coef;
+	vec.y *= coef;
 }
 
 export class Game
 {
 	private canvas: HTMLCanvasElement;
-	readonly context: CanvasRenderingContext2D;
+	private context: CanvasRenderingContext2D | null;
 	private ball: PongBall;
 	public paddle_p1: PongPaddle;
 	public paddle_p2: PongPaddle;
@@ -204,15 +175,15 @@ export class Game
 	private score_viewer: HTMLElement;
 	private start_button : HTMLElement;
 
+	private current_interval_id: number | null = null;
+	private canvas_ratio: Size;
+	private speed_ratio: number;
+
+
 	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement)
 	{
 		this.canvas = html.querySelector("#pong-canvas")!;
-		// this.canvas.width = this.canvas.width * 2;
-		// this.canvas.height = this.canvas.height * 2;
 		this.context = this.canvas.getContext("2d")!;
-
-		// html.addEventListener('load', () => { resolution_update(this.canvas, this.context); });
-		// this.canvas.addEventListener("resize", () => resolution_update(this.canvas));
 		this.score_viewer = html.querySelector("#panel-score")!;
 		this.start_button = html.querySelector("#panel-start")!;
 		this.score = {p1: 0, p2: 0};
@@ -222,46 +193,60 @@ export class Game
 		this.is_running = false;
 		this.last_timestamp = 0;
 		this.buffer = 0;
-		this.tick_rate = 60;
+		this.tick_rate = 90;
 		this.tick_interval = 1000 / this.tick_rate;
 		this.input = new Map([["w", false], ["s", false], ["ArrowUp", false], ["ArrowDown", false]]);
 
 		socket.addListener("pong", (msg) => {this.pong_event_listener(msg)});
+		this.canvas_ratio = {w: this.canvas.width / 500, h: this.canvas.height / 250 };
+		this.speed_ratio = (10 / this.tick_rate);
 
 	}
 
 	pong_event_listener(msg: PongMessage): void
 	{
-		if (msg.type !== "state")
+		if (msg.type !== "state" && msg.type !== "score")
 			return;
-		// console.debug("pong_event_listener :", msg);
+		if (msg.type == "score")
+		{
+			this.ball.pos.x = this.canvas.width / 2;
+			this.ball.pos.y = this.canvas.height / 2;
+			this.score.p1 = (msg as ScoreMessage).p1_score;
+			this.score.p2 = (msg as ScoreMessage).p2_score;
+			return ;
+		}
+		if ((msg as StateMessage).status == "not_started")
+		{
+			this.current_interval_id = setInterval(() => {
+				this.update()}, 1000 / this.tick_rate);
+		}
+		else if ((msg as StateMessage).status == "on_going")
+		{
+			clearInterval(this.current_interval_id!);
+		}
+
 		this.update_state(msg as StateMessage);
+		this.current_interval_id = setInterval(() => {
+			this.update()}, 1000 / this.tick_rate);
 	}
 
 	update_state(msg: StateMessage)
 	{
+		msg.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
+		msg.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
+		coef_product(msg.ball.speed, this.speed_ratio);
 		this.ball.speed = msg.ball.speed;
-		this.paddle_p2.pos.y = msg.paddles.p2_Y;
-		this.paddle_p1.pos.y = msg.paddles.p1_Y;
-		this.update();
 	}
 
 	update_paddle_texture() : void
 	{
-		if (DEBUG == 1)
-		{
-			draw_hit_box(this.context, this.paddle_p1);
-			draw_hit_box(this.context, this.paddle_p2);
-		}
-		this.paddle_p1.updateTextPos(this.context);
-		this.paddle_p2.updateTextPos(this.context);
+		this.paddle_p1.updateTextPos(this.context!);
+		this.paddle_p2.updateTextPos(this.context!);
 	}
 
 	update_ball_texture() : void
 	{
-		if (DEBUG == 1)
-			draw_hit_box(this.context, this.ball);
-		this.ball.updateTextPos(this.context);
+		this.ball.updateTextPos(this.context!);
 	}
 
 	update_texture_pos()
@@ -272,7 +257,6 @@ export class Game
 
 	game_init() : void
 	{
-		this.is_running = false;
 		this.update_texture_pos();
 		window.addEventListener("keydown", (event) => {
 			if (event.key === "ArrowDown")
@@ -283,8 +267,7 @@ export class Game
 				this.input.set("s", true);
 			if (event.key === "w" || event.key === "W")
 				this.input.set("w", true);
-		}
-		);
+		});
 
 		window.addEventListener("keyup", (event) => {
 			if (event.key === "ArrowDown")
@@ -302,7 +285,6 @@ export class Game
 
 	start() : void
 	{
-		resolution_update(this.canvas, this.context);
 		debug_message("start");
 		this.score.p1 = 0;
 		this.score.p2 = 0;
@@ -317,7 +299,6 @@ export class Game
 			this.canvas.hidden = false;
 			this.is_running = true;
 		}
-
 	}
 
 	pause() : void
@@ -332,29 +313,10 @@ export class Game
 
 	update() : void
 	{
-		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.context!.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.ball.updatePos();
 		this.score_viewer.innerHTML = this.score.p1.toString() + " - " + this.score.p2.toString();
 		this.update_texture_pos();
-
-		if (this.score.p1 >= 7) {
-			this.score_viewer.innerHTML = "Player 1 Win ! Rematch ?";
-			this.is_running = false;
-			this.start_button.hidden = false;
-		}
-		else if (this.score.p2 >= 7)
-		{
-			this.score_viewer.innerHTML = "Player 2 Win ! Rematch ?";
-			this.is_running = false;
-			this.start_button.hidden = false;
-		}
-	}
-
-	reset_game() : void
-	{
-		this.score.p1 = 0;
-		this.score.p2 = 0;
-		this.is_running = false;
 	}
 }
 

@@ -24,12 +24,11 @@ class GameInstance {
 		this.game_id = game_id;
 		this._player_1 = p1;
 		this._player_2 = p2;
-		this._game = new ServerSidedGame(p1.uuid, p2.uuid);
+		this._game = new ServerSidedGame(game_id, p1.uuid, p2.uuid);
 	}
 
 	play()
 	{
-		this._game.game_init();
 		this._game.start();
 	}
 }

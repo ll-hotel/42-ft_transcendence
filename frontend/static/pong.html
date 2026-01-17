@@ -1,6 +1,5 @@
-<body class="flex size-full">
-    <button id="join-queue">Join Queue</button>
-    <div id="game-clickbox" class="border-green-700 border-4 border-double rounded-xl text-center text-2xl">
+<body class="w-full h-screen">
+    <div id="game-clickbox" class="size-4/5 border-green-700 border-4 border-double rounded-xl text-center text-2xl">
 		<div id="panel-start" class="place-content-center items-center">
 			<p>Start Game</p>
 		</div>
@@ -9,8 +8,8 @@
 			<p>Pause<p>
 		</div>
 
-        <div id="panel-game" class="w-full h-full flex place-content-center rounded-lg" hidden>
-            <canvas id="pong-canvas" class="w-full h-full block rounded-lg"></canvas>
+        <div id="panel-game" class="size-full place-content-center rounded-lg" hidden>
+            <canvas id="pong-canvas" class="w-full border border-red-600 rounded-lg"></canvas>
         </div>
 
         <div id="panel-score" class="place-content-center items-center" hidden></div>

@@ -12,7 +12,6 @@ export class PongPage implements AppPage {
 	private constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement) {
 		this.content = html;
 		this.game = new Game(html, ball, paddle);
-
 		html.querySelector("#game-clickbox")?.addEventListener("click", () => this.onclick());
 		this.onclick = () => this.showGame();
 	}
@@ -50,12 +49,13 @@ export class PongPage implements AppPage {
 		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-score")?.setAttribute("hidden", "");
-		this.game.game_init();
+		// this.game.game_init();
 	}
 	showGame() {
 		this.onclick = () => this.showPause();
 		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
+		this.game.game_init();
 		// this.game.start();
 		//setTimeout(() => this.showScore(), 5000);
 	}

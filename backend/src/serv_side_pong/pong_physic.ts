@@ -1,15 +1,18 @@
 import * as logger from './myLogger';
 import socket from "../socket";
 import {setInterval} from "node:timers";
+import * as match from "../game/match"
+import Match from "../game/match";
+import {matches} from "../db/tables";
+import {endMatch, updateMatchInfo} from "../db/methods";
 
-
-type Speed = {dx: number, dy: number};
 
 enum TypeMsg
 {
 	state = 'state',
 	input = 'input',
 	error = 'error',
+	score = 'score'
 }
 
 enum State
@@ -30,20 +33,26 @@ type StateMessage = BaseMessage &
 {
 	"type": "state",
 	"ball": {
-		"x": number, "y": number, "speed": Speed,
+		"x": number, "y": number, "speed": Vector2D,
 	},
 	"paddles": {
 		"p1_Y": number,
 		"p2_Y": number
 	},
 	"score": { "p1": number, "p2": number },
-	"status": State;
+	"status": State
 }
 
 type InputMessage = BaseMessage & {
 	type: "input",
 	up: boolean,
 	down: boolean
+}
+
+type ScoreMessage = BaseMessage & {
+	type: "score",
+	p1_score: number,
+	p2_score: number
 }
 
 type Message = BaseMessage | StateMessage | InputMessage ;
@@ -53,6 +62,9 @@ type Size = {w: number, h: number};
 type Score = {p1: number, p2: number};
 type Input = {name: string, value: boolean};
 
+const client_tickrate :number = 90;
+const server_tickrate :number = 10;
+
 function dot_product(x1: number, y1: number, x2: number, y2: number) : number
 {
 	return ((x1 * x2) + (y1 * y2));
@@ -61,27 +73,31 @@ function dot_product(x1: number, y1: number, x2: number, y2: number) : number
 abstract class PhysicObject
 {
 	protected	position: Position;
-	protected	speed: Vector2D;
+	protected	_speed: Vector2D;
 	readonly	size: Size
 
 	constructor(position: Position, size: Size, speed: Vector2D)
 	{
 		this.size = size;
 		this.position = position;
-		this.speed = speed;
+		this._speed = speed;
 	}
 
 	updatePos() : void
 	{
-		this.position.x += this.speed.getX();
-		this.position.y += this.speed.getY();
+		this.position.x += this._speed.getX();
+		this.position.y += this._speed.getY();
 	}
 
 	public get pos() : Position{
 		return this.position;
 	}
-}
 
+	public get speed() : Vector2D
+	{
+		return this._speed;
+	}
+}
 
 export class Vector2D
 {
@@ -182,23 +198,25 @@ export class ServerSidedGame
 	private tick_interval: number;
 	private tick_rate: number;
 	private is_running: Boolean;
+	private game_id: number;
 
-	constructor(p1ws: string, p2ws: string)
+	constructor(game_id: number, p1ws: string, p2ws: string)
 	{
-		this.table = new PongTable({w: 1000, h: 500});
+		this.game_id = game_id;
+		this.table = new PongTable({w: 500, h: 250});
 		this.score = {p1: 0, p2: 0};
 		this.paddle_p1 = new PongPaddle({x: 0, y: this.table.height / 2});
 		this.paddle_p2 = new PongPaddle({x: this.table.width, y: this.table.height / 2});
-		this.ball = new PongBall(this.table, this.score, this.paddle_p1, this.paddle_p2);
+		this.p1_ws = p1ws;
+		this.p2_ws = p2ws;
+		this.ball = new PongBall(this.table, this.score, this.paddle_p1, this.paddle_p2, this.p1_ws, this.p2_ws, this.game_id);
 		this.is_running = false;
 		this.last_timestamp = 0;
 		this.buffer = 0;
-		this.tick_rate = 60;
+		this.tick_rate = server_tickrate;
 		this.tick_interval = 1000 / this.tick_rate;
 		this.input = new Map([["w", false], ["s", false], ["ArrowUp", false], ["ArrowDown", false]]);
 
-		this.p1_ws = p1ws;
-		this.p2_ws = p2ws;
 	}
 
 	send_to_players(state: State)
@@ -206,7 +224,7 @@ export class ServerSidedGame
 		let init_msg : StateMessage = {
 			source: "pong",
 			type: TypeMsg.state,
-			ball: {x: this.ball.pos.x, y: this.ball.pos.y},
+			ball: {x: this.ball.pos.x, y: this.ball.pos.y, speed: this.ball.speed},
 			paddles: {p1_Y: this.paddle_p1.pos.y, p2_Y: this.paddle_p2.pos.y},
 			status: state,
 		} as StateMessage;
@@ -214,26 +232,13 @@ export class ServerSidedGame
 		socket.send(this.p2_ws, init_msg);
 	}
 
-	game_init() : void
-	{
-		let init_msg : StateMessage = {
-			source: "pong",
-			type: TypeMsg.state,
-			ball: {x: this.ball.pos.x, y: this.ball.pos.y},
-			paddles: {p1_Y: this.paddle_p1.pos.y, p2_Y: this.paddle_p2.pos.y},
-			status: State.not_started,
-		} as StateMessage;
-
-		this.is_running = false;
-
-	}
-
 	start() : void
 	{
 		this.score.p1 = 0;
 		this.score.p2 = 0;
-		this.ball.spawn_ball((Math.random() < 0.5 ? -1 : 1));
+		this.ball.respawn((Math.random() < 0.5 ? -1 : 1));
 		this.is_running = true;
+		this.send_to_players(State.not_started);
 		setInterval(() => {
 				this.update();
 		}, 1000 / this.tick_rate);
@@ -269,13 +274,14 @@ export class ServerSidedGame
 		this.ball.updatePos();
 		if (this.score.p1 >= 7) {
 			this.is_running = false;
+			this.end();
 		}
 		else if (this.score.p2 >= 7)
 		{
 			this.is_running = false;
+			this.end();
 		}
 		this.send_to_players(State.on_going);
-		logger.error("oui", "latest_pong.log");
 	}
 
 	reset_game() : void
@@ -283,6 +289,12 @@ export class ServerSidedGame
 		this.score.p1 = 0;
 		this.score.p2 = 0;
 		this.is_running = false;
+	}
+
+	end()
+	{
+		console.log("end");
+		endMatch(this.game_id);
 	}
 }
 
@@ -305,8 +317,11 @@ export class PongBall extends PhysicObject
 	readonly	bottom_normal : Vector2D;
 	readonly	left_normal : Vector2D;
 	readonly	right_normal : Vector2D;
+	private		p1_ws : string;
+	private		p2_ws : string;
+	private		game_id : number;
 
-	constructor(table: PongTable, score: Score, paddle_p1: PongPaddle, paddle_p2: PongPaddle)
+	constructor(table: PongTable, score: Score, paddle_p1: PongPaddle, paddle_p2: PongPaddle, p1_ws: string, p2_ws: string, game_id: number)
 	{
 		super({x: table.width / 2, y: table.height / 2}, {w:10, h:10}, new Vector2D(0,0));
 		this.table = table;
@@ -318,6 +333,23 @@ export class PongBall extends PhysicObject
 		this.bottom_normal = new Vector2D(0, -1);
 		this.left_normal = new Vector2D(1, 0);
 		this.right_normal = new Vector2D(-1, 0);
+
+		this.p1_ws = p1_ws;
+		this.p2_ws = p2_ws;
+		this.game_id = game_id;
+	}
+
+	send_score_to_players()
+	{
+		let init_msg : ScoreMessage = {
+			source: "pong",
+			type: TypeMsg.score,
+			p1_score: this.score.p1,
+			p2_score: this.score.p2
+		} as ScoreMessage;
+
+		socket.send(this.p1_ws, init_msg);
+		socket.send(this.p2_ws, init_msg);
 	}
 
 	test_collide(line_position: Position,normal: Vector2D)
@@ -333,20 +365,18 @@ export class PongBall extends PhysicObject
 			let speed_tangent:number = dot_product(this.speed.getX(), this.speed.getY(), normal.getY(), -normal.getX());
 			this.speed.setX = -(speed_normal * normal.getX()) + (speed_tangent * normal.getY());
 			this.speed.setY = -(speed_normal * normal.getY()) + (speed_tangent * -normal.getX());
+			this.speed.coef_product(1.05);
 		}
 	}
 
-	spawn_ball(side:number)
+	respawn(side:number)
 	{
 		this.pos.x = this.table.width / 2;
 		this.pos.y = this.table.height / 2;
 		//TODO remettre l'angle aleatoire
 
-		// let new_dir:number = Math.random() * 5 * ((Math.random() * 2) - 1);
-		// this.speed.setX = (3 * side);
-		// this.speed.setY = (new_dir);
-		this.speed.setX = 0;
-		this.speed.setY = 1;
+		this.speed.setX = 5;
+		this.speed.setY = 5;
 	}
 
 	test_collide_score(line_position: Position,normal: Vector2D)
@@ -366,9 +396,11 @@ export class PongBall extends PhysicObject
 			else if (this.pos.x >= this.table.width - this.size.w)
 			{
 				this.score.p1++;
+				updateMatchInfo(this.game_id, this.score.p1, this.score.p2);
 				next_side = -1;
 			}
-			this.spawn_ball(next_side);
+			this.respawn(next_side);
+			this.send_score_to_players();
 		}
 	}
 
@@ -400,10 +432,10 @@ export class PongBall extends PhysicObject
 	{
 		this.position.x += this.speed.getX();
 		this.position.y += this.speed.getY();
-		this.test_collide({x: 0, y: 0}, this.top_normal);
-		this.test_collide({x: 0, y: this.table.height}, this.bottom_normal);
-		this.test_collide_paddle({x: this.paddle_p2.pos.x - (this.paddle_p2.size.w / 2), y: this.paddle_p2.pos.y}, this.right_normal);
-		this.test_collide_paddle({x: this.paddle_p1.pos.x + (this.paddle_p1.size.w / 2), y:this.paddle_p1.pos.y}, this.left_normal);
+		this.test_collide({x: 0, y: (this.size.h / 2)}, this.top_normal);
+		this.test_collide({x: 0, y: this.table.height - (this.size.h / 2)}, this.bottom_normal);
+		this.test_collide_paddle({x: this.paddle_p2.pos.x - (this.paddle_p2.size.w / 2) - (this.size.w / 2), y: this.paddle_p2.pos.y}, this.right_normal);
+		this.test_collide_paddle({x: this.paddle_p1.pos.x + (this.paddle_p1.size.w / 2) + (this.size.w / 2), y:this.paddle_p1.pos.y}, this.left_normal);
 		this.test_collide_score({x: 0, y: 0}, this.left_normal);
 		this.test_collide_score({x: this.table.width, y: 0}, this.right_normal);
 
