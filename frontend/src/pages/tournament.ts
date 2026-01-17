@@ -3,6 +3,9 @@ import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import AppPage from "./AppPage.js";
 
+type TournamentMessage = {
+	type: string,
+}
 export class Tournament implements AppPage {
 	html: HTMLElement;
 	constructor(html: HTMLElement) {
@@ -23,7 +26,8 @@ export class Tournament implements AppPage {
 			alert("No such tournament");
 			return gotoPage("tournaments");
 		}
-		socket.addListener("tournament", (message) => {
+		socket.addListener("tournament", (data) => {
+			const message = data as unknown as TournamentMessage;
 			if (message.type != "left" && message.type != "join") return;
 			const { name } = message as unknown as { name: string };
 			if (message.type == "left") {
@@ -33,6 +37,7 @@ export class Tournament implements AppPage {
 			}
 		});
 		this.displayTournament(result.info);
+		this.toggleStartButton(result.info);
 	}
 	unload(): void {
 		this.html.remove();
@@ -46,11 +51,34 @@ export class Tournament implements AppPage {
 		const info = res.payload as TournamentInfo;
 		return { info };
 	}
+
 	displayTournament(info: TournamentInfo) {
 		if (info.rounds.length > 0) {
 			this.displayRounds(info);
 		} else {
 			this.displayWaitingList(info);
+		}
+	}
+	async toggleStartButton(info: TournamentInfo) {
+		const res = await api.get("/api/me");
+		if (!res || res.status != Status.success) return;
+
+		const startButton = this.html.querySelector("#tournament-start") as HTMLButtonElement | null;
+		if (startButton) {
+			startButton.setAttribute("hidden", "");
+			startButton.onclick = null;
+			if (info.creator.name == res.payload.username) {
+				startButton.removeAttribute("hidden");
+				startButton.onclick = () => this.startTournament(info.name);
+			}
+		}
+	}
+	async startTournament(name: string) {
+		const res = await api.post("/api/tournament/start", { name });
+		if (!res) return;
+		if (res.status != Status.not_found) {
+			alert("Can not start tournament: " + res.payload.message);
+			return;
 		}
 	}
 	displayWaitingList(info: TournamentInfo) {
@@ -77,6 +105,7 @@ export class Tournament implements AppPage {
 		round1.innerHTML = "";
 		round2.innerHTML = "";
 
+		console.log(info.rounds);
 		const htmlItems: HTMLElement[] = [];
 		if (info.rounds.length > 2) {
 			round0.removeAttribute("hidden");
@@ -144,6 +173,7 @@ export class Tournament implements AppPage {
 }
 
 type TournamentInfo = {
+	creator: { name: string },
 	name: string,
 	players: string[],
 	rounds: TournamentMatch[][],

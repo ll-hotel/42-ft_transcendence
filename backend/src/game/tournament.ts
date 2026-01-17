@@ -5,6 +5,7 @@ import * as dbM from "../db/methods";
 import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
 import { schema, STATUS } from "../shared";
+import socket from "../socket";
 
 export class Tournament {
 	static setup(app: FastifyInstance) {
@@ -97,7 +98,7 @@ export class Tournament {
 		const players = await db.select().from(tables.tournamentPlayers).where(
 			orm.eq(tables.tournamentPlayers.tournamentId, tournament.id),
 		);
-		if (players.length === 8) {
+		if (players.length >= tournament.size) {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament full", full: true });
 		}
 		await dbM.addTournamentPlayer(tournament.id, user);
@@ -115,109 +116,88 @@ export class Tournament {
 			return rep.code(STATUS.not_found).send({ message: "Tournament not found" });
 		}
 		if (user.uuid !== tournament.createdBy) {
-			return rep.code(STATUS.unauthorized).send({ message: "You are not the creator of this tournament " });
-		}
-		if (tournament.status !== "pending") {
-			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
+			return rep.code(STATUS.unauthorized).send({ message: "You are not the creator of this tournament" });
 		}
 
-		const players = await db.select().from(tables.tournamentPlayers).where(
-			orm.eq(tables.tournamentPlayers.tournamentId, tournament.id),
-		);
-		if (players.length !== 4) {
-			return rep.code(STATUS.bad_request).send({ message: "Not enough players" });
+		const error = await dbM.startTournament(tournament.id);
+		switch (error) {
+			case dbM.Error.MissingPlayers:
+				return rep.code(STATUS.bad_request).send({ message: "Missing players" });
+			case dbM.Error.TournamentNotPending:
+				return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended" });
+			case dbM.Error.MissingTournament: // Can not happen.
+			case null: // No error.
 		}
 
-		const [m1] = await db.insert(tables.matches).values({
-			player1Id: players[0].userId,
-			player2Id: players[1].userId,
-			status: "ongoing",
-		}).returning();
-		const [m2] = await db.insert(tables.matches).values({
-			player1Id: players[2].userId,
-			player2Id: players[3].userId,
-			status: "ongoing",
-		}).returning();
-
-		await db.insert(tables.tournamentMatches).values([
-			{ tournamentId: tournament.id, matchId: m1.id, round: 1 },
-			{ tournamentId: tournament.id, matchId: m2.id, round: 1 },
-		]);
-
-		await db.update(tables.tournaments).set({ status: "ongoing" }).where(
-			orm.eq(tables.tournaments.id, tournament.id),
-		);
-
-		// notifyUser TOURNAMENT_STARTED
+		notifyTournamentStart(tournament.id);
 
 		return rep.code(STATUS.success).send({
 			message: "Tournament started",
-			matches: [m1, m2],
 		});
 	}
 
-	static async tournamentEndMatch(matchId: number, winnerId: number) {
-		const [tm] = await db.select().from(tables.tournamentMatches).where(
-			orm.eq(tables.tournamentMatches.matchId, matchId),
-		);
-		if (!tm) {
-			return;
-		}
-		if (tm.round === 1) {
-			await Tournament.semiFinalEnd(tm.tournamentId);
-		} else if (tm.round === 2) {
-			await db.update(tables.tournaments).set({ status: "ended" }).where(
-				orm.eq(tables.tournaments.id, tm.tournamentId),
-			);
-			// notify User TOURNAMENT_ENDED
-		}
-	}
+	// static async tournamentEndMatch(matchId: number, winnerId: number) {
+	// 	const [tm] = await db.select().from(tables.tournamentMatches).where(
+	// 		orm.eq(tables.tournamentMatches.matchId, matchId),
+	// 	);
+	// 	if (!tm) {
+	// 		return;
+	// 	}
+	// 	if (tm.round === 1) {
+	// 		await Tournament.semiFinalEnd(tm.tournamentId);
+	// 	} else if (tm.round === 2) {
+	// 		await db.update(tables.tournaments).set({ status: "ended" }).where(
+	// 			orm.eq(tables.tournaments.id, tm.tournamentId),
+	// 		);
+	// 		// notify User TOURNAMENT_ENDED
+	// 	}
+	// }
 
-	static async semiFinalEnd(tournamentId: number) {
-		const link = await db.select().from(tables.tournamentMatches).where(orm.and(
-			orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
-			orm.eq(tables.tournamentMatches.round, 1),
-		));
+	// static async semiFinalEnd(tournamentId: number) {
+	// 	const link = await db.select().from(tables.tournamentMatches).where(orm.and(
+	// 		orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
+	// 		orm.eq(tables.tournamentMatches.round, 1),
+	// 	));
 
-		if (link.length !== 2) {
-			return;
-		}
+	// 	if (link.length !== 2) {
+	// 		return;
+	// 	}
 
-		const semiMatches = await db.select().from(tables.matches).where(orm.or(
-			orm.eq(tables.matches.id, link[0].matchId),
-			orm.eq(tables.matches.id, link[1].matchId),
-		));
+	// 	const semiMatches = await db.select().from(tables.matches).where(orm.or(
+	// 		orm.eq(tables.matches.id, link[0].matchId),
+	// 		orm.eq(tables.matches.id, link[1].matchId),
+	// 	));
 
-		const finished = semiMatches.filter(x => x.status === "ended");
-		if (finished.length < 2) {
-			return;
-		}
+	// 	const finished = semiMatches.filter(x => x.status === "ended");
+	// 	if (finished.length < 2) {
+	// 		return;
+	// 	}
 
-		const winner1 = finished[0].winnerId;
-		const winner2 = finished[1].winnerId;
+	// 	const winner1 = finished[0].winnerId;
+	// 	const winner2 = finished[1].winnerId;
 
-		if (!winner1 || !winner2) {
-			return;
-		}
+	// 	if (!winner1 || !winner2) {
+	// 		return;
+	// 	}
 
-		const [finalMatch] = await db.insert(tables.matches).values({
-			player1Id: Number(winner1),
-			player2Id: Number(winner2),
-			status: "ongoing",
-		}).returning();
+	// 	const [finalMatch] = await db.insert(tables.matches).values({
+	// 		player1Id: Number(winner1),
+	// 		player2Id: Number(winner2),
+	// 		status: "ongoing",
+	// 	}).returning();
 
-		// notifyUser FINAL_MATCH
-		await db.insert(tables.tournamentMatches).values({
-			tournamentId,
-			matchId: finalMatch.id,
-			round: 2,
-		});
-	}
+	// 	// notifyUser FINAL_MATCH
+	// 	await db.insert(tables.tournamentMatches).values({
+	// 		tournamentId,
+	// 		matchId: finalMatch.id,
+	// 		round: 2,
+	// 	});
+	// }
 
 	static async getTournament(req: FastifyRequest, rep: FastifyReply) {
 		const tournamentId = (req.params as { id: number }).id;
 
-		const info = await searchTournamentInfo(tournamentId);
+		const info = await dbM.searchTournamentInfo(tournamentId);
 		if (!info) {
 			return rep.code(STATUS.not_found).send({ message: "No such tournament" });
 		}
@@ -261,12 +241,46 @@ export class Tournament {
 			rep.code(STATUS.not_found).send({ message: "No such tournament" });
 			return;
 		}
-		const info = await searchTournamentInfo(tournament.id);
+		const [creator] = await db.select({ name: tables.users.displayName }).from(tables.users).where(
+			orm.eq(tables.users.uuid, tournament.createdBy),
+		);
+		const info = await dbM.searchTournamentInfo(tournament.id);
 		if (!info) {
 			// Can not happen as the tournament exists.
 			return;
 		}
-		rep.code(STATUS.success).send(info);
+		rep.code(STATUS.success).send({ creator, ...info });
+	}
+}
+
+async function notifyTournamentStart(tournamentId: number) {
+	const [tournament] = await db.select().from(tables.tournaments).where(
+		orm.eq(tables.tournaments.id, tournamentId),
+	);
+	if (!tournament || tournament.status != "ongoing") {
+		return;
+	}
+	const matchsLinks = await db.select().from(tables.tournamentMatches).where(
+		orm.and(
+			orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
+			orm.eq(tables.tournamentMatches.round, tournament.round!),
+		),
+	);
+	const matchIds = matchsLinks.map((link) => link.matchId);
+	const matchs = await db.select().from(tables.matches).where(
+		orm.inArray(tables.matches.id, matchIds),
+	);
+	const playerIds = matchs.flatMap((match) => [match.player1Id, match.player2Id]);
+	const players = await db.select().from(tables.users).where(
+		orm.inArray(tables.users.id, playerIds),
+	);
+	for (const match of matchs) {
+		const player1 = players.find((player) => player.id == match.player1Id)!;
+		const player2 = players.find((player) => player.id == match.player2Id)!;
+		const message1 = { topic: "match", id: match.id };
+		const message2 = { topic: "match", id: match.id };
+		socket.send(player1.uuid, message1);
+		socket.send(player2.uuid, message2);
 	}
 }
 
@@ -279,69 +293,3 @@ export default async function(fastify: FastifyInstance) {
 		dbM.deleteTournament(tournament.id);
 	}
 }
-
-async function searchTournamentInfo(tournamentId: number): Promise<TournamentInfo | null> {
-	const [tournament] = await db.select().from(tables.tournaments).where(
-		orm.eq(tables.tournaments.id, tournamentId),
-	);
-	if (!tournament) {
-		return null;
-	}
-	const playerLinks = await db.select().from(tables.tournamentPlayers).where(
-		orm.eq(tables.tournamentPlayers.tournamentId, tournamentId),
-	);
-	const players = await db.select().from(tables.users).where(
-		orm.inArray(tables.users.id, playerLinks.map(link => link.userId)),
-	);
-	const info: TournamentInfo = {
-		name: tournament.name,
-		players: players.map((player) => player.displayName),
-		rounds: [],
-	};
-	const matchLinks = await db.select().from(tables.tournamentMatches).where(
-		orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
-	);
-	if (matchLinks.length === 0) {
-		return info;
-	}
-
-	const matchIds = matchLinks.map(x => x.matchId);
-	const dbMatchs = await db.select().from(tables.matches).where(orm.inArray(tables.matches.id, matchIds));
-	const matchs: TournamentMatch[] = dbMatchs.map((match) => {
-		// Both players exists because the `players` list is made from the tournament players list.
-		const player1 = players.find((player) => player.id == match.player1Id)!;
-		const player2 = players.find((player) => player.id == match.player2Id)!;
-		let winner = null;
-		if (match.winnerId) {
-			winner = player1.id == match.winnerId ? 1 : 2;
-		}
-		return {
-			matchId: match.id,
-			status: match.status,
-			winner,
-			p1: { name: player1.displayName, score: match.scoreP1 },
-			p2: { name: player2.displayName, score: match.scoreP2 },
-		};
-	});
-
-	info.rounds = [];
-	for (let round = 0; Math.pow(2, round) <= tournament.size!; round += 1) {
-		const roundMatchs = matchLinks.filter((link) => link.round == round)
-			.map((link) => matchs.find((match) => match.matchId == link.matchId)!);
-		info.rounds.push(roundMatchs);
-	}
-	return info;
-}
-
-type TournamentInfo = {
-	name: string,
-	players: string[],
-	rounds: TournamentMatch[][],
-};
-type TournamentMatch = {
-	matchId: number,
-	status: string,
-	winner: number | null,
-	p1: { name: string, score: number },
-	p2: { name: string, score: number },
-};

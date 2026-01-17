@@ -37,6 +37,16 @@ document.addEventListener("DOMContentLoaded", async function() {
 	});
 });
 
+function initSocket() {
+	socket.addListener("match", (m) => {
+		const message = m as unknown as { type: string, id?: number };
+		if (message.type == "found") {
+			// TODO: gotoPage("match", "?id=" + message.id!);
+			alert("Match found!\n")
+		}
+	})
+}
+
 function initSearchBar() {
 	const search = document.getElementById("user-search") as HTMLInputElement | null;
 	const result = document.getElementById("user-results");

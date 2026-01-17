@@ -1,6 +1,11 @@
 <body class="flex w-full h-screen items-center place-content-center p-2 md:p-8">
 	<div class="flex flex-col gap-8 h-4/5 w-full xl:w-4/5">
-		<h1 id="tournament-name" class="text-[#04809f] text-xl text-center font-bold">Tournament name</h1>
+		<div class="flex flex-row">
+			<h1 id="tournament-name" class="text-[#04809f] text-xl text-center font-bold">Tournament name</h1>
+			<button id="tournament-start" class="flex size-fit p-2 gap-2 bg-[#04809f] text-white rounded-md items-center ml-auto">
+				<p>Start</p>
+			</button>
+		</div>
 		<section class="flex flex-row bg-gray-300 size-full rounded-2xl overflow-scroll">
 			<ul id="waiting-players" class="grid size-full place-content-center items-center gap-8">
 			</ul>

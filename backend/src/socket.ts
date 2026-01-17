@@ -6,8 +6,7 @@ type Client = {
 	lastOnlineTime: number,
 };
 type Message = {
-	source: string,
-	type: string,
+	topic: string,
 };
 
 export const clients: Map<ClientId, Client> = new Map();

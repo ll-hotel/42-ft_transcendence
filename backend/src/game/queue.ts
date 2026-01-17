@@ -1,20 +1,11 @@
-import * as drizzle from "drizzle-orm";
+import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
+import * as dbM from "../db/methods";
 import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
 import { STATUS } from "../shared";
 import socket from "../socket";
-
-function notifyUser(uuid: string, match: number, opponent: string) {
-	const message = {
-		source: "matchmaking",
-		type: "found",
-		match,
-		opponent,
-	};
-	socket.send(uuid, message);
-}
 
 class Queue {
 	static setup(app: FastifyInstance) {
@@ -30,15 +21,15 @@ class Queue {
 		const usr = req.user!;
 
 		const [inQueue] = await db.select().from(tables.matchmakingQueue).where(
-			drizzle.eq(tables.matchmakingQueue.userId, usr.id),
+			orm.eq(tables.matchmakingQueue.userId, usr.id),
 		);
 		if (inQueue) {
 			return rep.code(STATUS.bad_request).send({ message: "Already in queue" });
 		}
 
-		const [isPlaying] = await db.select().from(tables.matches).where(drizzle.and(
-			drizzle.or(drizzle.eq(tables.matches.player1Id, usr.id), drizzle.eq(tables.matches.player2Id, usr.id)),
-			drizzle.eq(tables.matches.status, "ongoing"),
+		const [isPlaying] = await db.select().from(tables.matches).where(orm.and(
+			orm.or(orm.eq(tables.matches.player1Id, usr.id), orm.eq(tables.matches.player2Id, usr.id)),
+			orm.eq(tables.matches.status, "ongoing"),
 		));
 		if (isPlaying) {
 			return rep.code(STATUS.bad_request).send({ message: "Already in game" });
@@ -50,28 +41,22 @@ class Queue {
 	}
 
 	static async createMatch() {
-		const players = await db.select().from(tables.matchmakingQueue).limit(2);
+		const players = await db.select({ id: tables.matchmakingQueue.userId }).from(tables.matchmakingQueue).limit(2);
 		if (players.length < 2) {
 			return false;
 		}
-		const [p1, p2] = players;
-		const [match] = await db.insert(tables.matches).values({
-			player1Id: p1.userId,
-			player2Id: p2.userId,
-			status: "ongoing",
-		}).returning();
-
+		const [player1, player2] = players;
+		const match = await dbM.createMatch(player1.id, player2.id);
 		await db.delete(tables.matchmakingQueue)
-			.where(drizzle.or(
-				drizzle.eq(tables.matchmakingQueue.userId, p1.userId),
-				drizzle.eq(tables.matchmakingQueue.userId, p2.userId),
+			.where(orm.or(
+				orm.eq(tables.matchmakingQueue.userId, player1.id),
+				orm.eq(tables.matchmakingQueue.userId, player2.id),
 			));
+		const [user1] = await db.select().from(tables.users).where(orm.eq(tables.users.id, player1.id));
+		const [user2] = await db.select().from(tables.users).where(orm.eq(tables.users.id, player2.id));
 
-		const [user1] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p1.userId));
-		const [user2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p2.userId));
 		notifyUser(user1.uuid, match.id, user2.username);
 		notifyUser(user2.uuid, match.id, user1.username);
-
 		return true;
 	}
 
@@ -80,14 +65,14 @@ class Queue {
 
 		const [player] = await db.select()
 			.from(tables.matchmakingQueue)
-			.where(drizzle.eq(tables.matchmakingQueue.userId, usr.id));
+			.where(orm.eq(tables.matchmakingQueue.userId, usr.id));
 
 		if (!player) {
 			return rep.code(400).send({ message: "User not in queue" });
 		}
 
 		await db.delete(tables.matchmakingQueue)
-			.where(drizzle.eq(tables.matchmakingQueue.userId, usr.id));
+			.where(orm.eq(tables.matchmakingQueue.userId, usr.id));
 
 		return rep.code(STATUS.success).send({ message: "Left queue" });
 	}
@@ -95,4 +80,14 @@ class Queue {
 
 export default function(fastify: FastifyInstance) {
 	Queue.setup(fastify);
+}
+
+function notifyUser(uuid: string, match: number, opponent: string) {
+	const message = {
+		topic: "matchmaking",
+		type: "found",
+		match,
+		opponent,
+	};
+	socket.send(uuid, message);
 }

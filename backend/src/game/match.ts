@@ -3,14 +3,13 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
 import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
-import { STATUS } from "../shared";
-import { Tournament } from "./tournament";
+import { schema, STATUS } from "../shared";
 
 class Match {
 	static setup(app: FastifyInstance) {
 		app.get("/api/match/current", { preHandler: authGuard }, Match.getCurrent);
-		app.get("/api/match/:id", { preHandler: authGuard }, Match.getById);
-		app.post("/api/match/:id/end", { preHandler: authGuard }, Match.end);
+		app.get("/api/match/:id", { preHandler: authGuard, schema: schema.params({ id: "number" }) }, Match.getById);
+		// app.post("/api/match/:id/end", { preHandler: authGuard }, Match.end);
 		// use case: player invited to play by chat.
 		app.post("/api/match/create", { preHandler: authGuard }, Match.create);
 	}
@@ -40,42 +39,10 @@ class Match {
 		const [user2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, match.player2Id));
 
 		return rep.code(STATUS.success).send({
-			player1: user1.username,
-			player2: user2.username,
-			scoreP1: match.scoreP1,
-			scoreP2: match.scoreP2,
-			finished: match.status != "pending",
+			p1: { name: user1.displayName, score: match.scoreP1 },
+			p2: { name: user2.displayName, score: match.scoreP2 },
+			status: match.status,
 		});
-	}
-	static async end(req: FastifyRequest, rep: FastifyReply) {
-		const { id } = req.params as { id: number };
-		const matchId = Number(id);
-		const { winnerId, scoreP1, scoreP2 } = req.body as any;
-
-		const [match] = await db.select().from(tables.matches).where(drizzle.eq(tables.matches.id, matchId));
-		if (!match) {
-			return rep.code(STATUS.not_found).send({ message: "Match not found" });
-		}
-		if (match.status !== "ongoing") {
-			return rep.code(STATUS.bad_request).send({ message: "Match already ended" });
-		}
-
-		await db.update(tables.matches).set({
-			status: "ended",
-			winnerId,
-			scoreP1,
-			scoreP2,
-			endedAt: Date.now(),
-		}).where(drizzle.eq(tables.matches.id, matchId));
-
-		const [tm] = await db.select().from(tables.tournamentMatches).where(
-			drizzle.eq(tables.tournamentMatches.matchId, matchId),
-		);
-		if (tm) {
-			await Tournament.tournamentEndMatch(matchId, winnerId);
-		}
-
-		return rep.code(STATUS.success).send({ message: "Match ended" });
 	}
 	static async create(req: FastifyRequest, rep: FastifyReply) {
 		const { p1Id, p2Id } = req.body as { p1Id: number, p2Id: number };
