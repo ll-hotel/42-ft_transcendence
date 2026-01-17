@@ -35,8 +35,11 @@ export class Login implements AppPage {
 		};
 	}
 	static new(content: HTMLElement) {
-		if (!content.querySelector("form") ||
-			!content.querySelector("button#button-intra")) {
+		if (
+			!content.querySelector("form")
+			|| !content.querySelector("button#button-intra")
+			|| !content.querySelector("button#button-google")
+		) {
 			return null;
 		}
 		return new Login(content);
@@ -66,7 +69,7 @@ export class Login implements AppPage {
 		const password = data.get("password");
 		const twoFACode = data.get("twoFACode");
 
-		const res = await api.post("/api/auth/login", { username, password, twoFACode })
+		const res = await api.post("/api/auth/login", { username, password, twoFACode });
 		if (!res) {
 			return alert("Invalid API response.");
 		}
@@ -109,10 +112,11 @@ export class Login implements AppPage {
 
 async function loginWithProvider(container: HTMLElement, provider: string, code: string) {
 	let path: string;
-	if (provider === "42")
+	if (provider === "42") {
 		path = "/api/auth42/callback?code=";
-	else
+	} else {
 		path = "/api/authGoogle/callback?code=";
+	}
 	const logging = document.createElement("p");
 	logging.className = "font-bold text-xl";
 	logging.innerText = "Logging in...";

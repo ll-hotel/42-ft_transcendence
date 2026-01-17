@@ -5,6 +5,14 @@ import { eq, and, or} from 'drizzle-orm';
 import { authGuard } from '../security/authGuard';
 import { STATUS, MESSAGE } from '../shared';
 
+export async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
+	{
+		const res = await db.select({id:friends.id }).from(friends).where(and(
+			eq(friends.status, "accepted"), or( and(
+				eq(friends.senderId, user_1), eq(friends.receiverId, user_2)), and(
+				eq(friends.senderId,user_2), eq(friends.receiverId, user_1))))).limit(1);
+				return res.length > 0;
+	}
 
 class friend {
 	setup(app: FastifyInstance) {
@@ -118,8 +126,7 @@ class friend {
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
-
-
+			username: users.username,
 		})
 		.from(friends).innerJoin(users, or(eq(users.id, friends.senderId), eq(users.id, friends.receiverId)))
 		.where(and(
