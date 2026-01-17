@@ -8,7 +8,11 @@ type MatchMessage = BaseMessage & {
 	match: number,
 	opponent: string,
 };
-export type Message = BaseMessage | MatchMessage;
+
+type VersusMessage = BaseMessage & {
+	target: string;
+};
+export type Message = BaseMessage | MatchMessage | VersusMessage;
 
 let socket: WebSocket | null = null;
 const hooks = new Map<string, ((m: Message) => void)[]>();
@@ -34,11 +38,13 @@ async function connect(): Promise<boolean> {
 			setTimeout(connect, 500);
 		}
 	};
+
+// HOOK MAINTENANT LIER AU TYPE PLUTOT QUE A LA SOURCE 
 	socket.onmessage = (event) => {
 		try {
 			const message = JSON.parse(event.data) as Message;
-			if (hooks.has(message.source)) {
-				hooks.get(message.source)!.forEach(hook => hook(message));
+			if (hooks.has(message.type)) {
+				hooks.get(message.type)!.forEach(hook => hook(message));
 			}
 		} catch (err) {
 			console.log(err);
@@ -67,17 +73,23 @@ function disconnect() {
 	wasConnected = false;
 	socket?.close();
 }
-function addListener(source: string, hook: (m: Message) => void) {
-	if (!hooks.has(source)) {
-		hooks.set(source, []);
+
+//Changer le listener en fonction du type plutot que de la source, (si source est une personne alors aucun sens, plutot lier a un type de message dans le cas d'une invit,
+//plusieur source possible (source = clientId du sender ou alors (source = server et ajouter une variable sender)) )
+
+function addListener(type: string, hook: (m: Message) => void) {
+	if (!hooks.has(type)) {
+		hooks.set(type, []);
 	}
-	hooks.get(source)!.push(hook);
+	hooks.get(type)!.push(hook);
 }
-function removeListener(source: string) {
-	if (hooks.has(source)) {
-		hooks.delete(source);
+
+function removeListener(type: string) {
+	if (hooks.has(type)) {
+		hooks.delete(type);
 	}
 }
+
 
 export default {
 	connect,

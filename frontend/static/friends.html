@@ -15,14 +15,14 @@
 			<div id="chat-header" class="bg-gray-200 h-12 p-2 flex rounded-t-md justify-between items-center font-bold">
 				<span id="chat-name" data-default="Select a friend">Select a friend</span>
 				<div class="flex space-x-2">
-					<button class="text-sm bg-[#04809F] text-white px-2 rounded">1v1</button>
+					<button id="button-1vs1" class="text-sm bg-[#04809F] text-white px-2 rounded">1v1</button>
 					<button id="button-block" class="text-sm bg-red-500 text-white px-2 rounded">Block</button>
 				</div>
 			</div>
 			<div id="chat-content"></div>
-			<div id ="chat-footer" class="bg-gray-200 h-12 p-2 rounded-b-md flex space-x-2">
+			<form id ="chat-footer" class="bg-gray-200 h-12 p-2 rounded-b-md flex space-x-2">
 				<input id="chat-input" type="text" class="bg-white flex-1 border rounded p-1">
-				<button id="chat-send" class="bg-[#04809F] text-white px-2 rounded">Send</button>
+				<button id="chat-send" type="submit" class="bg-[#04809F] text-white px-2 rounded">Send</button>
 			</div>
 		</div>
 	</div>

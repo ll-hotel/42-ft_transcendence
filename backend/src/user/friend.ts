@@ -127,6 +127,7 @@ class friend {
 			avatar: users.avatar,
 			isOnline: users.isOnline,
 			username: users.username,
+			uuid: users.uuid,
 		})
 		.from(friends).innerJoin(users, or(eq(users.id, friends.senderId), eq(users.id, friends.receiverId)))
 		.where(and(

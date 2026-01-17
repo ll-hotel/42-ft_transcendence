@@ -69,7 +69,8 @@ class User {
 			displayName: req.user.displayName,
 			id: req.user.id,
 			username: req.user.username,
-			avatar: req.user.avatar
+			avatar: req.user.avatar,
+			uuid: req.user.uuid
 		});
 	}
 

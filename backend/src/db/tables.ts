@@ -69,3 +69,9 @@ export const tournamentMatches = sqliteTable("tournamentMatches", {
 	matchId: integer("matchId").notNull().references(() => matches.id, {onDelete: "cascade"}),
 	round: integer("round").notNull(),
 });
+
+/* matchInvite
+
+senderid
+receverid
+status = {pending}*/

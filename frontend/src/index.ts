@@ -1,6 +1,7 @@
 import { api, Status } from "./api.js";
 import { gotoPage, gotoUserPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
+import {initSocket} from "./socketListener.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -18,10 +19,14 @@ document.addEventListener("DOMContentLoaded", async function() {
 	if (name == "login" || (await socket.connect()) == false) {
 		await gotoPage("login", location.search);
 	} else if (name == "profile/other") {
+		initSocket();
 		await gotoPage("profile/other", location.search);
 	}
 	else
+	{
+		initSocket();
 		await gotoPage(name);
+	}
 
 
 	const headerButtons = document.querySelectorAll('header button');
@@ -82,7 +87,7 @@ function displayResultSearch(selectedUsers :any) {
 		card.className = "user-result";
 
 		const avatar = document.createElement("img");
-		avatar.src =  "/default_pp.png";
+		avatar.src =  user.avatar.startsWith("/") ? user.avatar : `/${user.avatar}`;
 		avatar.className = "result-avatar";
 
 		const name = document.createElement("span");

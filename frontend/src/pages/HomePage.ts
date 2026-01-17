@@ -55,24 +55,18 @@ export class HomePage implements AppPage {
 	}
 
 	async loadFriends() {
-		this.listContainer.innerHTML = "<div>En recherche d'amis</div>";
+		this.listContainer.innerHTML = "<div>Searching friends...</div>";
 		const friendRes = await api.get("/api/friends");
 		const requestRes = await api.get("/api/friend/requests")
 
 		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success ) {
-			this.listContainer.innerHTML = "<div>Erreur lors de la recherche</div>";
+			this.listContainer.innerHTML = "<div>Error while searching...</div>";
 			return;
 		}
 
 		const friends = friendRes.payload.friends
 		const requests = requestRes.payload.requests
 		this.listContainer.innerHTML = "";
-
-		if(!friends || friends.length == 0)
-			console.log("No Friend");
-
-		if(!requests || requests.length == 0)
-			console.log("No Requests");
 
 		if ((!friends || friends.length == 0) && (!requests || requests.length))
 		{
@@ -100,7 +94,7 @@ export class HomePage implements AppPage {
 		card.classList.add("friend-card-home")
 
 		card.innerHTML = `
-			<img src="/default_pp.png" alt="${friend.displayName}" class="friend-avatar">
+			<img src="${friend.avatar}" alt="${friend.displayName}" class="friend-avatar">
 				<div class="text-m font-semibold">
 					${friend.displayName}
 				</div>
@@ -123,7 +117,7 @@ export class HomePage implements AppPage {
 		card.className = "request-card";
 
 		card.innerHTML = `
-			<img src="/default_pp.png" alt="${request.requestFrom}" class="friend-avatar">
+			<img src="${request.avatar}" alt="${request.requestFrom}" class="friend-avatar">
 				<div class="text-m font-semibold">
 					${request.requestFrom}
 				</div>
@@ -159,7 +153,7 @@ export class HomePage implements AppPage {
 
 			if (declineRes && declineRes.status == Status.success)
 			{
-				console.log(`Tu n'es pas ami avec ${request.requestFrom}`);
+				console.log(`YOu're not friend with ${request.requestFrom}`);
 				card.remove();
 			}
 			else

@@ -96,40 +96,6 @@ namespace Chat {
 						conn.ws.send(JSON.stringify(msg));
 			this.buffer = [];
 		}
-
-/*		flushIncoming(chat: Instance) {
-			for (const conn of this.connections) {
-				const messages = conn.popMessages();
-				for (const msg of messages) {
-					if (!this.rooms.has(msg.target))
-						continue;
-					const room = chat.rooms.get(msg.target);
-					if (!room || !room.users.has(this))
-						continue;
-
-					const allmsg: Message = {
-						source : this.id,
-						target: msg.target,
-						content:msg.content
-					};
-
-					room.send(allmsg);
-					continue;
-
-				/*	// message privé
-					if (msg.target.startsWith("@")) {
-						const target = chat.users.get(msg.target);
-						if (!target) continue;
-						try {
-							const room = await chat.createPrivateRoom(this, target);
-							room.send(msg);
-						}
-						catch {};
-					}
-				}
-			}
-		} */
-
 	}
 
 	export class Room {
@@ -191,8 +157,6 @@ namespace Chat {
 		constructor() {
 			this.users = new Map();
 			this.rooms = new Map();
-			
-
 		}
 
 		getOrCreateUser(userId: number, username: string): User {

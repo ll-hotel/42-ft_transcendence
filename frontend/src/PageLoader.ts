@@ -95,6 +95,7 @@ export async function gotoUserPage( displayName : string)
 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
+
 async function loadPage()
 {
 		const path = location.pathname.substring(1);

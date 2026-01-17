@@ -46,6 +46,9 @@ export class OtherProfilePage implements AppPage {
 		try {
 			userinfo = res.payload.user;
 			this.displayname.innerHTML = userinfo.displayName;
+			const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
+			if (avatarImg)
+				avatarImg.src = userinfo.avatar.startsWith("/") ? userinfo.avatar : `/${userinfo.avatar}`;
 		} catch {
 		}
 		const statusDot = this.content.querySelector("#status-dot");
