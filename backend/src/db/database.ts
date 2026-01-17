@@ -89,6 +89,7 @@ function createTournamentsTable() {
 		status TEXT NOT NULL DEFAULT 'pending',
 		winnerId INTEGER,
 		createdAt INTEGER,
+		round INTEGER,
 		FOREIGN KEY (winnerId) REFERENCES users(id),
 		FOREIGN KEY (createdBy) REFERENCES users(uuid)
 	);

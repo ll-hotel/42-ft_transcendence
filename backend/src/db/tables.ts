@@ -41,11 +41,12 @@ export const matches = sqliteTable("matches", {
 export const tournaments = sqliteTable("tournaments", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
 	createdBy: text("createdBy").notNull().references(() => users.uuid),
-	size: integer("size"),
+	size: integer("size").notNull(),
 	name: text("name").notNull(),
 	status: text("status").notNull().default("pending"),
 	winnerId: integer("winnerId").references(() => users.id),
 	createdAt: integer("createdAt"),
+	round: integer("round"),
 });
 
 export const tournamentPlayers = sqliteTable("tournamentPlayers", {
