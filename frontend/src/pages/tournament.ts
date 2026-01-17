@@ -53,6 +53,8 @@ export class Tournament implements AppPage {
 	}
 
 	displayTournament(info: TournamentInfo) {
+		const nameElement = this.html.querySelector("#tournament-name") as HTMLElement | null;
+		if (nameElement) nameElement.innerText = "Tournament: " + info.name;
 		if (info.rounds.length > 0) {
 			this.displayRounds(info);
 		} else {
@@ -80,6 +82,7 @@ export class Tournament implements AppPage {
 			alert("Can not start tournament: " + res.payload.message);
 			return;
 		}
+		alert("Tournament started");
 	}
 	displayWaitingList(info: TournamentInfo) {
 		this.html.querySelector("#round-0")?.setAttribute("hidden", "");

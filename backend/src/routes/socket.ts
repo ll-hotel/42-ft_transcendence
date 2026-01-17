@@ -23,6 +23,9 @@ async function route(ws: WebSocket, req: FastifyRequest) {
 	}
 	socket.addListener(uuid, "disconnect", () => {
 		setTimeout(() => {
+			if (socket.isOnline(uuid)) {
+				return;
+			}
 			dbM.removeUserFromTournaments(uuid);
 			dbM.setUserOffline(uuid);
 		}, 2000);

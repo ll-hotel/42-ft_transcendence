@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 		alert("Missing content div");
 		return;
 	}
+	initSocket();
 	initSearchBar();
 	const uri = window.location.pathname;
 
@@ -39,11 +40,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 function initSocket() {
 	socket.addListener("match", (m) => {
-		const message = m as unknown as { type: string, id?: number };
-		if (message.type == "found") {
-			// TODO: gotoPage("match", "?id=" + message.id!);
-			alert("Match found!\n")
-		}
+		const match = m as unknown as { id?: number };
+		// TODO: gotoPage("match", "?id=" + message.id!);
+		alert("Match found: id=" + match.id!)
 	})
 }
 

@@ -179,7 +179,7 @@ export async function startTournament(id: number): Promise<Error | null> {
 			{ tournamentId: tournament.id, matchId: match.id, round: 0 },
 		]);
 	}
-	await db.update(tables.tournaments).set({ status: "ongoing" }).where(
+	await db.update(tables.tournaments).set({ status: "ongoing", round: 0 }).where(
 		orm.eq(tables.tournaments.id, tournament.id),
 	);
 	return null;

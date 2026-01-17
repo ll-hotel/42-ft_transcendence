@@ -30,7 +30,6 @@ class User {
 			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized });
 		}
 		rep.code(STATUS.success).send({
-			id: req.user.id,
 			displayName: req.user.displayName,
 			username: req.user.username,
 			avatar: req.user.avatar,
