@@ -484,5 +484,6 @@ export async function getUserIdByUsername(username: string): Promise<number | nu
 
 export default async function(fastify: FastifyInstance) {
 	User.setup(fastify);
+	// Reset online status.
 	await db.update(users).set({ isOnline: 0 });
 }

@@ -9,6 +9,10 @@ export type TournamentPlayer = {
 	displayName: string,
 };
 
+export async function setUserOffline(uuid: string) {
+	db.update(tables.users).set({ isOnline: 0 }).where(orm.eq(tables.users.uuid, uuid));
+}
+
 export async function addTournamentPlayer(tournamentId: number, user: TournamentPlayer) {
 	const [player] = await db.select({ id: tables.tournamentPlayers.userId }).from(tables.tournamentPlayers).where(
 		orm.eq(tables.tournamentPlayers.id, user.id),
@@ -28,11 +32,20 @@ export async function addTournamentPlayer(tournamentId: number, user: Tournament
 
 export async function removeUserFromTournaments(userUUID: string) {
 	const tournaments = await db.select({ id: tables.tournamentPlayers.tournamentId }).from(tables.tournamentPlayers)
-		.where(
-			orm.eq(tables.tournamentPlayers.userUuid, userUUID),
-		);
+		.where(orm.eq(tables.tournamentPlayers.userUuid, userUUID));
+	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status }).from(
+		tables.tournaments,
+	).where(
+		orm.inArray(tables.tournaments.id, tournaments.map((value) => value.id)),
+	);
 	await db.delete(tables.tournamentPlayers).where(
-		orm.eq(tables.tournamentPlayers.userUuid, userUUID),
+		orm.and(
+			orm.eq(tables.tournamentPlayers.userUuid, userUUID),
+			orm.inArray(
+				tables.tournamentPlayers.tournamentId,
+				tournamentStates.filter((value) => value.status == "pending").map((value) => value.id),
+			),
+		),
 	);
 	const [user] = await db.select().from(tables.users).where(
 		orm.eq(tables.users.uuid, userUUID),

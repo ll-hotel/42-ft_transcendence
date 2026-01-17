@@ -147,8 +147,7 @@ class AuthService {
 		if (!user)
 			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized });
 
-		await db.update(users).set({ isOnline: 0 }).where(eq(users.id, user.id));
-
+		// websocket "disconnect" handler takes care of the user offline status.
 		socket.disconnect(user.uuid);
 
 		rep.clearCookie('accessToken', { path: "/api" });

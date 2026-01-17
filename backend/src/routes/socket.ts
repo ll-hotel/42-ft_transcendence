@@ -22,25 +22,9 @@ async function route(ws: WebSocket, req: FastifyRequest) {
 		return;
 	}
 	socket.addListener(uuid, "disconnect", () => {
-		const checkOfflineDuration = () => {
-			if (socket.isOnline(uuid)) {
-				return;
-			}
-			const client = socket.clients.get(uuid);
-			if (!client) {
-				return;
-			}
-			const offlineDuration = Date.now() - client.lastOnlineTime;
-			// Since client sends a ping message with a 4sec interval, let's add double that and add 2.
-			if (offlineDuration <= 10) {
-				setTimeout(checkOfflineDuration, 1000);
-				return;
-			}
+		setTimeout(() => {
 			dbM.removeUserFromTournaments(uuid);
-			if (client.sockets.length == 0) {
-				db.update(tables.users).set({ isOnline: 0 }).where(orm.eq(tables.users.uuid, uuid));
-			}
-		};
-		checkOfflineDuration();
+			dbM.setUserOffline(uuid);
+		}, 2000);
 	});
 }
