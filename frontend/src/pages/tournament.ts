@@ -67,7 +67,7 @@ export class Tournament implements AppPage {
 		if (startButton) {
 			startButton.setAttribute("hidden", "");
 			startButton.onclick = null;
-			if (info.creator.name == res.payload.username) {
+			if (info.creator.name == res.payload.displayName) {
 				startButton.removeAttribute("hidden");
 				startButton.onclick = () => this.startTournament(info.name);
 			}
@@ -105,7 +105,6 @@ export class Tournament implements AppPage {
 		round1.innerHTML = "";
 		round2.innerHTML = "";
 
-		console.log(info.rounds);
 		const htmlItems: HTMLElement[] = [];
 		if (info.rounds.length > 2) {
 			round0.removeAttribute("hidden");
