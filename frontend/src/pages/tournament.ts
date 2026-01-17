@@ -76,7 +76,7 @@ export class Tournament implements AppPage {
 	async startTournament(name: string) {
 		const res = await api.post("/api/tournament/start", { name });
 		if (!res) return;
-		if (res.status != Status.not_found) {
+		if (res.status != Status.success) {
 			alert("Can not start tournament: " + res.payload.message);
 			return;
 		}
@@ -119,33 +119,40 @@ export class Tournament implements AppPage {
 			const round = info.rounds[roundI];
 			const roundElement = htmlItems[roundI];
 			for (const match of round) {
-				let avatar1 = "default_pp.png";
-				const res1 = await api.get("/api/user?displayName=" + match.p1.name);
-				if (res1 && res1.status == Status.success) {
-					avatar1 = res1.payload.avatar;
-				}
-				let avatar2 = "default_pp.png";
-				const res2 = await api.get("/api/user?displayName=" + match.p2.name);
-				if (res2 && res2.status == Status.success) {
-					avatar2 = res2.payload.avatar;
-				}
-				const matchDiv = createElement(`
-					<div class="tournament-match">
-						<div name="@${match.p1.name}" class="tournament-player-card">
-							<img src="${avatar1}" class="tournament-player-pic" />
-							<p class="tournament-player-username">${match.p1.name}</p>
-							<p class="tournament-player-score">${match.p1.score}</p>
-						</div>,
-						<div name="@${match.p2.name}" class="tournament-player-card">
-							<img src="${avatar2}" class="tournament-player-pic" />
-							<p class="tournament-player-username">${match.p2.name}</p>
-							<p class="tournament-player-score">${match.p2.score}</p>
-						</div>,
-					</div>
-					`);
-				roundElement.appendChild(matchDiv!);
+				this.addMatch(match, roundElement);
 			}
 		}
+	}
+	async addMatch(match: TournamentMatch, round: HTMLElement) {
+		const avatar1: string = await getUserAvatar(match.p1.name);
+		const avatar2: string = await getUserAvatar(match.p2.name);
+		const matchDiv = createElement(`
+			<div class="tournament-match">
+				<div name="@${match.p1.name}" class="tournament-player-card">
+					<img src="${avatar1}" class="tournament-player-pic" />
+					<p class="tournament-player-username">${match.p1.name}</p>
+					<p class="tournament-player-score">${match.p1.score}</p>
+				</div>
+				<div name="@${match.p2.name}" class="tournament-player-card">
+					<img src="${avatar2}" class="tournament-player-pic" />
+					<p class="tournament-player-username">${match.p2.name}</p>
+					<p class="tournament-player-score">${match.p2.score}</p>
+				</div>
+			</div>
+			`);
+		const playerCard1 = matchDiv!.querySelector(`[name="@${match.p1.name}"]`)!;
+		const playerCard2 = matchDiv!.querySelector(`[name="@${match.p2.name}"]`)!;
+		if (match.winner === null) {
+			playerCard1.classList.add("bg-[#04809f]", "text-white");
+			playerCard2.classList.add("bg-[#04809f]", "text-white");
+		} else if (match.winner == 1) {
+			playerCard1.classList.add("bg-green-200");
+			playerCard2.classList.add("bg-red-200");
+		} else {
+			playerCard1.classList.add("bg-red-200");
+			playerCard2.classList.add("bg-green-200");
+		}
+		round.appendChild(matchDiv!);
 	}
 	removeWaitingPlayer(name: string) {
 		const playerCard = this.html.querySelector(`#waiting-players [name="@${name}"]`);
@@ -155,13 +162,7 @@ export class Tournament implements AppPage {
 	async addWaitingPlayer(name: string) {
 		const playerList = this.html.querySelector(`#waiting-players`);
 		if (!playerList) return;
-		let avatar: string = "default_pp.png";
-		const res = await api.get("/api/user?displayName=" + name);
-		if (res && res.status == Status.success) {
-			const { user } = res.payload as { user: { avatar: string } };
-			if (user.avatar == "DEFAULT_AVATAR") user.avatar = "default_pp.png";
-			else avatar = user.avatar;
-		}
+		const avatar: string = await getUserAvatar(name);
 		const playerCard = createElement(
 			`<div name="@${name}" class="tournament-player-card bg-[#04809f] text-white">
 				<img src="${avatar}" class="tournament-player-pic" />
@@ -170,6 +171,17 @@ export class Tournament implements AppPage {
 		)!;
 		playerList.appendChild(playerCard);
 	}
+}
+
+async function getUserAvatar(username: string) {
+	let avatar: string = "default_pp.png";
+	const res = await api.get("/api/user?displayName=" + username);
+	if (res && res.status == Status.success) {
+		const { user } = res.payload as { user: { avatar: string } };
+		if (user.avatar == "DEFAULT_AVATAR") user.avatar = "default_pp.png";
+		else avatar = user.avatar;
+	}
+	return avatar;
 }
 
 type TournamentInfo = {
