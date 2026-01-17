@@ -4,10 +4,10 @@
    @apply size-fit;
 }
 .tournament-player-card {
-  @apply border rounded-sm flex flex-row w-80 p-4 items-center gap-4;
+  @apply border rounded-sm flex flex-row place-self-center w-80 p-4 items-center gap-4;
 }
 .tournament-player-pic {
-  @apply rounded-[100%] w-20 md:w-24 overflow-hidden justify-center items-center bg-transparent;
+  @apply rounded-[100%] min-h-24 min-w-24 max-h-24 max-w-24 overflow-hidden justify-center items-center bg-transparent border-1;
 }
 .tournament-player-username {
   @apply w-full text-center text-lg;
