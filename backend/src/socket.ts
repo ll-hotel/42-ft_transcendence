@@ -15,15 +15,16 @@ type Client = {
 	nbConnections: number;
 };
 type BaseMessage = {
-	source: string;
-	type: string;
+	topic: string;
 };
 type MatchMessage = BaseMessage & {
+	source: string;
 	match: number;
 	opponent: string;
 };
 
 type VersusMessage = BaseMessage & {
+	source: string;
 	target: string;
 }
 
@@ -67,8 +68,8 @@ async function createMatchBetween(uuid1: string, uuid2 : string) {
 		status: "ongoing",
 	}).returning();
 
-	send(uuid1, {source: "server", type : "vs:start", match:match.id, opponent : p2.username,});
-	send(uuid2, {source: "server", type : "vs:start", match:match.id, opponent : p1.username,});
+	send(uuid1, {source: "server", topic : "vs:start", match:match.id, opponent : p2.username,});
+	send(uuid2, {source: "server", topic : "vs:start", match:match.id, opponent : p1.username,});
 
 }
 
@@ -104,22 +105,22 @@ export async function connect(clientId: ClientId, socket: WebSocket) {
 function onMessage(clientId: ClientId, ev: MessageEvent) {
 	try {
 		const msg = JSON.parse(ev.data);
-		if (msg.source != "ping") {
+		if (msg.topic != "ping") {
 			console.log("[socket]", "message", clientId, msg);
 		}
-		switch (msg.type)
+		switch (msg.topic)
 		{
 			case("vs:invite") :
 				if (!isAlive(msg.target))
 					return; 
-				send(msg.target, {source: clientId, type : "vs:invite", target: msg.target})
+				send(msg.target, {source: clientId, topic : "vs:invite", target: msg.target})
 				break;
 			case ("vs:accept") :
 				createMatchBetween(clientId, msg.target);
 				break;
 			
 			case("vs:decline") :
-				send(msg.target, {source: clientId, type : "vs:decline", target:msg.target})
+				send(msg.target, {source: clientId, topic : "vs:decline", target:msg.target})
 				break;
 		}
 	} catch (_) {

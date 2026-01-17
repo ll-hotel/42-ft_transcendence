@@ -36,7 +36,7 @@ export class MatchMaking implements AppPage {
     }
 
     onQueueNotification(m: Message) {
-    	if (m.type != "found") return;
+    	if (m.topic != "found") return;
     	const { match, opponent } = m as { match: number, opponent: string };
     	
     	alert("Match found!\n" + `Match id: ${match}\nOpponent: ${opponent}`);

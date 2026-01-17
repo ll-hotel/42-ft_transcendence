@@ -10,7 +10,7 @@ export async function initSocket() {
 
 	socket.addListener("vs:invite", (m: Message) => {
 		const isMatch = confirm(`New invitation to play with ${m.source}, let's win ?`);
-		socket.send({source : "server", type : isMatch ? "vs:accept" : "vs:decline", target: m.source})
+		socket.send({source : "server", topic : isMatch ? "vs:accept" : "vs:decline", target: m.source})
 	});
 
 	socket.addListener("vs:start", (m: Message) => {

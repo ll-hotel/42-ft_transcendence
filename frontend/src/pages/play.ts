@@ -33,7 +33,7 @@ export default class Play implements AppPage {
 	}
 	async playRandom() {
 		socket.addListener("matchmaking", (message) => {
-			if (message.type != "ready") return;
+			if (message.topic != "ready") return;
 			socket.removeListener("matchmaking");
 			this.inQueue = false;
 

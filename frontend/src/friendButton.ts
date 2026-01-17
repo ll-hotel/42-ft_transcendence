@@ -137,7 +137,7 @@ export class FriendButton {
 		console.log(me.payload.uuid, friend.payload.user.uuid);
 		socket.send({
 			source: me.payload.uuid,
-			type: "vs:invite",
+			topic: "vs:invite",
 			target : friend.payload.user.uuid,
 		});
 	}

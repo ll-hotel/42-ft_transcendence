@@ -296,7 +296,7 @@ export class FriendPage implements AppPage
 				return alert("Error when getting user info: " + me.payload.message);
 			socket.send({
 				source: me.payload.uuid,
-				type: "vs:invite",
+				topic: "vs:invite",
 				target : targetUuid,
 			});
 		}

@@ -9,7 +9,7 @@ import socket from "../socket";
 function notifyUser(uuid: string, match: number, opponent: string) {
 	socket.send(uuid, {
 		source: "matchmaking",
-		type: "found",
+		topic: "found",
 		match,
 		opponent,
 	});

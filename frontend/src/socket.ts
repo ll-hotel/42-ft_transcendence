@@ -1,18 +1,19 @@
 import { api, Status } from "./api.js";
 
 type BaseMessage = {
-	source: string,
-	type: string,
+	topic: string,
 };
 type MatchMessage = BaseMessage & {
+	source: string,
 	match: number,
 	opponent: string,
 };
 
 type VersusMessage = BaseMessage & {
+	source: string,
 	target: string;
 };
-export type Message = BaseMessage | MatchMessage | VersusMessage;
+export type Message = VersusMessage | BaseMessage | MatchMessage;
 
 let socket: WebSocket | null = null;
 const hooks = new Map<string, ((m: Message) => void)[]>();
@@ -43,8 +44,8 @@ async function connect(): Promise<boolean> {
 	socket.onmessage = (event) => {
 		try {
 			const message = JSON.parse(event.data) as Message;
-			if (hooks.has(message.type)) {
-				hooks.get(message.type)!.forEach(hook => hook(message));
+			if (hooks.has(message.topic)) {
+				hooks.get(message.topic)!.forEach(hook => hook(message));
 			}
 		} catch (err) {
 			console.log(err);
@@ -56,7 +57,7 @@ async function connect(): Promise<boolean> {
 }
 function pingLoop() {
 	setTimeout(() => {
-		send({source: "ping", type: "ping"}) && pingLoop();
+		send({topic: "ping"}) && pingLoop();
 	}, 4000);
 }
 function isAlive() {

@@ -9,7 +9,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 		alert("Missing content div");
 		return;
 	}
+
 	initSearchBar();
+	initSocket();
 	const uri = window.location.pathname;
 	
  
@@ -19,12 +21,10 @@ document.addEventListener("DOMContentLoaded", async function() {
 	if (name == "login" || (await socket.connect()) == false) {
 		await gotoPage("login", location.search);
 	} else if (name == "profile/other") {
-		initSocket();
 		await gotoPage("profile/other", location.search);
 	}
 	else
 	{
-		initSocket();
 		await gotoPage(name);
 	}
 
