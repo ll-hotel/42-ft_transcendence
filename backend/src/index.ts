@@ -2,7 +2,6 @@ import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
-import authModule from "./auth";
 import { createTables } from "./db/database";
 import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
@@ -24,7 +23,6 @@ async function main() {
 
 	app.register(fastifyCookie);
 	app.register(fastifyWebsocket);
-	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
 	app.register(gameTournament);

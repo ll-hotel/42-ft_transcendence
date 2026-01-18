@@ -29,6 +29,22 @@ services:
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
 
+  auth-service:
+    container_name: auth-service
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    build:
+      context: auth-service
+    volumes:
+      - auth-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - secrets:/run/secrets:ro
+
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -115,6 +131,12 @@ volumes:
     driver: local
     driver_opts:
       device: ./backend/src
+      type: none
+      o: bind
+  auth-service-src:
+    driver: local
+    driver_opts:
+      device: ./auth-service/src
       type: none
       o: bind
   backend-db:

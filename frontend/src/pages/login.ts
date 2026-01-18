@@ -19,7 +19,7 @@ export class Login implements AppPage {
 		this.twoFAHidden = true;
 		const intraButton: HTMLButtonElement = this.content.querySelector("button#button-intra")!;
 		intraButton.onclick = async function() {
-			const res = await api.get("/api/auth42");
+			const res = await api.get("/auth-service/auth42");
 			if (!res || !res.payload.redirect) {
 				return;
 			}
@@ -27,7 +27,7 @@ export class Login implements AppPage {
 		};
 		const googleButton: HTMLButtonElement = this.content.querySelector("button#button-google")!;
 		googleButton.onclick = async function() {
-			const res = await api.get("/api/authGoogle");
+			const res = await api.get("/auth-service/authGoogle");
 			if (!res || !res.payload.redirect) {
 				return;
 			}
@@ -66,7 +66,7 @@ export class Login implements AppPage {
 		const password = data.get("password");
 		const twoFACode = data.get("twoFACode");
 
-		const res = await api.post("/api/auth/login", { username, password, twoFACode })
+		const res = await api.post("/auth-service/auth/login", { username, password, twoFACode })
 		if (!res) {
 			return alert("Invalid API response.");
 		}
@@ -110,9 +110,9 @@ export class Login implements AppPage {
 async function loginWithProvider(container: HTMLElement, provider: string, code: string) {
 	let path: string;
 	if (provider === "42")
-		path = "/api/auth42/callback?code=";
+		path = "/auth-service/auth42/callback?code=";
 	else
-		path = "/api/authGoogle/callback?code=";
+		path = "/auth-service/authGoogle/callback?code=";
 	const logging = document.createElement("p");
 	logging.className = "font-bold text-xl";
 	logging.innerText = "Logging in...";

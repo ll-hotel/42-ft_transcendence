@@ -1,15 +1,15 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken';
 import { v4 as uiidv4 } from 'uuid';
-import { STATUS, MESSAGE } from './shared';
-import { users } from './db/tables';
-import { db } from './db/database';
+import { STATUS, MESSAGE } from './utils/http-reply';
+import { users } from './utils/db/tables';
+import { db } from './utils/db/database';
 import { eq } from 'drizzle-orm';
-import { hashPassword, comparePassword } from './security/hash';
-import { generate2FASecret, generateQRCode, verify2FAToken } from './security/2fa';
+import { hashPassword, comparePassword } from './utils/security/hash';
+import { generate2FASecret, generateQRCode, verify2FAToken } from './utils/security/2fa';
 import fs from "fs";
-import { authGuard } from './security/authGuard';
-import socket from './socket';
+import { authGuard } from './utils/security/authGuard';
+import socket from './utils/socket';
 
 const SCHEMA_REGISTER = {
 	body: {
@@ -36,13 +36,13 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class AuthService {
 	setup(app: FastifyInstance) {
-		app.post('/api/auth/register', { schema: SCHEMA_REGISTER }, this.register);
-		app.post('/api/auth/login', { schema: SCHEMA_LOGIN }, this.login);
-		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
-		app.get('/api/auth42', this.redirectAuth42);
-		app.get('/api/auth42/callback', this.callback);
-		app.get('/api/authGoogle', this.redirectGoogle);
-		app.get('/api/authGoogle/callback', this.googleCallback);
+		app.post('/auth-service/auth/login', { schema: SCHEMA_LOGIN }, this.login);
+		app.post('/auth-service/auth/register', { schema: SCHEMA_REGISTER }, this.register);
+		app.post('/auth-service/auth/logout', { preHandler: authGuard }, this.logout);
+		app.get('/auth-service/auth42', this.redirectAuth42);
+		app.get('/auth-service/auth42/callback', this.callback);
+		app.get('/auth-service/authGoogle', this.redirectGoogle);
+		app.get('/auth-service/authGoogle/callback', this.googleCallback);
 	}
 
 	async register(req: FastifyRequest, rep: FastifyReply) {
