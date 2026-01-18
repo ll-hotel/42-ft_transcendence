@@ -9,10 +9,15 @@ import { ucs2 } from "punycode";
 import { tcheckFriends } from "./user/friend";
 import { TableAliasProxyHandler } from "drizzle-orm";
 
+type Event = "message" | "disconnect";
+type Handler = (data?: any) => void;
+
 type ClientId = string;
 type Client = {
-	sockets: WebSocket[];
-	nbConnections: number;
+	sockets: WebSocket[],
+	onMessage: Handler[],
+	onDisconnect: (() => void)[],
+	lastOnlineTime: number,
 };
 type BaseMessage = {
 	topic: string;
@@ -27,11 +32,117 @@ type VersusMessage = BaseMessage & {
 	source: string;
 	target: string;
 }
-
-
-
 type Message = BaseMessage | MatchMessage | VersusMessage;
 
+
+export const clients: Map<ClientId, Client> = new Map();
+
+export function isAlive(client: ClientId) {
+	if (!clients.has(client)) return false;
+	for (const socket of clients.get(client)!.sockets) {
+		if (socket.readyState === WebSocket.OPEN) return true;
+	return false;
+	}
+}
+
+
+export function isOnline(id: ClientId) {
+	const client = clients.get(id);
+	if (!client) return false;
+	for (const socket of client.sockets) {
+		if (socket.readyState === WebSocket.OPEN) {
+			client.lastOnlineTime = Date.now();
+			return true;
+		}
+	}
+}
+
+export async function connect(uuid: ClientId, socket: WebSocket) {
+	if (!clients.has(uuid)) {
+		clients.set(uuid, {
+			sockets: [],
+			onMessage: [],
+			onDisconnect: [],
+			lastOnlineTime: 0,
+		});
+	}
+	const client = clients.get(uuid)!;
+	client.sockets.push(socket);
+	client.lastOnlineTime = Date.now();
+
+	socket.addEventListener("message", (event) => onMessage(client, uuid , event));
+	socket.addEventListener("close", () => disconnect(uuid, socket));
+}
+
+function updateOnlineTime(client: Client) {
+	client.lastOnlineTime = Date.now();
+}
+function onMessage(client: Client, clientId : ClientId, event: MessageEvent) {
+	updateOnlineTime(client);
+	try {
+		const msg = JSON.parse(event.data);
+		if (msg.source === "ping") return;
+		client.onMessage.forEach((handler) => handler(msg));
+		switch (msg.topic)
+		{
+			case("vs:invite") :
+				if (!isAlive(msg.target))
+					return; 
+				send(msg.target, {source: clientId, topic : "vs:invite", target: msg.target})
+				break;
+			case ("vs:accept") :
+				createMatchBetween(clientId, msg.target);
+				break;
+			
+			case("vs:decline") :
+				send(msg.target, {source: clientId, topic : "vs:decline", target:msg.target})
+				break;
+		}
+	} catch (_) {
+	}
+}
+
+export function send(target: ClientId, message: Message) {
+	if (isOnline(target)) {
+		try {
+			const data = JSON.stringify(message);
+			clients.get(target)!.sockets.forEach(socket => socket.send(data));
+		} catch (err) {}
+	}
+}
+
+export function addListener(clientId: ClientId, event: Event, handler: Handler) {
+	const client = clients.get(clientId);
+	if (!client) return;
+
+	if (event == "message") {
+		client.onMessage.push(handler);
+	} else if (event == "disconnect") {
+		client.onDisconnect.push(handler);
+	}
+}
+
+/**
+ * Closes all of client websockets, or the one specified.
+ * Uses the error code 4001 to manifest a voluntary disconnection.
+ */
+export function disconnect(target: ClientId, socket?: WebSocket) {
+	const client = clients.get(target);
+	if (!client) return;
+	if (socket && socket.readyState === WebSocket.OPEN) {
+		client.sockets = client.sockets.filter(e => e != socket);
+		if (client.sockets.length == 0) {
+			client.lastOnlineTime = Date.now();
+		}
+		socket.close(4001);
+	} else {
+		client.sockets.forEach(e => e.close(4001));
+		client.sockets = [];
+	}
+	if (!isOnline(target)) {
+		client.onDisconnect.forEach((handler) => handler());
+	}
+}
 
 async function createMatchBetween(uuid1: string, uuid2 : string) {
 	const [p1] = await db.select().from(users).where(eq(users.uuid, uuid1));
@@ -73,15 +184,20 @@ async function createMatchBetween(uuid1: string, uuid2 : string) {
 
 }
 
-export const clients: Map<ClientId, Client> = new Map();
+export default {
+	clients,
+	isOnline,
+	send,
+	connect,
+	disconnect,
+	addListener,
+};
 
-export function isAlive(client: ClientId) {
-	if (!clients.has(client)) return false;
-	for (const socket of clients.get(client)!.sockets) {
-		if (socket.readyState === WebSocket.OPEN) return true;
-	}
-	return false;
-}
+
+
+/*
+
+//MY CONNECT AND DISCONNECT FUNCTION
 
 export async function connect(clientId: ClientId, socket: WebSocket) {
 	console.log("[socket]", "connect", clientId);
@@ -99,58 +215,11 @@ export async function connect(clientId: ClientId, socket: WebSocket) {
 	catch {
 		console.log("Error while setting isOnline to 1");
 	}
-	socket.addEventListener("message", (ev) => onMessage(clientId, ev)); 
+	socket.addEventListener("message", (ev) => onMessage(clientId, ev));
 }
+	*/ 
 
-function onMessage(clientId: ClientId, ev: MessageEvent) {
-	try {
-		const msg = JSON.parse(ev.data);
-		if (msg.topic != "ping") {
-			console.log("[socket]", "message", clientId, msg);
-		}
-		switch (msg.topic)
-		{
-			case("vs:invite") :
-				if (!isAlive(msg.target))
-					return; 
-				send(msg.target, {source: clientId, topic : "vs:invite", target: msg.target})
-				break;
-			case ("vs:accept") :
-				createMatchBetween(clientId, msg.target);
-				break;
-			
-			case("vs:decline") :
-				send(msg.target, {source: clientId, topic : "vs:decline", target:msg.target})
-				break;
-		}
-	} catch (_) {
-		if (ev.data) {
-			console.log("[socket]", "message", clientId, '"' + ev.data + '"');
-		}
-	}
-}
-
-export function send(target: ClientId, message: Message) {
-	if (isAlive(target)) {
-		console.log("[socket]", "send", target, message);
-		try {
-			const data = JSON.stringify(message);
-			clients.get(target)!.sockets.forEach(socket => socket.send(data));
-		} catch (err) {}
-	}
-}
-export function addListener(client: ClientId, event: string, hook: () => void) {
-	if (clients.has(client)) {
-		clients.get(client)!.sockets.forEach(s => s.addEventListener(event, hook));
-	}
-}
-
-/**
- * Closes all of client websockets, or the one specified.
- * Uses the error code 4001 to manifest a voluntary disconnection.
- */
-export async function disconnect(target: ClientId, socket?: WebSocket) {
-	console.log("[socket]", "disconnect", target);
+/*export function disconnect(target: ClientId, socket?: WebSocket) {
 	const client = clients.get(target);
 	if (!client) return;
 	if (socket && socket.readyState === WebSocket.OPEN) {
@@ -172,13 +241,4 @@ export async function disconnect(target: ClientId, socket?: WebSocket) {
 	catch {
 		console.log("Error while setting isOnline to 0");
 	}
-}
-
-export default {
-	clients,
-	isAlive,
-	send,
-	connect,
-	disconnect,
-	addListener,
-};
+}*/

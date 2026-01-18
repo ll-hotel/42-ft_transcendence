@@ -2,14 +2,16 @@ import AppPage from "./pages/AppPage.js";
 import {HomePage} from "./pages/HomePage.js";
 import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
-import { RegisterPage } from "./pages/register.js";
-import { ProfilePage } from "./pages/profile.js"
 import Play from "./pages/play.js";
-import PlayLocal from "./pages/play_local.js";
-import PlayMatch from "./pages/play_match.js";
-import PlayTournament from "./pages/play_tournament.js";
+import PlayLocal from "./pages/play/play_local.js";
+import PlayMatch from "./pages/play/play_match.js";
+import PlayTournament from "./pages/play/play_tournament.js";
 import { OtherProfilePage } from "./pages/otherProfile.js";
+import { ProfilePage } from "./pages/profile.js";
+import { RegisterPage } from "./pages/register.js";
 import { editProfile } from "./pages/editProfile.js";
+import { Tournament } from "./pages/tournament.js";
+import { Tournaments } from "./pages/tournaments.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "home", new: HomePage.new },
@@ -23,6 +25,8 @@ const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
 	{ name: "play/tournament", new: PlayTournament.new },
+	{ name: "tournament", new: Tournament.new },
+	{ name: "tournaments", new: Tournaments.new },
 ];
 
 export function strToPageName(str: string): string | null {
@@ -72,7 +76,7 @@ class PageLoader {
 		}
 		this.list.set(name, page);
 	}
-};
+}
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
 	const element = await fetch(`/${encodeURI(path + ".html")}`, {
@@ -95,18 +99,6 @@ export async function gotoUserPage( displayName : string)
 
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
-
-async function loadPage()
-{
-		const path = location.pathname.substring(1);
-		const pageName = strToPageName(path) || "login";
-
-		await loader.downloadPages();
-		loader.load(pageName);
-
-		const page = loader.list.get(pageName);
-}
-
 export async function gotoPage(name: string, search: string = "") {
 	const pageName = strToPageName(name);
 	if (pageName == null || (loader.loaded && loader.loaded === pageName && location.search === search)) {
@@ -116,9 +108,17 @@ export async function gotoPage(name: string, search: string = "") {
 	await loadPage();
 }
 
+async function loadPage() {
+	const path = location.pathname.substring(1);
+	const pageName = strToPageName(path) || "login";
+
+	await loader.downloadPages();
+	loader.load(pageName);
+}
+
 
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {
-		loadPage();
-}
+	loadPage();
+};

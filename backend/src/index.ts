@@ -9,15 +9,14 @@ import { createTables } from "./db/database";
 import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
 import gameTournament from "./game/tournament";
-import socketRoute from "./socketRoute";
-import { friendService } from "./user/friend";
 import { chatRoute } from "./routes/chat";
+import socketRoute from "./routes/socket";
+import { friendService } from "./user/friend";
 import userModule from "./user/user";
 import path from "path";
 
 async function main() {
-	try {
-		await createTables();
+	createTables();
 
 	const app: FastifyInstance = Fastify({
 		logger: true,
@@ -43,15 +42,13 @@ async function main() {
 	app.register(gameMatch);
 	app.register(socketRoute);
 	app.register(chatRoute);
-	
 
-	console.log(app.printRoutes());
-
-		await app.listen({ port: 8080, host: "0.0.0.0" });
-	} catch (err) {
-		console.log("Could not start server:", err);
-		process.exit(1);
-	}
+	app.listen({ port: 8080, host: "0.0.0.0" }, (err) => {
+		if (err) {
+			console.log("Could not start server:", err);
+			process.exit(1);
+		}
+	});
 }
 
 main();

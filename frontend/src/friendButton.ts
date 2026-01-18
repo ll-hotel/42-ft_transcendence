@@ -31,8 +31,6 @@ export class FriendButton {
 			if (resRequest?.status === Status.success)
 			{
 				const statusRequest = resRequest.payload.status;
-				if (statusRequest ==="not sent")
-					console.log("Friend status not send");
 				if (statusRequest === "not sent" || statusRequest === "declined")
 					this.status= "add";
 				else if (statusRequest === "pending_in")
@@ -69,7 +67,6 @@ export class FriendButton {
 					this.extraButton.className = "px-4 py-2 rounded border border-white bg-[#04809F]  text-white";
 					this.extraButton.textContent = "1VS1";
 					this.extraButton.addEventListener("click", () => this.handle1vs1());
-					this.container.className = "gap-2"
 					this.container.appendChild(this.extraButton);
 				}
 				break;

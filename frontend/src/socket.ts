@@ -24,7 +24,7 @@ async function connect(): Promise<boolean> {
 	if (socket) {
 		return true;
 	} else {
-		const me = await api.get("/api/me")
+		const me = await api.get("/api/me");
 		if (!me || me.status == Status.unauthorized) {
 			return false;
 		}
@@ -50,14 +50,14 @@ async function connect(): Promise<boolean> {
 		} catch (err) {
 			console.log(err);
 		}
-	}
+	};
 	wasConnected = true;
 	pingLoop();
 	return true;
 }
 function pingLoop() {
 	setTimeout(() => {
-		send({topic: "ping"}) && pingLoop();
+		send({ topic: "ping" }) && pingLoop();
 	}, 4000);
 }
 function isAlive() {
@@ -74,20 +74,15 @@ function disconnect() {
 	wasConnected = false;
 	socket?.close();
 }
-
-//Changer le listener en fonction du type plutot que de la source, (si source est une personne alors aucun sens, plutot lier a un type de message dans le cas d'une invit,
-//plusieur source possible (source = clientId du sender ou alors (source = server et ajouter une variable sender)) )
-
-function addListener(type: string, hook: (m: Message) => void) {
-	if (!hooks.has(type)) {
-		hooks.set(type, []);
+function addListener(topic: string, hook: (m: Message) => void) {
+	if (!hooks.has(topic)) {
+		hooks.set(topic, []);
 	}
-	hooks.get(type)!.push(hook);
+	hooks.get(topic)!.push(hook);
 }
-
-function removeListener(type: string) {
-	if (hooks.has(type)) {
-		hooks.delete(type);
+function removeListener(topic: string) {
+	if (hooks.has(topic)) {
+		hooks.delete(topic);
 	}
 }
 

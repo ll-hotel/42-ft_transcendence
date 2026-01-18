@@ -1,7 +1,6 @@
 import { api, Status } from "./api.js";
 import { gotoPage, gotoUserPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
-import {initSocket} from "./socketListener.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -9,46 +8,48 @@ document.addEventListener("DOMContentLoaded", async function() {
 		alert("Missing content div");
 		return;
 	}
-
-	initSearchBar();
-	initSocket();
-	const uri = window.location.pathname;
 	
- 
+	initSocket();
+	initSearchBar();
+	const uri = window.location.pathname;
+
 	// JAI ENLEVER LES HISTORIQUE ICI
 
 	const name = strToPageName(uri.substring(1)) || "login";
 	if (name == "login" || (await socket.connect()) == false) {
 		await gotoPage("login", location.search);
-	} else if (name == "profile/other") {
-		await gotoPage("profile/other", location.search);
-	}
-	else
-	{
+	} else if (name == "profile/other" || name == "tournament") {
+		await gotoPage(name, location.search);
+	} else {
 		await gotoPage(name);
 	}
 
-
-	const headerButtons = document.querySelectorAll('header button');
+	const headerButtons = document.querySelectorAll("header button");
 
 	headerButtons.forEach(btn => {
-		btn.addEventListener('click', async () => {
-			const page = strToPageName(btn.getAttribute('data-page')!);
-			if (!page)
+		btn.addEventListener("click", async () => {
+			const page = strToPageName(btn.getAttribute("data-page")!);
+			if (!page) {
 				return;
+			}
 			await gotoPage(page);
-			headerButtons.forEach(b => b.classList.remove('font-bold'));
-			btn.classList.add('font-bold');
+			headerButtons.forEach(b => b.classList.remove("font-bold"));
+			btn.classList.add("font-bold");
 		});
 	});
 });
+
+function initSocket() {
+	
+}
 
 function initSearchBar() {
 	const search = document.getElementById("user-search") as HTMLInputElement | null;
 	const result = document.getElementById("user-results");
 
-	if (!search || !result)
+	if (!search || !result) {
 		return;
+	}
 
 	search.addEventListener("input", async () => {
 		const searchName = search.value.trim().toLowerCase();
@@ -60,29 +61,28 @@ function initSearchBar() {
 
 		const allUsers = await api.get("/api/users/all");
 
-		if (!allUsers || ! allUsers.payload || !allUsers.payload.users)
-		{
+		if (!allUsers || !allUsers.payload || !allUsers.payload.users) {
 			result.innerHTML = "<div>Pas d'utilisateurs chargés</div>";
 			return;
 		}
 
-		const selectedUsers = allUsers.payload.users.filter((user: any) =>{
+		const selectedUsers = allUsers.payload.users.filter((user: any) => {
 			return user.displayName.toLowerCase().includes(searchName);
-		}
-	);
+		});
 
-	displayResultSearch(selectedUsers);
+		displayResultSearch(selectedUsers);
 	});
 }
 
-function displayResultSearch(selectedUsers :any) {
+function displayResultSearch(selectedUsers: any) {
 	const results = document.getElementById("user-results");
-	if (!results)
+	if (!results) {
 		return;
+	}
 
 	results.innerHTML = "";
 
-	selectedUsers.forEach((user:any) => {
+	selectedUsers.forEach((user: any) => {
 		const card = document.createElement("div");
 		card.className = "user-result";
 

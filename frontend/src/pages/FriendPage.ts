@@ -17,6 +17,12 @@ import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { FriendChat } from "./FriendChat.js";
 import socket from "../socket.js";
 
+type Message = {
+	source: string;
+	target: string;
+	content: string 
+};
+
 
 export class FriendPage implements AppPage
 {

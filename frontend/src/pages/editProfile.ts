@@ -114,6 +114,18 @@ export class editProfile implements AppPage
 			const data = await res.json();
 			this.updatePreview(undefined, `uploads/${data.file}`);
 		}
+/*		const avatar = userFormData.get("avatar")?.toString();
+
+		if (!displayName && !avatar)
+			return alert("No user info to update");
+
+		const res = await api.patch("/api/user/profile", {displayName, avatar});
+		if (!res || !res.payload)
+			return;
+		if (res.status !== Status.success)
+			return alert("Error when editing user info: " + res.payload.message);
+
+		this.updatePreview(displayName, avatar);*/
 		this.userForm.reset();
 	}
 
@@ -136,7 +148,7 @@ export class editProfile implements AppPage
 
 	this.passwordForm.reset();
 	alert("Password updated");
-	}
+}
 
 	updatePreview(displayName?: string, avatar?: string) {
 		if (displayName) {
@@ -147,12 +159,10 @@ export class editProfile implements AppPage
 
 		if (avatar) {
 			const avatarEl = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview");
-			if (!avatarEl)
-				return;
-			avatarEl.src = avatar.startsWith("/") ? avatar : `/${avatar}`;
+			//if (avatarEl)
+			//	avatarEl.src = avatar; Besoin d'avoir une image bien implanté dans le back !
 		}
-	}
-
 }
 
 
+}

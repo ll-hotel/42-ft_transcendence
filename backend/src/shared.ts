@@ -51,6 +51,9 @@ export namespace schema {
 	export function params(items: any): FastifySchema {
 		return { params: { type: "object", properties: decompose(items) } };
 	}
+	export function query(items: any): FastifySchema {
+		return { querystring: { type: "object", properties: decompose(items) } };
+	}
 	function decompose(items: any) {
 		const properties: any = {};
 		for (const key in items) {

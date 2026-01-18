@@ -41,15 +41,14 @@ export class ProfilePage implements AppPage {
 	async loadUserInfo() {
 		const res = await api.get("/api/me");
 		if (!res || res.status != Status.success) {
-			gotoPage("login");
-			return;
+			return gotoPage("login");
 		}
 		const userInfo = res.payload as { displayName: string, id:number, avatar: string };
-		this.displayname.innerHTML = userInfo.displayName;
+		const contMatchList = this.content.querySelector("#match-list");
 		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
 		if (avatarImg)
 			avatarImg.src = userInfo.avatar.startsWith("/") ? userInfo.avatar : `/${userInfo.avatar}`;
-		const contMatchList = this.content.querySelector("#match-list");
+		this.displayname.innerHTML = userInfo.displayName;
 		
 		const resMatch = await api.get("/api/me/history");
 		if (!resMatch || resMatch.status != Status.success) {
@@ -67,7 +66,7 @@ export class ProfilePage implements AppPage {
 					date.toLocaleTimeString("fr-FR"),
 					{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
 					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
-					userInfo.displayName
+					userInfo.displayName || "Display name"
 				).toHTML());
 			}
 			if (!MatchList.length)
