@@ -195,40 +195,39 @@ export class Game
 		this.buffer = 0;
 		this.tick_rate = 90;
 		this.tick_interval = 1000 / this.tick_rate;
-		this.input = new Map([["w", false], ["s", false], ["ArrowUp", false], ["ArrowDown", false]]);
-
-		socket.addListener("pong", (msg) => {this.pong_event_listener(msg)});
+		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
 		this.canvas_ratio = {w: this.canvas.width / 500, h: this.canvas.height / 250 };
 		this.speed_ratio = (10 / this.tick_rate);
-
+		socket.addListener("pong", (msg) => {this.pong_event_listener(msg)})
 	}
 
-	pong_event_listener(msg: PongMessage): void
-	{
-		if (msg.type !== "state" && msg.type !== "score")
-			return;
-		if (msg.type == "score")
-		{
-			this.ball.pos.x = this.canvas.width / 2;
-			this.ball.pos.y = this.canvas.height / 2;
-			this.score.p1 = (msg as ScoreMessage).p1_score;
-			this.score.p2 = (msg as ScoreMessage).p2_score;
-			return ;
-		}
-		if ((msg as StateMessage).status == "not_started")
-		{
-			this.current_interval_id = setInterval(() => {
-				this.update()}, 1000 / this.tick_rate);
-		}
-		else if ((msg as StateMessage).status == "on_going")
-		{
-			clearInterval(this.current_interval_id!);
-		}
+       pong_event_listener(msg: PongMessage): void
+       {
+               if (msg.type !== "state" && msg.type !== "score")
+                       return;
+               if (msg.type == "score")
+               {
+                       this.ball.pos.x = this.canvas.width / 2;
+                       this.ball.pos.y = this.canvas.height / 2;
+                       this.score.p1 = (msg as ScoreMessage).p1_score;
+                       this.score.p2 = (msg as ScoreMessage).p2_score;
+                       return ;
+               }
+               if ((msg as StateMessage).status == "not_started")
+               {
+                       this.current_interval_id = setInterval(() => {
+                               this.update()}, 1000 / this.tick_rate);
+               }
+               else if ((msg as StateMessage).status == "on_going")
+               {
+                       clearInterval(this.current_interval_id!);
+               }
 
-		this.update_state(msg as StateMessage);
-		this.current_interval_id = setInterval(() => {
-			this.update()}, 1000 / this.tick_rate);
-	}
+               this.update_state(msg as StateMessage);
+               this.current_interval_id = setInterval(() => {
+                       this.update()}, 1000 / this.tick_rate);
+       }
+
 
 	update_state(msg: StateMessage)
 	{
@@ -236,6 +235,8 @@ export class Game
 		msg.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
 		coef_product(msg.ball.speed, this.speed_ratio);
 		this.ball.speed = msg.ball.speed;
+		this.paddle_p1.pos.y = msg.paddles.p1_Y * this.canvas_ratio.h;
+		this.paddle_p2.pos.y = msg.paddles.p2_Y * this.canvas_ratio.h;
 	}
 
 	update_paddle_texture() : void

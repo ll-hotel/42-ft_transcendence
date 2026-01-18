@@ -1,11 +1,16 @@
 import * as logger from './myLogger';
 import socket from "../socket";
-import {setInterval} from "node:timers";
+import {clearInterval, setInterval} from "node:timers";
 import * as match from "../game/match"
 import Match from "../game/match";
 import {matches} from "../db/tables";
 import {endMatch, updateMatchInfo} from "../db/methods";
 
+enum Mode
+{
+	local = "local",
+	remote = "remote"
+}
 
 enum TypeMsg
 {
@@ -49,6 +54,14 @@ type InputMessage = BaseMessage & {
 	down: boolean
 }
 
+type LocalMessage = BaseMessage & {
+	type: "input",
+	p1_up: boolean,
+	p1_down: boolean,
+	p2_up: boolean,
+	p2_down: boolean
+}
+
 type ScoreMessage = BaseMessage & {
 	type: "score",
 	p1_score: number,
@@ -62,7 +75,6 @@ type Size = {w: number, h: number};
 type Score = {p1: number, p2: number};
 type Input = {name: string, value: boolean};
 
-const client_tickrate :number = 90;
 const server_tickrate :number = 10;
 
 function dot_product(x1: number, y1: number, x2: number, y2: number) : number
@@ -200,23 +212,69 @@ export class ServerSidedGame
 	private is_running: Boolean;
 	private game_id: number;
 
-	constructor(game_id: number, p1ws: string, p2ws: string)
+	constructor(game_id: number, p1ws: string, p2ws: string, mode: Mode)
 	{
 		this.game_id = game_id;
 		this.table = new PongTable({w: 500, h: 250});
 		this.score = {p1: 0, p2: 0};
 		this.paddle_p1 = new PongPaddle({x: 0, y: this.table.height / 2});
 		this.paddle_p2 = new PongPaddle({x: this.table.width, y: this.table.height / 2});
-		this.p1_ws = p1ws;
-		this.p2_ws = p2ws;
-		this.ball = new PongBall(this.table, this.score, this.paddle_p1, this.paddle_p2, this.p1_ws, this.p2_ws, this.game_id);
 		this.is_running = false;
 		this.last_timestamp = 0;
 		this.buffer = 0;
 		this.tick_rate = server_tickrate;
 		this.tick_interval = 1000 / this.tick_rate;
-		this.input = new Map([["w", false], ["s", false], ["ArrowUp", false], ["ArrowDown", false]]);
+		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
 
+		this.p1_ws = p1ws;
+		this.p2_ws = p2ws;
+		this.ball = new PongBall(this.table, this.score, this.paddle_p1, this.paddle_p2, this.p1_ws, this.p2_ws, this.game_id);
+
+		if (mode == Mode.local)
+		{
+			socket.addListener(this.p1_ws, "pong", (msg) => {this.local_input_listener(msg)});
+		}
+		else if (mode == Mode.remote)
+		{
+			socket.addListener(this.p1_ws, "pong", (msg) => {this.p1_event_listener(msg)});
+			socket.addListener(this.p2_ws, "pong", (msg) => {this.p2_event_listener(msg)});
+		}
+	}
+
+
+	p1_event_listener(msg: InputMessage)
+	{
+		if (msg.type !== "input")
+			return;
+		if (msg.source == this.p1_ws)
+		{
+			this.input["p1_up"].value = msg.up;
+			this.input["p1_down"].value = msg.down;
+		}
+	}
+
+	p2_event_listener(msg: InputMessage)
+	{
+		if (msg.type !== "input")
+			return;
+		if (msg.source == this.p2_ws)
+		{
+			this.input["p2_up"].value = msg.up;
+			this.input["p2_down"].value = msg.down;
+		}
+	}
+
+	local_input_listener(msg: InputMessage)
+	{
+		if (msg.type !== "input")
+			return;
+		if (msg.source == this.p1_ws)
+		{
+			this.input["p1_up"] = (msg as LocalMessage).p1_up;
+			this.input["p1_down"] = (msg as LocalMessage).p1_down;
+			this.input["p2_up"] = (msg as LocalMessage).p2_up;
+			this.input["p2_down"] = (msg as LocalMessage).p2_down;
+		}
 	}
 
 	send_to_players(state: State)
@@ -262,18 +320,17 @@ export class ServerSidedGame
 
 	update()
 	{
-		if (this.input.get("w") && this.paddle_p1.pos.y >= ( 5 + (this.paddle_p1.size.h / 2)))
+		if (this.input.get("p1_up") && this.paddle_p1.pos.y >= ( 5 + (this.paddle_p1.size.h / 2)))
 			this.paddle_p1.pos.y = this.paddle_p1.pos.y - 5;
-		if (this.input.get("s")  && this.paddle_p1.pos.y <= this.table.height - (5 +  (this.paddle_p1.size.h / 2)))
+		if (this.input.get("p1_down")  && this.paddle_p1.pos.y <= this.table.height - (5 +  (this.paddle_p1.size.h / 2)))
 			this.paddle_p1.pos.y = this.paddle_p1.pos.y + 5;
-		if (this.input.get("ArrowUp") && this.paddle_p2.pos.y >= (5 +  (this.paddle_p1.size.h / 2)))
+		if (this.input.get("p2_up") && this.paddle_p2.pos.y >= (5 +  (this.paddle_p1.size.h / 2)))
 			this.paddle_p2.pos.y = this.paddle_p2.pos.y - 5;
-		if (this.input.get("ArrowDown") && this.paddle_p2.pos.y <= this.table.height - (5 +  (this.paddle_p1.size.h / 2)))
+		if (this.input.get("p2_down") && this.paddle_p2.pos.y <= this.table.height - (5 +  (this.paddle_p1.size.h / 2)))
 			this.paddle_p2.pos.y = this.paddle_p2.pos.y + 5;
 
 		this.ball.updatePos();
 		if (this.score.p1 >= 7) {
-			this.is_running = false;
 			this.end();
 		}
 		else if (this.score.p2 >= 7)
@@ -282,13 +339,6 @@ export class ServerSidedGame
 			this.end();
 		}
 		this.send_to_players(State.on_going);
-	}
-
-	reset_game() : void
-	{
-		this.score.p1 = 0;
-		this.score.p2 = 0;
-		this.is_running = false;
 	}
 
 	end()
@@ -396,9 +446,9 @@ export class PongBall extends PhysicObject
 			else if (this.pos.x >= this.table.width - this.size.w)
 			{
 				this.score.p1++;
-				updateMatchInfo(this.game_id, this.score.p1, this.score.p2);
 				next_side = -1;
 			}
+			updateMatchInfo(this.game_id, this.score.p1, this.score.p2);
 			this.respawn(next_side);
 			this.send_score_to_players();
 		}
