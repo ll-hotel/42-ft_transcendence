@@ -1,1 +1,19 @@
-@import "tailwindcss" source("../static");
+@import "./card.css";
+
+.tournament-match {
+   @apply size-fit;
+}
+.tournament-player-card {
+  @apply border rounded-sm flex flex-row place-self-center w-80 p-4 items-center gap-4;
+}
+.tournament-player-pic {
+  @apply rounded-[100%] min-h-24 min-w-24 max-h-24 max-w-24 overflow-hidden justify-center items-center bg-transparent border-1;
+}
+.tournament-player-username {
+  @apply w-full text-center text-lg;
+}
+.tournament-player-score {
+  @apply justify-self-end h-full font-bold;
+}
+
+@import "tailwindcss";

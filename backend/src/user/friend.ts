@@ -3,20 +3,29 @@ import { db } from '../db/database';
 import { friends, users } from '../db/tables';
 import { eq, and, or} from 'drizzle-orm';
 import { authGuard } from '../security/authGuard';
-import { STATUS, MESSAGE } from '../shared';
+import { STATUS, MESSAGE, schema} from '../shared';
 
+
+export async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
+	{
+		const res = await db.select({id:friends.id }).from(friends).where(and(
+			eq(friends.status, "accepted"), or( and(
+				eq(friends.senderId, user_1), eq(friends.receiverId, user_2)), and(
+				eq(friends.senderId,user_2), eq(friends.receiverId, user_1))))).limit(1);
+				return res.length > 0;
+	}
 
 class friend {
 	setup(app: FastifyInstance) {
-		app.post("/api/friend/request", {preHandler: authGuard}, this.sendRequest);
+		app.post("/api/friend/request", {preHandler: authGuard, schema: schema.body({displayName: "string"}, ["displayName"])}, this.sendRequest);
 
-		app.patch("/api/friend/accept", {preHandler: authGuard}, this.acceptRequest);
-		app.patch("/api/friend/decline", {preHandler: authGuard}, this.declineRequest);
+		app.patch("/api/friend/accept", {preHandler: authGuard, schema: schema.body({displayName: "string"}, ["displayName"])}, this.acceptRequest);
+		app.patch("/api/friend/decline", {preHandler: authGuard, schema: schema.body({displayName: "string"}, ["displayName"])}, this.declineRequest);
 
 		app.get("/api/friends", {preHandler: authGuard}, this.getFriends);
 		app.get("/api/friend/requests", {preHandler: authGuard}, this.getPendingRequests);
-		app.get("/api/friends/status", {preHandler: authGuard}, this.getFriendStatus);
-		app.delete("/api/friend/remove", {preHandler: authGuard}, this.removeFriend);
+		app.get("/api/friends/status", {preHandler: authGuard, schema: schema.query({displayName: "string"}, ["displayName"])}, this.getFriendStatus);
+		app.delete("/api/friend/remove", {preHandler: authGuard, schema: schema.body({displayName: "string"}, ["displayName"])}, this.removeFriend);
 
 	}
 
@@ -118,8 +127,7 @@ class friend {
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
-
-
+			username: users.username,
 		})
 		.from(friends).innerJoin(users, or(eq(users.id, friends.senderId), eq(users.id, friends.receiverId)))
 		.where(and(
@@ -176,7 +184,9 @@ class friend {
 
 	async getFriendStatus(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
-		const {displayName} = req.body as {displayName: string};
+
+		const {displayName} = req.query as {displayName: string};
+
 		let status = "not sent";
 
 		if (!displayName)

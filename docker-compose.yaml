@@ -8,8 +8,10 @@ services:
       - "8443:443"
     volumes:
       - frontend-static:/srv/app/static
-      - frontend-src:/srv/app/src
+      - frontend-src:/srv/app/src:ro
       - secrets:/run/secrets:ro
+    networks:
+      - api
 
   backend:
     container_name: backend
@@ -28,6 +30,9 @@ services:
       - backend-src:/srv/app/src
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
+    networks:
+      - api
+    env_file: .env
 
   auth-service:
     container_name: auth-service
@@ -151,3 +156,7 @@ volumes:
       device: ./secrets
       type: none
       o: bind
+
+networks:
+  api:
+    driver: bridge

@@ -35,8 +35,11 @@ export class Login implements AppPage {
 		};
 	}
 	static new(content: HTMLElement) {
-		if (!content.querySelector("form") ||
-			!content.querySelector("button#button-intra")) {
+		if (
+			!content.querySelector("form")
+			|| !content.querySelector("button#button-intra")
+			|| !content.querySelector("button#button-google")
+		) {
 			return null;
 		}
 		return new Login(content);
@@ -66,7 +69,7 @@ export class Login implements AppPage {
 		const password = data.get("password");
 		const twoFACode = data.get("twoFACode");
 
-		const res = await api.post("/auth-service/auth/login", { username, password, twoFACode })
+		const res = await api.post("/auth-service/auth/login", { username, password, twoFACode });
 		if (!res) {
 			return alert("Invalid API response.");
 		}
