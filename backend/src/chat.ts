@@ -1,5 +1,4 @@
 import { tcheckFriends } from "./user/friend";
-import user from "./user/user";
 
 function privateRoomId(UserAId: string, UserBId: string): string {
 	const [a, b] = UserAId < UserBId ? [UserAId, UserBId] : [UserBId, UserAId];

@@ -1,29 +1,26 @@
-//import { matches, tournamentMatches, tournaments, users } from "../db/tables";
-//import { eq, or, and, desc } from "drizzle-orm";
-
 import fs from "fs";
 import sharp from "sharp";
 
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { db } from "../db/database";
-import { matches, tournamentMatches, tournaments, users } from "../db/tables";
-import { generate2FASecret, generateQRCode } from "../security/2fa";
-import { authGuard } from "../security/authGuard";
-import { comparePassword, hashPassword } from "../security/hash";
-import { MESSAGE, schema, STATUS } from "../shared";
+import { db } from "./utils/db/database";
+import { matches, tournamentMatches, tournaments, users } from "./utils/db/tables";
+import { generate2FASecret, generateQRCode } from "./utils/security/2fa";
+import { authGuard } from "./utils/security/authGuard";
+import { comparePassword, hashPassword } from "./utils/security/hash";
+import { MESSAGE, schema, STATUS } from "./utils/http-reply";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class User {
 	static setup(app: FastifyInstance) {
-		app.get("/api/me", { preHandler: authGuard }, User.getMe);
+		app.get("/api/user/me", { preHandler: authGuard }, User.getMe);
 		app.get("/api/user", { preHandler: authGuard, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUser);
-		app.get("/api/users/all", { preHandler: authGuard }, User.getallUsers);
-		app.get("/api/me/history", { preHandler: authGuard }, User.getMyHistory);
+		app.get("/api/user/all", { preHandler: authGuard }, User.getallUsers);
+		app.get("/api/user/me/history", { preHandler: authGuard }, User.getMyHistory);
 		app.get("/api/user/history", { preHandler: authGuard }, User.getUserHistory);
-		app.get("/api/me/stats", { preHandler: authGuard }, User.getMyStat);
+		app.get("/api/user/me/stats", { preHandler: authGuard }, User.getMyStat);
 		app.get("/api/user/stats", { preHandler: authGuard }, User.getUserStat);
 
 		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
@@ -511,11 +508,6 @@ class User {
 
 		return rep.code(STATUS.success).send(finalList);
 	}
-}
-
-export async function getUserIdByUsername(username: string): Promise<number | null> {
-	const [user] = await db.select({ id: users.id }).from(users).where(orm.eq(users.username, username));
-	return user ? user.id : null;
 }
 
 export default async function(fastify: FastifyInstance) {

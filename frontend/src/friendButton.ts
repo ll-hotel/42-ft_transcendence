@@ -125,7 +125,7 @@ export class FriendButton {
 		if (!confirmVs)
 			return;
 		
-		const me = await api.get("/api/me");
+		const me = await api.get("/api/user/me");
 		const friend = await api.get(`/api/user?displayName=${this.displayName}`);
 		if (!me || ! friend || !me.payload || !friend.payload)
 			return alert("Error when getting user ou friend info");

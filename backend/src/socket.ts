@@ -4,7 +4,6 @@ import { matches, users } from './db/tables';
 import { db } from './db/database';
 import { and, eq, or } from 'drizzle-orm';
 import { matchesGlob } from "path";
-import user from "./user/user";
 import { ucs2 } from "punycode";
 import { tcheckFriends } from "./user/friend";
 import { TableAliasProxyHandler } from "drizzle-orm";

@@ -62,7 +62,7 @@ export class Tournament implements AppPage {
 		}
 	}
 	async toggleStartButton(info: TournamentInfo) {
-		const res = await api.get("/api/me");
+		const res = await api.get("/api/user/me");
 		if (!res || res.status != Status.success) return;
 
 		const startButton = this.html.querySelector("#tournament-start") as HTMLButtonElement | null;

@@ -75,7 +75,7 @@ export class OtherProfilePage implements AppPage {
 			return;
 		}
 
-		const resMe = await api.get(`/api/me`);
+		const resMe = await api.get(`/api/user/me`);
 		if (!resMe || resMe.status != Status.success) {
 			alert("Can't load my info");
 			return;

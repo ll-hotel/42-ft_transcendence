@@ -24,7 +24,7 @@ async function connect(): Promise<boolean> {
 	if (socket) {
 		return true;
 	} else {
-		const me = await api.get("/api/me");
+		const me = await api.get("/api/user/me");
 		if (!me || me.status == Status.unauthorized) {
 			return false;
 		}
