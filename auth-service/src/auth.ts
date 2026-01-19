@@ -30,6 +30,8 @@ if (!process.env.HOSTNAME) {
 	throw new Error("Missing server hostname");
 }
 
+process.env.HOSTNAME = "localhost";
+
 const redirect42 = `https://${process.env.HOSTNAME}:8443/login?provider=42`;
 const redirectGoogle = `https://${process.env.HOSTNAME}:8443/login?provider=google`;
 
