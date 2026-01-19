@@ -10,7 +10,7 @@ export type TournamentPlayer = {
 };
 
 export async function setUserOffline(uuid: string) {
-	db.update(tables.users).set({ isOnline: 0 }).where(orm.eq(tables.users.uuid, uuid));
+	await db.update(tables.users).set({ isOnline: 0 }).where(orm.eq(tables.users.uuid, uuid));
 }
 
 export async function addTournamentPlayer(tournamentId: number, user: TournamentPlayer) {
