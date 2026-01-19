@@ -455,8 +455,8 @@
   .col-span-4 {
     grid-column: span 4 / span 4;
   }
-  .col-span-5 {
-    grid-column: span 5 / span 5;
+  .col-span-8 {
+    grid-column: span 8 / span 8;
   }
   .row-span-2 {
     grid-row: span 2 / span 2;
@@ -551,9 +551,6 @@
   }
   .h-12 {
     height: calc(var(--spacing) * 12);
-  }
-  .h-16 {
-    height: calc(var(--spacing) * 16);
   }
   .h-24 {
     height: calc(var(--spacing) * 24);
@@ -736,9 +733,6 @@
   .rounded-sm {
     border-radius: var(--radius-sm);
   }
-  .rounded-xl {
-    border-radius: var(--radius-xl);
-  }
   .rounded-t-md {
     border-top-left-radius: var(--radius-md);
     border-top-right-radius: var(--radius-md);
@@ -858,6 +852,9 @@
   .p-8 {
     padding: calc(var(--spacing) * 8);
   }
+  .p-24 {
+    padding: calc(var(--spacing) * 24);
+  }
   .px-2 {
     padding-inline: calc(var(--spacing) * 2);
   }
@@ -881,9 +878,6 @@
   }
   .pt-14 {
     padding-top: calc(var(--spacing) * 14);
-  }
-  .pt-16 {
-    padding-top: calc(var(--spacing) * 16);
   }
   .text-center {
     text-align: center;
@@ -1118,11 +1112,6 @@
       line-height: var(--tw-leading, var(--text-lg--line-height));
     }
   }
-  .md\:col-span-1 {
-    @media (width >= 48rem) {
-      grid-column: span 1 / span 1;
-    }
-  }
   .md\:col-span-2 {
     @media (width >= 48rem) {
       grid-column: span 2 / span 2;
@@ -1131,11 +1120,6 @@
   .md\:grid-cols-3 {
     @media (width >= 48rem) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-  .md\:p-4 {
-    @media (width >= 48rem) {
-      padding: calc(var(--spacing) * 4);
     }
   }
   .md\:p-6 {
@@ -1148,14 +1132,14 @@
       padding: calc(var(--spacing) * 8);
     }
   }
+  .md\:p-16 {
+    @media (width >= 48rem) {
+      padding: calc(var(--spacing) * 16);
+    }
+  }
   .md\:px-8 {
     @media (width >= 48rem) {
       padding-inline: calc(var(--spacing) * 8);
-    }
-  }
-  .md\:pt-4 {
-    @media (width >= 48rem) {
-      padding-top: calc(var(--spacing) * 4);
     }
   }
   .lg\:text-sm {
@@ -1172,6 +1156,11 @@
   .xl\:col-span-3 {
     @media (width >= 80rem) {
       grid-column: span 3 / span 3;
+    }
+  }
+  .xl\:col-span-5 {
+    @media (width >= 80rem) {
+      grid-column: span 5 / span 5;
     }
   }
   .xl\:w-4\/5 {

@@ -90,6 +90,7 @@ function removeListener(topic: string) {
 export default {
 	connect,
 	send,
+	isAlive,
 	disconnect,
 	addListener,
 	removeListener,

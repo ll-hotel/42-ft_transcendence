@@ -34,17 +34,7 @@ type VersusMessage = BaseMessage & {
 }
 type Message = BaseMessage | MatchMessage | VersusMessage;
 
-
 export const clients: Map<ClientId, Client> = new Map();
-
-export function isAlive(client: ClientId) {
-	if (!clients.has(client)) return false;
-	for (const socket of clients.get(client)!.sockets) {
-		if (socket.readyState === WebSocket.OPEN) return true;
-	return false;
-	}
-}
-
 
 export function isOnline(id: ClientId) {
 	const client = clients.get(id);
@@ -86,7 +76,7 @@ function onMessage(client: Client, clientId : ClientId, event: MessageEvent) {
 		switch (msg.topic)
 		{
 			case("vs:invite") :
-				if (!isAlive(msg.target))
+				if (!isOnline(msg.target))
 					return; 
 				send(msg.target, {source: clientId, topic : "vs:invite", target: msg.target})
 				break;
@@ -192,8 +182,6 @@ export default {
 	disconnect,
 	addListener,
 };
-
-
 
 /*
 

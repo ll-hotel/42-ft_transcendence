@@ -68,7 +68,7 @@ export class HomePage implements AppPage {
 		const requests = requestRes.payload.requests
 		this.listContainer.innerHTML = "";
 
-		if ((!friends || friends.length == 0) && (!requests || requests.length))
+		if ((!friends || friends.length == 0) && (!requests || requests.length === 0))
 		{
 			this.listContainer.innerHTML = `<div class="no-friend" >Go get some friends dude :)</div>`;
 			return;

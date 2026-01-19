@@ -25,7 +25,7 @@ function createUserTable() {
 	    	username TEXT UNIQUE NOT NULL,
 			displayName TEXT UNIQUE NOT NULL,
 	    	password TEXT NOT NULL,
-			avatar TEXT NOT NULL DEFAULT 'DEFAULT_AVATAR',
+			avatar TEXT NOT NULL DEFAULT 'uploads/default_pp.png',
 			twofaKey TEXT,
 			twofaEnabled INTEGER NOT NULL DEFAULT 0,
 			isOnline	INTEGER NOT NULL DEFAULT 0

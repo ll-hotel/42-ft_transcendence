@@ -80,6 +80,7 @@ class User {
 		}
 
 		const [user] = await db.select({
+			uuid: users.uuid,
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
@@ -520,5 +521,5 @@ export async function getUserIdByUsername(username: string): Promise<number | nu
 export default async function(fastify: FastifyInstance) {
 	User.setup(fastify);
 	// Reset online status. //POURQUOI CA RESET LE USER STATUS
-	//await db.update(users).set({ isOnline: 0 });
+	await db.update(users).set({ isOnline: 0 });
 }

@@ -1,6 +1,7 @@
 import { api, Status } from "./api.js";
 import { gotoPage, gotoUserPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
+import { initSocket } from "./socketListener.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -39,9 +40,6 @@ document.addEventListener("DOMContentLoaded", async function() {
 	});
 });
 
-function initSocket() {
-	
-}
 
 function initSearchBar() {
 	const search = document.getElementById("user-search") as HTMLInputElement | null;

@@ -90,13 +90,13 @@ export class FriendPage implements AppPage
 
 	async loadFriends() 
 	{
-		this.listContainer.innerHTML = "<div>En recherche d'amis</div>";
+		this.listContainer.innerHTML = "<div>Finding friends...</div>";
 
 		const friendRes = await api.get("/api/friends");
 		const requestRes = await api.get("/api/friend/requests")
 
 		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success ) {
-			this.listContainer.innerHTML = "<div>Erreur lors de la recherche</div>";
+			this.listContainer.innerHTML = "<div>Error while charging...</div>";
 			return;
 		}
 
@@ -104,7 +104,7 @@ export class FriendPage implements AppPage
 		const requests = requestRes.payload.requests
 		this.listContainer.innerHTML = "";
 
-		if ((!friends || friends.length == 0) && (!requests || requests.length))
+		if ((!friends || friends.length === 0) && (!requests || requests.length === 0))
 		{
 			this.listContainer.innerHTML = `<div class="no-friend" >Go get some friends dude :)</div>`;
 			return;
@@ -333,6 +333,9 @@ export class FriendPage implements AppPage
 
 		const newMsgs = msgs.slice(this.chat.lastMessage); 
 
+		if (!newMsgs.length)
+			return;
+
 		for (let msg of newMsgs)
 		{
 			const divMsg = document.createElement("div");
@@ -342,6 +345,7 @@ export class FriendPage implements AppPage
 			chatList.appendChild(divMsg);
 		}
 		this.chat.lastMessage = msgs.length
+		chatList.scrollTop = chatList.scrollHeight;
 	}
 
 }
