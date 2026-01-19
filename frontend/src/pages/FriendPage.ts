@@ -15,6 +15,7 @@ import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { FriendChat } from "./FriendChat.js";
+import { notify } from "../utils/notifs.js";
 
 type Message = {
 	source: string;
@@ -279,7 +280,7 @@ export class FriendPage implements AppPage
 
 			const res = await api.delete("/api/friend/remove", { displayName: targetDisplayname });
 			if (res && res.status === Status.success) {
-				alert(`${targetDisplayname} a été supprimé de vos amis.`);
+				notify(`${targetDisplayname} has been deleted from friend list`, "success");
 
 				await this.loadFriends();
 
@@ -293,7 +294,7 @@ export class FriendPage implements AppPage
 				blockBtn.disabled = true;
 			}
 			else {
-				alert("Impossible de supprimer l'ami. Veuillez réessayer.");
+				notify("Can not delete friend, please retry.", "error");
 			}
 		};
 	}

@@ -1,6 +1,7 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
+import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
 
 type TournamentMessage = {
@@ -23,7 +24,7 @@ export class Tournament implements AppPage {
 		}
 		const result = await this.retrieveTournamentInfo(tournamentName);
 		if (!result) {
-			alert("No such tournament");
+			notify("No such tournament", "error");
 			return gotoPage("tournaments");
 		}
 		socket.addListener("tournament", (data) => {
@@ -79,10 +80,10 @@ export class Tournament implements AppPage {
 		const res = await api.post("/api/tournament/start", { name });
 		if (!res) return;
 		if (res.status != Status.success) {
-			alert("Can not start tournament: " + res.payload.message);
+			notify("Can not start tournament: " + res.payload.message, "error");
 			return;
 		}
-		alert("Tournament started");
+		notify("Tournament started", "success");
 	}
 	displayWaitingList(info: TournamentInfo) {
 		this.html.querySelector("#round-0")?.setAttribute("hidden", "");

@@ -1,4 +1,5 @@
 import { api, Status } from "../api.js";
+import { notify } from "../utils/notifs.js";
 
 type Message = {
 	source: string;
@@ -81,7 +82,7 @@ export class FriendChat {
 	{
 		const Roomres = await api.post(`/api/chat/private/${username}`);
 		if (!Roomres || Roomres.status !== Status.success) {
-			alert("Room didnt work");
+			notify("Room error", "error");
 			return;
 		}
 		this.currentRoomId = Roomres.payload.roomId;

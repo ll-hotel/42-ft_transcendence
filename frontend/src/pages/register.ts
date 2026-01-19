@@ -1,6 +1,7 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js";
+import { notify } from "../utils/notifs.js";
 
 export class RegisterPage implements AppPage {
 	content: HTMLElement;
@@ -47,11 +48,15 @@ export class RegisterPage implements AppPage {
 			return alert("Invalid API response.");
 		}
 		if (res.status != Status.created) {
-			return alert("Error: " + res.payload.message);
+			return notify(res.payload.message, "error");
 		}
 		if (res.payload.qrCode) {
 			window.open(res.payload.qrCode);
 		}
+		if (res.status == Status.created) {
+			notify("User successfuly created", "success");
+		}
+
 		await gotoPage("login");
 	}
 }

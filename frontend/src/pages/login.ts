@@ -2,6 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import AppPage from "./AppPage.js";
+import { notify } from "../utils/notifs.js";
 
 export class Login implements AppPage {
 	content: HTMLElement;
@@ -78,13 +79,14 @@ export class Login implements AppPage {
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
 			socket.connect();
+			notify(res.payload.message, "success");
 			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {
 			this.toggleTwoFA();
 			return;
 		}
-		alert("Error: " + res.payload.message);
+		notify(res.payload.message, "error");
 	}
 	toggleTwoFA() {
 		if (this.twoFAHidden) {
@@ -126,6 +128,7 @@ async function loginWithProvider(container: HTMLElement, provider: string, code:
 	if (!res || !res.payload.loggedIn) {
 		return gotoPage("login");
 	}
+	notify(res.payload.message, "success");
 	await socket.connect();
 	return gotoPage("profile");
 }

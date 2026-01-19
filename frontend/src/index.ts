@@ -1,11 +1,12 @@
 import { api, Status } from "./api.js";
 import { gotoPage, gotoUserPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
+import { notify } from "./utils/notifs.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
 	if (content === null) {
-		alert("Missing content div");
+		notify("Missing content div", "error");
 		return;
 	}
 	initSocket();
@@ -42,7 +43,7 @@ function initSocket() {
 	socket.addListener("match", (m) => {
 		const match = m as unknown as { id?: number };
 		// TODO: gotoPage("match", "?id=" + message.id!);
-		alert("Match found: id=" + match.id!)
+		notify("Match found: id=" + match.id!, "success")
 	})
 }
 
@@ -106,7 +107,7 @@ function displayResultSearch(selectedUsers: any) {
 				return;
 			}
 			if (me.status != Status.success) {
-				return alert("Error: " + me.payload.message);
+				return notify("Error: " + me.payload.message, "error");
 			}
 			if (me.payload.displayName == user.displayName) {
 				await gotoPage("profile");

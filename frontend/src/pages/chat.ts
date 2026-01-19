@@ -1,6 +1,7 @@
 //PLUS UTILISÉ
 
 import { api } from "../api.js";
+import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
 
 type Message = {
@@ -97,7 +98,7 @@ export class ChatElement implements AppPage {
 					chatList.innerHTML = "";
 				}
 				catch (err) {
-					alert("Impossible d'ouvrir la conversation privée");
+					notify("Error : Can't open private chat", "error");
 					return;
 				}
 			}

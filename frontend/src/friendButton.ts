@@ -1,4 +1,5 @@
 import { api, Status } from "./api.js";
+import { notify } from "./utils/notifs.js";
 
 export type FriendStatus = "add" | "sent" | "friend" | "accept";
 
@@ -87,24 +88,24 @@ export class FriendButton {
 				this.render();
 			}
 			else
-				 alert( res?.payload?.message || "Error Friend sent");
+				 notify( res?.payload?.message || "Error Friend sent", "error");
 		}
 		else if (this.status == "sent")
 		{
-			alert("Already send");
+			notify("Already sent", "info");
 		}
 		else if (this.status == "friend")
 		{
 			const res = await api.delete("/api/friend/remove", {displayName : this.displayName});
 			if (res && res.status === Status.success)
 			{
-				alert(`${this.displayName} est supprimé de la liste d'amis !`);
+				notify(`${this.displayName} has been deleted from friend list`, "success");
 				this.status = "add";
 				this.render();
 			}
 			else
 			{
-				alert(`Failed to ban friend ${this.displayName}`);
+				notify(`Failed to ban friend ${this.displayName}`, "error");
 			}
 		}
 		else if (this.status == "accept")
