@@ -42,13 +42,13 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class AuthService {
 	setup(app: FastifyInstance) {
-		app.post('/auth-service/auth/register', { schema: SCHEMA_REGISTER }, this.register);
-		app.post('/auth-service/auth/login', { schema: SCHEMA_LOGIN }, this.login);
-		app.post('/auth-service/auth/logout', { preHandler: authGuard }, this.logout);
-		app.get('/auth-service/auth42', this.auth42Redirect);
-		app.get('/auth-service/auth42/callback', this.auth42Callback);
-		app.get('/auth-service/authGoogle', this.googleRedirect);
-		app.get('/auth-service/authGoogle/callback', this.googleCallback);
+		app.post('/api/auth/register', { schema: SCHEMA_REGISTER }, this.register);
+		app.post('/api/auth/login', { schema: SCHEMA_LOGIN }, this.login);
+		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
+		app.get('/api/auth/42', this.auth42Redirect);
+		app.get('/api/auth/42/callback', this.auth42Callback);
+		app.get('/api/auth/google', this.googleRedirect);
+		app.get('/api/auth/google/callback', this.googleCallback);
 	}
 
 	async register(req: FastifyRequest, rep: FastifyReply) {

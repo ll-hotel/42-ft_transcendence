@@ -42,7 +42,7 @@ export class RegisterPage implements AppPage {
 		const password = data.get("password")?.toString() || "";
 		const twofa = data.get("twofa")?.valueOf() || false;
 
-		const res = await api.post("/auth-service/auth/register", { username, password, displayName: username, twofa })
+		const res = await api.post("/api/auth/register", { username, password, displayName: username, twofa })
 		if (!res) {
 			return alert("Invalid API response.");
 		}
