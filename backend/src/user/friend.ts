@@ -128,6 +128,7 @@ class friend {
 			avatar: users.avatar,
 			isOnline: users.isOnline,
 			username: users.username,
+			uuid: users.uuid,
 		})
 		.from(friends).innerJoin(users, or(eq(users.id, friends.senderId), eq(users.id, friends.receiverId)))
 		.where(and(
@@ -184,9 +185,7 @@ class friend {
 
 	async getFriendStatus(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
-
 		const {displayName} = req.query as {displayName: string};
-
 		let status = "not sent";
 
 		if (!displayName)
@@ -195,10 +194,24 @@ class friend {
 		if (!target)
 			return rep.code(STATUS.not_found).send({message: MESSAGE.user_notfound});
 
-		const [friendExists] =  await db.select().from(friends).where(and(eq(friends.senderId, usr.id), eq(friends.receiverId, target.id)));
+		if(await tcheckFriends(usr.id, target.id))
+			return rep.code(STATUS.success).send({status : "accepted"});
+
+		const [friendExists] = await db.select().from(friends).where(or(
+			and(eq(friends.senderId, usr.id), eq(friends.receiverId, target.id)),
+			and(eq(friends.senderId, target.id), eq(friends.receiverId, usr.id))));
 		
 		if (friendExists)
-			status = friendExists.status;
+		{
+			if (friendExists.status == "pending")
+			{
+				if (friendExists.senderId === usr.id)
+					status = "pending_out";
+				else
+					status = "pending_in";
+			}
+			else status = friendExists.status;
+		}
 
 		return rep.code(STATUS.success).send({status: status});
 	}

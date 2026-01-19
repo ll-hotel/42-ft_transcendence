@@ -2,6 +2,10 @@
 	@apply w-full h-20 bg-white flex justify-between items-center px-4;
 }
 
+.friend-card-home {
+	@apply hover:cursor-pointer hover:bg-[#04809F] hover:text-white;
+}
+
 .request-card {
 	@apply w-full h-20 text-white bg-[#04809F] flex justify-between items-center px-4 ;
 }
@@ -28,7 +32,7 @@
 }
 
 .friend-avatar {
-	@apply w-12 h-12 rounded-full;
+	@apply w-12 h-12 rounded-full block sm:hidden lg:block;
 }
 
 .friend-status {
@@ -68,9 +72,9 @@
 }
 
 .msg-me {
-  @apply self-end bg-[#04809F] text-white rounded-lg px-3 py-1 max-w-xs break-words;
+  @apply self-end bg-[#04809F] text-white rounded-lg px-3 py-1 max-w-xs wrap-break-word;
 }
 
 .msg-target {
-  @apply self-start bg-red-500 text-white rounded-lg px-3 py-1 max-w-xs break-words;
+  @apply self-start bg-red-500 text-white rounded-lg px-3 py-1 max-w-xs wrap-break-word;
 }

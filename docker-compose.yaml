@@ -28,6 +28,7 @@ services:
       - backend-src:/srv/app/src
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
+      - uploads:/srv/app/uploads
     env_file: .env
 
   auth-service:
@@ -172,5 +173,11 @@ volumes:
     driver: local
     driver_opts:
       device: ./secrets
+      type: none
+      o: bind
+  uploads:
+    driver: local
+    driver_opts:
+      device: ./backend/uploads
       type: none
       o: bind

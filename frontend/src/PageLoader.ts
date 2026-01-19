@@ -1,24 +1,32 @@
 import AppPage from "./pages/AppPage.js";
-import { editProfile } from "./pages/editProfile.js";
+import {HomePage} from "./pages/HomePage.js";
 import { FriendPage } from "./pages/FriendPage.js";
-import newHomePage from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
+import Play from "./pages/play/play.js";
+import PlayLocal from "./pages/play/play_local.js";
+import PlayMatch from "./pages/play/play_match.js";
+import PlayTournament from "./pages/play/play_tournament.js";
 import { OtherProfilePage } from "./pages/otherProfile.js";
 import { ProfilePage } from "./pages/profile.js";
 import { RegisterPage } from "./pages/register.js";
+import { editProfile } from "./pages/editProfile.js";
 import { Tournament } from "./pages/tournament.js";
 import { Tournaments } from "./pages/tournaments.js";
+import socket from "./socket.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
-	{ name: "home", new: newHomePage },
+	{ name: "home", new: HomePage.new },
 	{ name: "register", new: RegisterPage.new },
 	{ name: "login", new: Login.new },
 	{ name: "profile", new: ProfilePage.new },
+	{ name: "profile/other", new: OtherProfilePage.new},
+	{ name: "profile/edit", new: editProfile.new},
+	{ name: "friends", new: FriendPage.new},
+//	{ name: "play", new: Play.new },
+	{ name: "play/local", new: PlayLocal.new },
+	{ name: "play/match", new: PlayMatch.new },
 	{ name: "tournament", new: Tournament.new },
 	{ name: "tournaments", new: Tournaments.new },
-	{ name: "profile/other", new: OtherProfilePage.new },
-	{ name: "profile/edit", new: editProfile.new },
-	{ name: "friends", new: FriendPage.new },
 ];
 
 export function strToPageName(str: string): string | null {
@@ -71,31 +79,45 @@ class PageLoader {
 }
 
 async function downloadHtmlBody(path: string, cache: RequestCache = "default"): Promise<HTMLElement> {
-	return await fetch(`/${encodeURI(path + ".html")}`, {
+	const element = await fetch(`/${encodeURI(path + ".html")}`, {
 		method: "GET",
 		headers: { "Accept": "text/html" },
 		credentials: "include",
 		cache,
-	}).then(res => res.text().then(text => (new DOMParser()).parseFromString(text, "text/html").body));
+	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body.firstElementChild));
+
+	if (!element)
+		throw new Error(`No elements fond at ${path}`);
+	return element as HTMLElement;
+	
 }
 
-export async function gotoUserPage(displayName: string) {
+export async function gotoUserPage( displayName : string)
+{
 	await gotoPage("profile/other", "?displayName=" + displayName);
 }
+
 const loader = new PageLoader(document.body.querySelector("#content")!);
 
 export async function gotoPage(name: string, search: string = "") {
-	const pageName = strToPageName(name);
+	let pageName = strToPageName(name);
 	if (pageName == null || (loader.loaded && loader.loaded === pageName && location.search === search)) {
 		return;
 	}
 	history.pushState(null, "", "/" + pageName + search);
-	await loadPage();
+	await loadPage(true);
 }
 
-async function loadPage() {
+async function loadPage(isState: boolean) {
 	const path = location.pathname.substring(1);
-	const pageName = strToPageName(path) || "login";
+	let pageName = strToPageName(path) || "login";
+
+	if (!await socket.connect() && !(pageName === "register" || pageName === "login"))
+	{
+		pageName = "login";
+		if (isState)
+			history.replaceState(null, "", "/login");
+	}
 
 	await loader.downloadPages();
 	loader.load(pageName);
@@ -104,5 +126,5 @@ async function loadPage() {
 (window as any).gotoPage = gotoPage;
 
 window.onpopstate = function() {
-	loadPage();
+	loadPage(false);
 };

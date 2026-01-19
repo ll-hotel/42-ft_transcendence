@@ -6,7 +6,7 @@ export const users = sqliteTable("users", {
 	username: text("username").notNull().unique(),
 	displayName: text("displayName").unique().notNull(),
 	password: text("password").notNull(),
-	avatar: text("avatar").default("DEFAULT_AVATAR").notNull(),
+	avatar: text('avatar').default('uploads/default_pp.png').notNull(),
 	twofaKey: text("twofaKey"),
 	twofaEnabled: integer("twofaEnabled").notNull().default(0),
 	isOnline: integer("isOnline").notNull().default(0),

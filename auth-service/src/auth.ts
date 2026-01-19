@@ -117,8 +117,6 @@ class AuthService {
 				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA });
 			}
 		}
-		/* if (user.isOnline === 1)
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in }); */
 		const tokenCookie = req.cookies['accessToken'];
 		if (tokenCookie) {
 			try {
