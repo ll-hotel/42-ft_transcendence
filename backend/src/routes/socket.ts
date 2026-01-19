@@ -5,6 +5,7 @@ import * as dbM from "../db/methods";
 import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
 import socket from "../socket";
+import { table } from "console";
 
 export default function(fastify: FastifyInstance) {
 	fastify.get("/api/websocket", { preHandler: authGuard, websocket: true }, route);

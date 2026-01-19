@@ -84,8 +84,8 @@ export default function(fastify: FastifyInstance) {
 
 function notifyUser(uuid: string, match: number, opponent: string) {
 	const message = {
-		topic: "matchmaking",
-		type: "found",
+		topic: "matchmaking:found",
+		type: "",
 		match,
 		opponent,
 	};

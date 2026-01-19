@@ -1,4 +1,5 @@
 import { api, Status } from "./api.js";
+import socket from "./socket.js"
 
 export type FriendStatus = "add" | "sent" | "friend" | "accept";
 
@@ -120,8 +121,22 @@ export class FriendButton {
 
 	private async handle1vs1()
 	{
-		alert("Need to create the 1vs1 moment...");
-		//FAIRE EN SORTE DE CREER UN 1VS1 AVEC CE BOUTTON 
+		const confirmVs = confirm(`Do you want to play within ${this.displayName} ?`)
+		if (!confirmVs)
+			return;
+		
+		const me = await api.get("/api/me");
+		const friend = await api.get(`/api/user?displayName=${this.displayName}`);
+		if (!me || ! friend || !me.payload || !friend.payload)
+			return alert("Error when getting user ou friend info");
+		if (me.status !== Status.success || friend.status !== Status.success)
+			return alert("Error when getting user ou friend info: " + me.payload.message);
+		console.log(me.payload.uuid, friend.payload.user.uuid);
+		socket.send({
+			source: me.payload.uuid,
+			topic: "vs:invite",
+			target : friend.payload.user.uuid,
+		});
 	}
 
 	public getFriendButton():HTMLElement 

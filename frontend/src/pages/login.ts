@@ -55,6 +55,11 @@ export class Login implements AppPage {
 		if (await socket.connect()) {
 			return gotoPage("profile");
 		}
+//		if (localStorage.getItem("accessToken")) {
+			// Already connected. Redirecting to user profile page.
+//			gotoPage("profile");
+//			return;
+//		}
 		container.appendChild(this.content);
 	}
 	unload(): void {

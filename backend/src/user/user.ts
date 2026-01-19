@@ -1,3 +1,9 @@
+//import { matches, tournamentMatches, tournaments, users } from "../db/tables";
+//import { eq, or, and, desc } from "drizzle-orm";
+
+import fs from "fs";
+import sharp from "sharp";
+
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
@@ -19,10 +25,38 @@ class User {
 		app.get("/api/user/history", { preHandler: authGuard }, User.getUserHistory);
 		app.get("/api/me/stats", { preHandler: authGuard }, User.getMyStat);
 		app.get("/api/user/stats", { preHandler: authGuard }, User.getUserStat);
- 
-		app.patch("/api/user/profile", { preHandler: authGuard, schema: schema.body({displayName: "string", avatar: "string"}, ["displayName", "avatar"])}, User.updateProfile);
-		app.patch("/api/user/password", { preHandler: authGuard, schema: schema.body({currentPassword: "string", newPassword: "string"}, ["currentPassword", "newPassword"])}, User.updatePassword);
-		app.patch("/api/user/2fa", { preHandler: authGuard, schema: schema.body({enable: "boolean"}, ["enable"])}, User.update2fa);
+
+		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
+		app.patch("/api/user/password", { preHandler: authGuard }, User.updatePassword);
+		app.patch("/api/user/2fa", { preHandler: authGuard }, User.update2fa);
+
+
+		app.post("/api/user/updateAvatar", { preHandler: authGuard }, User.updateAvatar)
+	}
+
+	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {	
+		const usr = req.user!;
+		
+		if (!req.isMultipart())
+			return rep.send({message : " ERROR "});
+		
+		const data = await req.file();
+		if (!data)
+			return;
+		// dimensions / size check
+		const buffer = await data.toBuffer();
+		await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${data.filename}`);
+
+
+		// rm old pp from upload
+		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}`)
+			fs.unlink(usr.avatar, (err) => {});
+
+
+		const newAvatar = `uploads/${data.filename}`;
+		await db.update(users).set({ avatar: newAvatar }).where(orm.eq(users.id, usr.id));
+
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: data.filename});		
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
@@ -31,8 +65,10 @@ class User {
 		}
 		rep.code(STATUS.success).send({
 			displayName: req.user.displayName,
+	//		id: req.user.id,
 			username: req.user.username,
 			avatar: req.user.avatar,
+			uuid: req.user.uuid
 		});
 	}
 
@@ -44,6 +80,7 @@ class User {
 		}
 
 		const [user] = await db.select({
+			uuid: users.uuid,
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
@@ -483,6 +520,6 @@ export async function getUserIdByUsername(username: string): Promise<number | nu
 
 export default async function(fastify: FastifyInstance) {
 	User.setup(fastify);
-	// Reset online status.
+	// Reset online status. //POURQUOI CA RESET LE USER STATUS
 	await db.update(users).set({ isOnline: 0 });
 }
