@@ -5,7 +5,6 @@ import fs from "fs";
 import { createTables } from "./db/database";
 import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
-import gameTournament from "./game/tournament";
 import { chatRoute } from "./routes/chat";
 import socketRoute from "./routes/socket";
 import { friendService } from "./user/friend";
@@ -26,7 +25,6 @@ async function main() {
 	app.register(fastifyWebsocket);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
-	app.register(gameTournament);
 	app.register(gameQueue);
 	app.register(gameMatch);
 	app.register(socketRoute);

@@ -1,11 +1,11 @@
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { db } from "../db/database";
-import * as dbM from "../db/methods";
-import * as tables from "../db/tables";
-import { authGuard } from "../security/authGuard";
-import { schema, STATUS } from "../shared";
-import socket from "../socket";
+import { db } from "./utils/db/database";
+import * as dbM from "./utils/db/methods";
+import * as tables from "./utils/db/tables";
+import { authGuard } from "./utils/security/authGuard";
+import { schema, STATUS } from "./utils/http-reply";
+import socket from "./utils/socket";
 
 export class Tournament {
 	static setup(app: FastifyInstance) {
