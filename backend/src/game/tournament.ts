@@ -11,21 +11,21 @@ export class Tournament {
 	static setup(app: FastifyInstance) {
 		app.post("/api/tournament/create", {
 			preHandler: authGuard,
-			schema: schema.body({ name: "string", size: "number" }),
+			schema: schema.body({ name: "string", size: "number" }, ["name", "size"]),
 		}, Tournament.createTournament);
 		app.post(
 			"/api/tournament/join",
-			{ preHandler: authGuard, schema: schema.body({ name: "string" }) },
+			{ preHandler: authGuard, schema: schema.body({ name: "string" }, ["name"]) },
 			Tournament.joinTournament,
 		);
 		app.post(
 			"/api/tournament/start",
-			{ preHandler: authGuard, schema: schema.body({ name: "string" }) },
+			{ preHandler: authGuard, schema: schema.body({ name: "string" }, ["name"]) },
 			Tournament.startTournament,
 		);
 		app.get(
 			"/api/tournament",
-			{ preHandler: authGuard, schema: schema.query({ name: "string" }) },
+			{ preHandler: authGuard, schema: schema.query({ name: "string" }, ["name"]) },
 			Tournament.queryTournament,
 		);
 		app.get("/api/tournament/list", { preHandler: authGuard }, Tournament.getTournamentList);
