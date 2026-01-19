@@ -17,6 +17,7 @@ secrets: secrets/privatekey.pem secrets/certificate.pem
 secrets/privatekey.pem secrets/certificate.pem:
 	@mkdir -p $(dir $@)
 	openssl req -newkey rsa:2048 -nodes -keyout secrets/privatekey.pem -x509 -days 365 -out secrets/certificate.pem
+	cat /dev/urandom | head -c 1024 > secrets/jwt_secret
 
 .PHONY: build
 build:
