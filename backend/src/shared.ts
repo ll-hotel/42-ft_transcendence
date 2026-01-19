@@ -45,14 +45,14 @@ export const catch_errors = (fn: any) => async (req: FastifyRequest, rep: Fastif
 };
 
 export namespace schema {
-	export function body(items: any): FastifySchema {
-		return { body: { type: "object", properties: decompose(items) } };
+	export function body(items: any, required: string[] = []): FastifySchema {
+		return { body: { type: "object", required, properties: decompose(items)} };
 	}
 	export function params(items: any): FastifySchema {
 		return { params: { type: "object", properties: decompose(items) } };
 	}
-	export function query(items: any): FastifySchema {
-		return { querystring: { type: "object", properties: decompose(items) } };
+	export function query(items: any, required: string[] = []): FastifySchema {
+		return { querystring: { type: "object", required, properties: decompose(items) } };
 	}
 	function decompose(items: any) {
 		const properties: any = {};

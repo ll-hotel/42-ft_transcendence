@@ -19,7 +19,7 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 class User {
 	static setup(app: FastifyInstance) {
 		app.get("/api/me", { preHandler: authGuard }, User.getMe);
-		app.get("/api/user", { preHandler: authGuard, schema: schema.query({ displayName: "string" }) }, User.getUser);
+		app.get("/api/user", { preHandler: authGuard, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUser);
 		app.get("/api/users/all", { preHandler: authGuard }, User.getallUsers);
 		app.get("/api/me/history", { preHandler: authGuard }, User.getMyHistory);
 		app.get("/api/user/history", { preHandler: authGuard }, User.getUserHistory);
@@ -169,7 +169,7 @@ class User {
 		const { enable } = req.body as { enable: boolean };
 
 		// add password check ?
-
+		
 		if (enable) {
 			if (usr.twofaEnabled === 1) {
 				return rep.code(STATUS.bad_request).send({ message: "2FA is arleady enabled" });
