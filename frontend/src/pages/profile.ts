@@ -1,15 +1,15 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
-import AppPage from "./AppPage.js"
+import AppPage from "./AppPage.js";
 import { MatchInfo } from "./profile/matches.js";
 
 export class ProfilePage implements AppPage {
-	content: HTMLElement;
+	html: HTMLElement;
 	displayname: HTMLElement;
 	username: HTMLElement;
 
 	private constructor(content: HTMLElement) {
-		this.content = content;
+		this.html = content;
 		this.displayname = content.querySelector("#profile-displayname")!;
 		this.username = content.querySelector("#profile-username")!;
 		const logout = content.querySelector("#logout") as HTMLElement;
@@ -30,12 +30,12 @@ export class ProfilePage implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement) {
-		container.appendChild(this.content);
+		container.appendChild(this.html);
 		return this.loadUserInfo();
 	}
 
 	unload(): void {
-		this.content.remove();
+		this.html.remove();
 	}
 
 	async loadUserInfo() {
@@ -43,10 +43,18 @@ export class ProfilePage implements AppPage {
 		if (!res || res.status != Status.success) {
 			return gotoPage("login");
 		}
-		const userInfo = res.payload as { displayName?: string, id?: number };
+		const userInfo = res.payload as { displayName?: string, id?: number, avatar?: string };
 		this.displayname.innerHTML = userInfo.displayName || "Display name";
 
-		const contMatchList = this.content.querySelector("#match-list");
+		const pictureElt = this.html.querySelector("#profile-picture") as HTMLElement | null;
+		if (pictureElt) {
+			if (userInfo.avatar == "DEFAULT_AVATAR") {
+				userInfo.avatar = "default_pp.png";
+			}
+			pictureElt.setAttribute("src", userInfo.avatar!);
+		}
+
+		const contMatchList = this.html.querySelector("#match-list");
 
 		const resMatch = await api.get("/api/me/history");
 		if (!resMatch || resMatch.status != Status.success) {
@@ -59,32 +67,40 @@ export class ProfilePage implements AppPage {
 			for (let i = 0; i < MatchList.length; i++) {
 				let matchInfo = MatchList[i];
 				let date = new Date(matchInfo.match.endedAt);
-				contMatchList.append(MatchInfo.new(
-					date.toLocaleDateString("fr-FR"),
-					date.toLocaleTimeString("fr-FR"),
-					{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
-					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
-					userInfo.displayName || "Display name"
-				).toHTML());
+				contMatchList.append(
+					MatchInfo.new(
+						date.toLocaleDateString("fr-FR"),
+						date.toLocaleTimeString("fr-FR"),
+						{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
+						{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
+						userInfo.displayName || "Display name",
+					).toHTML(),
+				);
 			}
-			if (!MatchList.length)
+			if (!MatchList.length) {
 				contMatchList.append(MatchInfo.noMatchHtml());
+			}
 		}
 
-		const infoPlayedMatch = this.content.querySelector("#played-match");
-		const infoVictoryRate = this.content.querySelector("#victory-rate");
-		const infoPointsScored = this.content.querySelector("#points-scored");
-		const infoPointsTanked = this.content.querySelector("#points-tanked");
-		const infoTourPlayed = this.content.querySelector("#tournaments-played");
-		const infoTourPlacement = this.content.querySelector("#tournament-best");
+		const infoPlayedMatch = this.html.querySelector("#played-match");
+		const infoVictoryRate = this.html.querySelector("#victory-rate");
+		const infoPointsScored = this.html.querySelector("#points-scored");
+		const infoPointsTanked = this.html.querySelector("#points-tanked");
+		const infoTourPlayed = this.html.querySelector("#tournaments-played");
+		const infoTourPlacement = this.html.querySelector("#tournament-best");
 
-		if (!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed || !infoTourPlacement)
+		if (
+			!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed ||
+			!infoTourPlacement
+		) {
 			return alert("Missing info in Profile.html");
+		}
 
 		const resStat = await api.get("/api/me/stats");
 
-		if (!resStat || resStat.status != Status.success)
+		if (!resStat || resStat.status != Status.success) {
 			return alert("Can't load my stats");
+		}
 
 		const Stat = resStat.payload;
 
@@ -107,4 +123,4 @@ export class ProfilePage implements AppPage {
 	async editClick() {
 		await gotoPage("profile/edit");
 	}
-};
+}
