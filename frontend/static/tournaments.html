@@ -1,0 +1,53 @@
+<div class="flex w-full h-screen items-center place-content-center p-24 md:p-16">
+	<div class="grid cols-1 h-full w-full xl:w-4/5 gap-8">
+		<section class="flex flex-col bg-gray-300 size-full rounded-2xl px-2 md:px-8 py-4 space-y-4">
+			<h1 class="text-black text-xl font-bold">New tournament</h1>
+			<div class="grid xl:grid-rows-1 xl:grid-cols-8 gap-8 w-full h-4/5">
+				<div class="xl:col-span-3 col-span-8 bg-white rounded-md p-8 space-y-4">
+					<h2 class="text-lg">Create your own tournament!</h2>
+					<li class="ml-4">Choose a name for others to find your tournament.</li>
+					<li class="ml-4">Select your tournament size.</li>
+				</div>
+				<div class="xl:col-span-5 col-span-8 bg-white rounded-md">
+					<form class="flex flex-col xl:flex-row h-full gap-2 place-items-center px-8 py-4">
+						<div class="w-full">
+							<h2 class="text-lg">
+								<label for="tournament-name">Tournament name</label>
+							</h2>
+							<input name="tournament-name" required
+								class="bg-gray-200 px-4 py-2 border-1 border-black rounded-sm w-full" />
+						</div>
+						<div class="w-full grid grid-cols-1 justify-items-center">
+							<h2 class="text-lg w-fit">
+								<label for="tournament-size">Tournament size</label>
+							</h2>
+							<select name="tournament-size" class="bg-gray-200 p-2 rounded-md w-fit">
+								<option value="4">4 players</option>
+								<option value="8">8 players</option>
+							</select>
+						</div>
+						<div class="w-3/5 flex place-content-center">
+							<button id="tournament-create" type="submit"
+								class="flex size-fit p-2 gap-2 bg-[#04809f] text-white rounded-md items-center">
+								<img src="vertical-cross.svg" class="size-4" />
+								<p>Create</p>
+							</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</section>
+		<section class="flex flex-col bg-gray-300 size-full rounded-2xl px-8 py-4 space-y-4">
+			<h1 class="text-black text-xl font-bold">Tournament list</h1>
+			<div class="grid xl:grid-rows-1 xl:grid-cols-8 gap-8">
+				<ul id="tournament-list" class="xl:col-span-5 bg-white rounded-md">
+				</ul>
+				<div class="col-span-1 xl:col-span-3 bg-white p-8 space-y-4 rounded-md">
+					<h2 class="text-lg">Join a tournament!</h2>
+					<li class="ml-4">Click on the associated button to join your chosen tournament.</li>
+					<li class="ml-4">Win against powerful opponents and become a Champion!</li>
+				</div>
+			</div>
+		</section>
+	</div>
+</div>

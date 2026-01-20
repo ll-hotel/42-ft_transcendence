@@ -10,6 +10,10 @@ services:
       - frontend-static:/srv/app/static
       - frontend-src:/srv/app/src
       - secrets:/run/secrets:ro
+      - frontend-src:/srv/app/src:ro
+    networks:
+      - api
+
   backend:
     container_name: backend
     restart: on-failure
@@ -27,6 +31,9 @@ services:
       - backend-src:/srv/app/src
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
+      - uploads:/srv/app/uploads
+    networks:
+      - api
 
 volumes:
   frontend-static:
@@ -59,3 +66,13 @@ volumes:
       device: ./secrets
       type: none
       o: bind
+  uploads:
+    driver: local
+    driver_opts:
+      device: ./backend/uploads
+      type: none
+      o: bind
+
+networks:
+  api:
+    driver: bridge

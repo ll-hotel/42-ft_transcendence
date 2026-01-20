@@ -1,4 +1,4 @@
-import AppPage from "./AppPage.js";
+import AppPage from "../AppPage.js";
 
 export default class PlayTournament implements AppPage {
 	html: HTMLElement;

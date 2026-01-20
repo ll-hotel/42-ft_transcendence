@@ -1,4 +1,4 @@
-import AppPage from "./AppPage.js";
+import AppPage from "../AppPage.js";
 
 export default class PlayLocal implements AppPage {
     html: HTMLElement;

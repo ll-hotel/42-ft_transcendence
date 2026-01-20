@@ -1,19 +1,22 @@
 import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
-import Fastify, {FastifyInstance, FastifyRequest} from "fastify";
+import fastifyMultipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
+import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import authModule from "./auth";
 import { createTables } from "./db/database";
 import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
 import gameTournament from "./game/tournament";
-import socketRoute from "./socketRoute";
+import { chatRoute } from "./routes/chat";
+import socketRoute from "./routes/socket";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
-import * as logger from "./serv_side_pong/myLogger";
+import path from "path";
 
 async function main() {
-	await createTables();
+	createTables();
 
 	const app: FastifyInstance = Fastify({
 		// logger: true,
@@ -26,8 +29,14 @@ async function main() {
 	// 	logger.info("incoming request: " + request.url);
 	// });
 
+	app.register(fastifyStatic, {
+  		root: path.join(__dirname, "..", "uploads"),
+  		prefix: "/uploads/",
+	});
+
 	app.register(fastifyCookie);
 	app.register(fastifyWebsocket);
+	app.register(fastifyMultipart);
 	app.register(authModule);
 	app.register(userModule);
 	app.register(f => friendService.setup(f));
@@ -35,8 +44,9 @@ async function main() {
 	app.register(gameQueue);
 	app.register(gameMatch);
 	app.register(socketRoute);
+	app.register(chatRoute);
 
-	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
+	app.listen({ port: 8080, host: "0.0.0.0" }, (err) => {
 		if (err) {
 			console.log("Could not start server:", err);
 			process.exit(1);
