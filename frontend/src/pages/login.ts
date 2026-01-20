@@ -98,6 +98,7 @@ export class Login implements AppPage {
 			this.form.querySelector("#form-username")?.setAttribute("hidden", "");
 			this.form.querySelector("#form-password")?.setAttribute("hidden", "");
 			this.content.querySelector("#button-intra")?.setAttribute("hidden", "");
+			this.content.querySelector("#button-google")?.setAttribute("hidden", "");
 			this.content.querySelector("#button-register")?.setAttribute("hidden", "");
 			this.form.querySelector("#form-twoFACode")?.removeAttribute("hidden");
 			this.twoFAHidden = false;
@@ -105,13 +106,9 @@ export class Login implements AppPage {
 			this.form.querySelector("#form-username")?.removeAttribute("hidden");
 			this.form.querySelector("#form-password")?.removeAttribute("hidden");
 			this.content.querySelector("#button-intra")?.removeAttribute("hidden");
+			this.content.querySelector("#button-google")?.removeAttribute("hidden");
 			this.content.querySelector("#button-register")?.removeAttribute("hidden");
-			const twoFACodeForm = this.form.querySelector("#form-twoFACode");
-			if (twoFACodeForm) {
-				twoFACodeForm.setAttribute("hidden", "");
-				const twoFACodeInput = twoFACodeForm.querySelector("input");
-				if (twoFACodeInput) twoFACodeInput.value = "";
-			}
+			this.form.reset();
 			this.twoFAHidden = true;
 		}
 	}

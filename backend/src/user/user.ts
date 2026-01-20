@@ -1,70 +1,38 @@
-//import { matches, tournamentMatches, tournaments, users } from "../db/tables";
-//import { eq, or, and, desc } from "drizzle-orm";
-
-import fs from "fs";
-import sharp from "sharp";
-
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
-import { matches, tournamentMatches, tournaments, users } from "../db/tables";
-import { generate2FASecret, generateQRCode } from "../security/2fa";
-import { authGuard } from "../security/authGuard";
+import * as tables from "../db/tables";
+import { generate2FASecret, generateQRCode, verify2FAToken } from "../security/2fa";
+import { authGuard as preHandler } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
 import { MESSAGE, schema, STATUS } from "../shared";
-import { eq } from "drizzle-orm";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class User {
 	static setup(app: FastifyInstance) {
-		app.get("/api/me", { preHandler: authGuard }, User.getMe);
-		app.get("/api/user", { preHandler: authGuard, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUser);
-		app.get("/api/users/all", { preHandler: authGuard }, User.getallUsers);
-		app.get("/api/me/history", { preHandler: authGuard }, User.getMyHistory);
-		app.get("/api/user/history", { preHandler: authGuard }, User.getUserHistory);
-		app.get("/api/me/stats", { preHandler: authGuard }, User.getMyStat);
-		app.get("/api/user/stats", { preHandler: authGuard }, User.getUserStat);
+		app.get("/api/me", { preHandler }, User.getMe);
+		app.get("/api/me/history", { preHandler }, User.getMyHistory);
+		app.get("/api/me/stats", { preHandler }, User.getMyStat);
 
-		app.patch("/api/user/profile", { preHandler: authGuard }, User.updateProfile);
-		app.patch("/api/user/password", { preHandler: authGuard }, User.updatePassword);
-		app.patch("/api/user/2fa", { preHandler: authGuard }, User.update2fa);
+		app.get("/api/user", { preHandler, schema: schema.query({ displayName: "string" }) }, User.getUser);
+		app.get("/api/user/history", { preHandler }, User.getUserHistory);
+		app.get("/api/user/stats", { preHandler }, User.getUserStat);
+		app.get("/api/users/all", { preHandler }, User.getallUsers);
 
-
-		app.post("/api/user/updateAvatar", { preHandler: authGuard }, User.updateAvatar)
-	}
-
-	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {	
-		const usr = req.user!;
-		
-		if (!req.isMultipart())
-			return rep.code(STATUS.bad_request).send({ message : "Request is not multipart" });
-
-		const data = await req.file();
-		if (!data)
-			return rep.code(STATUS.bad_request).send({ message : "No file uploaded" });
-
-		const buffer = await data.toBuffer();
-		try {
-			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${data.filename}`);
-		}
-		catch {
-			return rep.code(STATUS.bad_request).send({ message: "Invalid image file" })
-		}
-
-		const imgTypes = ["image/png", "image/jpeg", "image/webp"];
-		if (!imgTypes.includes(data.mimetype))
-			return rep.code(STATUS.bad_request).send({ message: "Invalid image file "});
-		
-		const otherUserAvatar = await db.select().from(users).where(eq(users.avatar, usr.avatar));
-		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}` && otherUserAvatar.length < 2)
-			fs.unlink(usr.avatar, (err) => {});
-
-		const newAvatar = `uploads/${data.filename}`;
-		await db.update(users).set({ avatar: newAvatar }).where(orm.eq(users.id, usr.id));
-
-		return rep.code(STATUS.success).send({ message: `avatar updated`, file: data.filename});		
+		app.patch("/api/user/profile", { preHandler }, User.updateProfile);
+		app.patch("/api/user/password", { preHandler }, User.updatePassword);
+		app.patch(
+			"/api/user/twofa",
+			{ preHandler, schema: schema.body({ enable: "boolean" }, ["enable"]) },
+			User.updateTwofa,
+		);
+		app.post(
+			"/api/user/twofa/activate",
+			{ preHandler, schema: schema.body({ code: "string" }) },
+			User.activateTwofa,
+		);
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
@@ -73,10 +41,11 @@ class User {
 		}
 		rep.code(STATUS.success).send({
 			displayName: req.user.displayName,
-	//		id: req.user.id,
+			// id: req.user.id,
 			username: req.user.username,
 			avatar: req.user.avatar,
-			uuid: req.user.uuid
+			uuid: req.user.uuid,
+			twofa: req.user.twofaEnabled == tables.TwofaState.enabled,
 		});
 	}
 
@@ -88,11 +57,11 @@ class User {
 		}
 
 		const [user] = await db.select({
-			uuid: users.uuid,
-			displayName: users.displayName,
-			avatar: users.avatar,
-			isOnline: users.isOnline,
-		}).from(users).where(orm.eq(users.displayName, displayName));
+			uuid: tables.users.uuid,
+			displayName: tables.users.displayName,
+			avatar: tables.users.avatar,
+			isOnline: tables.users.isOnline,
+		}).from(tables.users).where(orm.eq(tables.users.displayName, displayName));
 
 		if (user == undefined) {
 			return rep.code(STATUS.not_found).send({ message: MESSAGE.user_notfound });
@@ -103,12 +72,12 @@ class User {
 
 	static async getallUsers(_req: FastifyRequest, rep: FastifyReply) {
 		const allUsers = await db.select({
-			uuid: users.uuid,
-			displayName: users.displayName,
-			avatar: users.avatar,
-			isOnline: users.isOnline,
+			uuid: tables.users.uuid,
+			displayName: tables.users.displayName,
+			avatar: tables.users.avatar,
+			isOnline: tables.users.isOnline,
 		})
-			.from(users);
+			.from(tables.users);
 
 		if (allUsers.length === 0) {
 			return rep.code(STATUS.not_found).send({ message: MESSAGE.not_found });
@@ -128,9 +97,11 @@ class User {
 
 		if (displayName) {
 			if (REGEX_USERNAME.test(displayName) === false) {
-				return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName + " : Must contain 3 minimum characters (alphanumerical only)" }));
+				return (rep.code(STATUS.bad_request).send({
+					message: MESSAGE.invalid_displayName + " : Must contain 3 minimum characters (alphanumerical only)",
+				}));
 			}
-			const exists = await db.select().from(users).where(orm.eq(users.displayName, displayName));
+			const exists = await db.select().from(tables.users).where(orm.eq(tables.users.displayName, displayName));
 			if (exists.length != 0) {
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.displayName_taken });
 			}
@@ -140,7 +111,7 @@ class User {
 			data.avatar = avatar;
 		}
 
-		await db.update(users).set(data).where(orm.eq(users.id, usr!.id));
+		await db.update(tables.users).set(data).where(orm.eq(tables.users.id, usr!.id));
 
 		return rep.code(STATUS.success).send({ message: "Profile updated" });
 	}
@@ -156,7 +127,7 @@ class User {
 			return rep.code(STATUS.bad_request).send({ message: "Invalid new password" });
 		}
 
-		const [usr] = await db.select().from(users).where(orm.eq(users.id, usrId));
+		const [usr] = await db.select().from(tables.users).where(orm.eq(tables.users.id, usrId));
 
 		if (await comparePassword(currentPassword, usr.password) === false) {
 			return rep.code(STATUS.bad_request).send({ message: "Current password is incorrect" });
@@ -167,56 +138,79 @@ class User {
 		}
 
 		const hashed = await hashPassword(newPassword);
-		await db.update(users).set({ password: hashed }).where(orm.eq(users.id, usrId));
+		await db.update(tables.users).set({ password: hashed }).where(orm.eq(tables.users.id, usrId));
 
 		rep.code(STATUS.success).send({ message: "Password updated" });
 	}
 
-	static async update2fa(req: FastifyRequest, rep: FastifyReply) {
-		const usr = req.user!;
-		const { enable } = req.body as { enable: boolean };
+	static async updateTwofa(req: FastifyRequest, rep: FastifyReply) {
+		const user = req.user!;
+		const twofa = req.body as { enable: boolean, code?: string };
 
-		// add password check ?
-		
-		if (enable) {
-			if (usr.twofaEnabled === 1) {
-				return rep.code(STATUS.bad_request).send({ message: "2FA is arleady enabled" });
+		if (twofa.enable == false) {
+			if (user.twofaEnabled != tables.TwofaState.disabled) {
+				await db.update(tables.users).set({ twofaEnabled: tables.TwofaState.disabled, twofaKey: null })
+					.where(
+						orm.eq(tables.users.id, user.id),
+					);
 			}
-			const secret = generate2FASecret(usr.username);
+			if (user.twofaEnabled != tables.TwofaState.enabled) {
+				return rep.code(STATUS.success).send({ message: "Twofa already disabled" });
+			}
+			return rep.code(STATUS.success).send({ message: "Twofa disabled" });
+		}
+		if (user.twofaEnabled == tables.TwofaState.enabled) {
+			return rep.code(STATUS.success).send({ message: "Twofa already enabled" });
+		}
+		if (user.twofaEnabled == tables.TwofaState.disabled) {
+			const secret = generate2FASecret(user.username);
 			if (!secret.otpauth_url) {
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.fail_gen2FAurl });
 			}
+			await db.update(tables.users).set({ twofaKey: secret.base32, twofaEnabled: tables.TwofaState.pending })
+				.where(
+					orm.eq(tables.users.id, user.id),
+				);
 			const qrCode = await generateQRCode(secret.otpauth_url);
-			await db.update(users).set({ twofaKey: secret.base32, twofaEnabled: 1 }).where(
-				orm.eq(users.id, usr.id),
-			);
-
-			return rep.code(STATUS.success).send({ message: "2FA enabled", qrCode });
-		} else {
-			await db.update(users).set({ twofaKey: null, twofaEnabled: 0 }).where(orm.eq(users.id, usr.id));
-			return rep.code(STATUS.success).send({ message: "2FA disabled" });
+			return rep.code(STATUS.bad_request).send({ message: "Awaiting validation", qrCode });
 		}
+	}
+
+	static async activateTwofa(req: FastifyRequest, rep: FastifyReply) {
+		const user = req.user!;
+		const twofa = req.body as { code?: string };
+
+		if (!twofa.code || verify2FAToken(user.twofaKey!, twofa.code!) == false) {
+			await db.update(tables.users).set({ twofaKey: null, twofaEnabled: tables.TwofaState.disabled }).where(
+				orm.eq(tables.users.id, user.id),
+			);
+			rep.code(STATUS.bad_request).send({ message: "Invalid twofa code" });
+		}
+		await db.update(tables.users).set({ twofaEnabled: tables.TwofaState.enabled }).where(
+			orm.eq(tables.users.id, user.id),
+		);
+		return rep.code(STATUS.success).send({ message: "Twofa enabled" });
 	}
 
 	// L'user actuel est toujours le Player1
 	static async getMyHistory(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 		const matchesList = await db.select({
-			match: matches,
+			match: tables.matches,
 			opponent: {
-				id: users.id,
-				displayName: users.displayName,
+				id: tables.users.id,
+				displayName: tables.users.displayName,
 			},
-		}).from(matches).innerJoin(
-			users,
+		}).from(tables.matches).innerJoin(
+			tables.users,
 			orm.or(
-				orm.and(orm.eq(matches.player1Id, usr.id), orm.eq(users.id, matches.player2Id)),
-				orm.and(orm.eq(matches.player2Id, usr.id), orm.eq(users.id, matches.player1Id)),
+				orm.and(orm.eq(tables.matches.player1Id, usr.id), orm.eq(tables.users.id, tables.matches.player2Id)),
+				orm.and(orm.eq(tables.matches.player2Id, usr.id), orm.eq(tables.users.id, tables.matches.player1Id)),
 			),
 		).where(orm.and(
-			orm.or(orm.eq(matches.player2Id, usr.id), orm.eq(matches.player1Id, usr.id)),
-			orm.eq(matches.status, "ended"),
-		)).limit(5).orderBy(orm.desc(matches.endedAt));
+			orm.or(orm.eq(tables.matches.player2Id, usr.id), orm.eq(tables.matches.player1Id, usr.id)),
+			orm.eq(tables.matches.status, "ended"),
+		)).limit(5).orderBy(orm.desc(tables.matches.endedAt));
 
 		matchesList.forEach(match => {
 			if (match.match.player1Id !== usr.id) {
@@ -235,28 +229,30 @@ class User {
 			return rep.code(STATUS.bad_request).send({ message: "Missing displayName" });
 		}
 
-		const [usr] = await db.select({ id: users.id }).from(users).where(orm.eq(users.displayName, displayName));
+		const [usr] = await db.select({ id: tables.users.id }).from(tables.users).where(
+			orm.eq(tables.users.displayName, displayName),
+		);
 		if (!usr) {
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
 		}
 
 		const matchesList = await db.select({
-			match: matches,
+			match: tables.matches,
 			opponent: {
-				id: users.id,
-				displayName: users.displayName,
+				id: tables.users.id,
+				displayName: tables.users.displayName,
 			},
-		}).from(matches).innerJoin(
-			users,
+		}).from(tables.matches).innerJoin(
+			tables.users,
 			orm.or(
-				orm.and(orm.eq(matches.player1Id, usr.id), orm.eq(users.id, matches.player2Id)),
-				orm.and(orm.eq(matches.player2Id, usr.id), orm.eq(users.id, matches.player1Id)),
+				orm.and(orm.eq(tables.matches.player1Id, usr.id), orm.eq(tables.users.id, tables.matches.player2Id)),
+				orm.and(orm.eq(tables.matches.player2Id, usr.id), orm.eq(tables.users.id, tables.matches.player1Id)),
 			),
 		).where(orm.and(
-			orm.or(orm.eq(matches.player2Id, usr.id), orm.eq(matches.player1Id, usr.id)),
-			orm.eq(matches.status, "ended"),
+			orm.or(orm.eq(tables.matches.player2Id, usr.id), orm.eq(tables.matches.player1Id, usr.id)),
+			orm.eq(tables.matches.status, "ended"),
 		))
-			.limit(5).orderBy(orm.desc(matches.endedAt));
+			.limit(5).orderBy(orm.desc(tables.matches.endedAt));
 
 		matchesList.forEach(match => {
 			if (match.match.player1Id !== usr.id) {
@@ -271,27 +267,27 @@ class User {
 	static async getMyStat(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 		const matchesList = await db.select({
-			match: matches,
+			match: tables.matches,
 			tournament: {
-				id: tournaments.id,
-				size: tournaments.size,
-				winnerId: tournaments.winnerId,
-				round: tournamentMatches.round,
+				id: tables.tournaments.id,
+				size: tables.tournaments.size,
+				winnerId: tables.tournaments.winnerId,
+				round: tables.tournamentMatches.round,
 			},
-			opponentId: users.id,
-		}).from(matches).innerJoin(
-			users,
+			opponentId: tables.users.id,
+		}).from(tables.matches).innerJoin(
+			tables.users,
 			orm.or(
-				orm.and(orm.eq(matches.player1Id, usr.id), orm.eq(users.id, matches.player2Id)),
-				orm.and(orm.eq(matches.player2Id, usr.id), orm.eq(users.id, matches.player1Id)),
+				orm.and(orm.eq(tables.matches.player1Id, usr.id), orm.eq(tables.users.id, tables.matches.player2Id)),
+				orm.and(orm.eq(tables.matches.player2Id, usr.id), orm.eq(tables.users.id, tables.matches.player1Id)),
 			),
-		).leftJoin(tournamentMatches, orm.eq(matches.id, tournamentMatches.matchId)).leftJoin(
-			tournaments,
-			orm.eq(tournamentMatches.tournamentId, tournaments.id),
+		).leftJoin(tables.tournamentMatches, orm.eq(tables.matches.id, tables.tournamentMatches.matchId)).leftJoin(
+			tables.tournaments,
+			orm.eq(tables.tournamentMatches.tournamentId, tables.tournaments.id),
 		).where(orm.and(
-			orm.or(orm.eq(matches.player2Id, usr.id), orm.eq(matches.player1Id, usr.id)),
-			orm.eq(matches.status, "ended"),
-		)).orderBy(orm.desc(matches.endedAt));
+			orm.or(orm.eq(tables.matches.player2Id, usr.id), orm.eq(tables.matches.player1Id, usr.id)),
+			orm.eq(tables.matches.status, "ended"),
+		)).orderBy(orm.desc(tables.matches.endedAt));
 
 		let nbMatchVictory: number = 0;
 		let nbTournament: number = 0;
@@ -312,8 +308,8 @@ class User {
 			pointScored += match.match.scoreP1;
 			pointConceded += match.match.scoreP2;
 			if (match.tournament.id) {
-				const keyT = participatedTournament.get(match.tournament.id) ??
-					{
+				const keyT = participatedTournament.get(match.tournament.id)
+					?? {
 						winnerId: match.tournament.winnerId!,
 						round: match.tournament.round!,
 						size: match.tournament.size!,
@@ -396,33 +392,35 @@ class User {
 			return rep.code(STATUS.bad_request).send({ message: "Missing displayName" });
 		}
 
-		const [usr] = await db.select({ id: users.id }).from(users).where(orm.eq(users.displayName, displayName));
+		const [usr] = await db.select({ id: tables.users.id }).from(tables.users).where(
+			orm.eq(tables.users.displayName, displayName),
+		);
 		if (!usr) {
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
 		}
 
 		const matchesList = await db.select({
-			match: matches,
+			match: tables.matches,
 			tournament: {
-				id: tournaments.id,
-				size: tournaments.size,
-				winnerId: tournaments.winnerId,
-				round: tournamentMatches.round,
+				id: tables.tournaments.id,
+				size: tables.tournaments.size,
+				winnerId: tables.tournaments.winnerId,
+				round: tables.tournamentMatches.round,
 			},
-			opponentId: users.id,
-		}).from(matches).innerJoin(
-			users,
+			opponentId: tables.users.id,
+		}).from(tables.matches).innerJoin(
+			tables.users,
 			orm.or(
-				orm.and(orm.eq(matches.player1Id, usr.id), orm.eq(users.id, matches.player2Id)),
-				orm.and(orm.eq(matches.player2Id, usr.id), orm.eq(users.id, matches.player1Id)),
+				orm.and(orm.eq(tables.matches.player1Id, usr.id), orm.eq(tables.users.id, tables.matches.player2Id)),
+				orm.and(orm.eq(tables.matches.player2Id, usr.id), orm.eq(tables.users.id, tables.matches.player1Id)),
 			),
-		).leftJoin(tournamentMatches, orm.eq(matches.id, tournamentMatches.matchId)).leftJoin(
-			tournaments,
-			orm.eq(tournamentMatches.tournamentId, tournaments.id),
+		).leftJoin(tables.tournamentMatches, orm.eq(tables.matches.id, tables.tournamentMatches.matchId)).leftJoin(
+			tables.tournaments,
+			orm.eq(tables.tournamentMatches.tournamentId, tables.tournaments.id),
 		).where(orm.and(
-			orm.or(orm.eq(matches.player2Id, usr.id), orm.eq(matches.player1Id, usr.id)),
-			orm.eq(matches.status, "ended"),
-		)).orderBy(orm.desc(matches.endedAt));
+			orm.or(orm.eq(tables.matches.player2Id, usr.id), orm.eq(tables.matches.player1Id, usr.id)),
+			orm.eq(tables.matches.status, "ended"),
+		)).orderBy(orm.desc(tables.matches.endedAt));
 
 		let nbMatchVictory: number = 0;
 		let nbTournament: number = 0;
@@ -443,8 +441,8 @@ class User {
 			pointScored += match.match.scoreP1;
 			pointConceded += match.match.scoreP2;
 			if (match.tournament.id) {
-				const keyT = participatedTournament.get(match.tournament.id) ??
-					{
+				const keyT = participatedTournament.get(match.tournament.id)
+					?? {
 						winnerId: match.tournament.winnerId!,
 						round: match.tournament.round!,
 						size: match.tournament.size!,
@@ -522,12 +520,14 @@ class User {
 }
 
 export async function getUserIdByUsername(username: string): Promise<number | null> {
-	const [user] = await db.select({ id: users.id }).from(users).where(orm.eq(users.username, username));
+	const [user] = await db.select({ id: tables.users.id }).from(tables.users).where(
+		orm.eq(tables.users.username, username),
+	);
 	return user ? user.id : null;
 }
 
 export default async function(fastify: FastifyInstance) {
 	User.setup(fastify);
-	// Reset online status. //POURQUOI CA RESET LE USER STATUS
-	await db.update(users).set({ isOnline: 0 });
+	// Reset online status.
+	await db.update(tables.users).set({ isOnline: 0 });
 }

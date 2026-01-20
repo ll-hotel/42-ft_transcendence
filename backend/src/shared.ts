@@ -46,10 +46,10 @@ export const catch_errors = (fn: any) => async (req: FastifyRequest, rep: Fastif
 
 export namespace schema {
 	export function body(items: any, required: string[] = []): FastifySchema {
-		return { body: { type: "object", required, properties: decompose(items)} };
+		return { body: { type: "object", required, properties: decompose(items) } };
 	}
-	export function params(items: any): FastifySchema {
-		return { params: { type: "object", properties: decompose(items) } };
+	export function params(items: any, required: string[] = []): FastifySchema {
+		return { params: { type: "object", required, properties: decompose(items) } };
 	}
 	export function query(items: any, required: string[] = []): FastifySchema {
 		return { querystring: { type: "object", required, properties: decompose(items) } };
