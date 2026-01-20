@@ -51,9 +51,11 @@ export function notify(message: string, type: "success" | "error" | "info") {
 	container.appendChild(el);
 
 	requestAnimationFrame(() => {
-		el.style.opacity = "1";
-		el.style.transform = "translateY(0)";
-		bar.style.transform = "scaleX(0)";
+		setTimeout(() => {
+			el.style.opacity = "1";
+			el.style.transform = "translateY(0)";
+			bar.style.transform = "scaleX(0)";
+		}, 10);
 	});
 
 	setTimeout(() => {
