@@ -1,5 +1,50 @@
-<div class="pt-16">
-	<h1>Home</h1>
-	Welcome to our ft_transcendence!
-	Hope you will enjoy the stay.
+<div class="flex w-full h-screen items-center justify-center">
+	<div id="home-div"  class="w-4/5 h-4/5 grid grid-cols-1 md:grid-cols-3 gap-5 mt-16">
+		<div id="match-and-tournament" class="col-span-1 md:col-span-2 grid grid-row-2 gap-5" >
+			<div id="match" class=" w-full flex flex-col justify-around p-5 bg-gray-200 border border-blue-200 rounded-md">
+				<h2 id="match-title" class="font-bold text-2xl">Matches</h2>
+				<div id="match-presentation" class="text-sm">
+					Find differents type of matches while clicking on the button bellow !
+				</div>
+				<div id ="match-buttons" class="flex flex-row justify-around text-center p-2 gap-3">
+					<div id="local-vs" class="flex justify-center p-3 md:p-6 text-white bg-[#04809F] rounded-md hover:cursor-pointer">
+						Local multiplayer
+					</div>
+					<div id="local-ia" class="flex justify-center p-3 md:p-6 text-white bg-[#04809F] rounded-md hover:cursor-pointer">
+						Local versus IA
+					</div>
+					<div id="online-vs" class="flex justify-center p-3 md:p-6 text-white bg-[#04809F] rounded-md hover:cursor-pointer">
+						Online multiplayer
+					</div>
+				</div>
+			</div>
+			<div id="tournament" class="w-full flex flex-col justify-around p-5 bg-gray-200 border border-blue-200 rounded-md">
+				<h2 id="tournament-title" class="font-bold text-2xl">Tournaments</h2>
+				<div id="tournament-presentation" class="text-sm">
+					Play or create differents type of tournaments while clicking on the buttons bellow !
+				</div>
+				<div id ="tournament-buttons" class="flex flex-row justify-around text-center p-2 gap-3">
+					<div id="find" class="flex justify-center p-3 md:p-6 text-white bg-[#04809F] rounded-md hover:cursor-pointer">
+						Find a tournament
+					</div>
+					<div id="create" class="flex justify-center p-3 md:p-6 text-white bg-[#04809F] rounded-md hover:cursor-pointer">
+						Create a tournament
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="friend-list" class="col-span-1 rounded-md flex flex-col items-center justify-center border border-blue-200">
+			<div id="friend-list-header" class="flex items-center justify-center bg-gray-200 w-full space-x-2 h-12 p-2 rounded-t-md">
+				<h2 class="font-bold text-xl">Friends list</h2>
+			</div>
+			<div id="friend-list-content" class="flex flex-1 flex-col items-center bg-gray-200 w-full space-y-3">
+			</div>
+			<div id="friend-list-bottom" class="flex items-center justify-center w-full bg-gray-200 space-x-2 h-12 p-2 rounded-b-md ">
+				<i class="fa-solid fa-arrow-down "></i>
+			</div>
+		</div>
+
+		</div>
+		
+	</div>
 </div>

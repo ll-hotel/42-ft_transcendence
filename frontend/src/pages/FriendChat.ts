@@ -28,7 +28,6 @@ export class FriendChat {
 			this.ws = new WebSocket(url);
 
 			this.ws.addEventListener("open", () =>{
-				console.log("WebSocket connected");
 				resolve(this.ws!);
 			}); 
 
@@ -37,7 +36,6 @@ export class FriendChat {
 					if (!this.isActive)
 						return;
 					const msg: Message = JSON.parse(event.data);
-					console.log("Received message:", msg, "currentRoomId:", this.currentRoomId);
 					this.messages.push(msg);
 				}
 				catch (err) {

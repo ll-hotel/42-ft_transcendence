@@ -44,11 +44,13 @@ export class ProfilePage implements AppPage {
 		if (!res || res.status != Status.success) {
 			return gotoPage("login");
 		}
-		const userInfo = res.payload as { displayName?: string, id?: number };
-		this.displayname.innerHTML = userInfo.displayName || "Display name";
-
+		const userInfo = res.payload as { displayName: string, id:number, avatar: string };
 		const contMatchList = this.content.querySelector("#match-list");
-
+		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
+		if (avatarImg)
+			avatarImg.src = userInfo.avatar.startsWith("/") ? userInfo.avatar : `/${userInfo.avatar}`;
+		this.displayname.innerHTML = userInfo.displayName;
+		
 		const resMatch = await api.get("/api/me/history");
 		if (!resMatch || resMatch.status != Status.success) {
 			notify("Can't load matchs info", "error");
@@ -56,8 +58,8 @@ export class ProfilePage implements AppPage {
 		}
 		const MatchList = resMatch.payload;
 		if (contMatchList && contMatchList.children.length == 0) {
-			// L'user est toujours le player1 (voir api)
-			for (let i = 0; i < MatchList.length; i++) {
+		// L'user est toujours le player1 (voir api)
+			for (let i = 0; i < MatchList.length ; i++) {
 				let matchInfo = MatchList[i];
 				let date = new Date(matchInfo.match.endedAt);
 				contMatchList.append(MatchInfo.new(

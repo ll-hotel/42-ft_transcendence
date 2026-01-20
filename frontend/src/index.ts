@@ -2,6 +2,7 @@ import { api, Status } from "./api.js";
 import { gotoPage, gotoUserPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
 import { notify } from "./pages/utils/notifs.js";
+import { initSocket } from "./socketListener.js";
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -9,6 +10,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 		notify("Missing content div", "error");
 		return;
 	}
+	
 	initSocket();
 	initSearchBar();
 	const uri = window.location.pathname;
@@ -39,13 +41,6 @@ document.addEventListener("DOMContentLoaded", async function() {
 	});
 });
 
-function initSocket() {
-	socket.addListener("match", (m) => {
-		const match = m as unknown as { id?: number };
-		// TODO: gotoPage("match", "?id=" + message.id!);
-		notify("Match found: id=" + match.id!, "success")
-	})
-}
 
 function initSearchBar() {
 	const search = document.getElementById("user-search") as HTMLInputElement | null;
@@ -91,7 +86,7 @@ function displayResultSearch(selectedUsers: any) {
 		card.className = "user-result";
 
 		const avatar = document.createElement("img");
-		avatar.src = "/default_pp.png";
+		avatar.src =  user.avatar.startsWith("/") ? user.avatar : `/${user.avatar}`;
 		avatar.className = "result-avatar";
 
 		const name = document.createElement("span");
@@ -103,19 +98,18 @@ function displayResultSearch(selectedUsers: any) {
 
 		card.onclick = async () => {
 			const me = await api.get("/api/me");
-			if (!me || !me.payload) {
+			if (!me || !me.payload)
 				return;
-			}
-			if (me.status != Status.success) {
-				return notify("Error: " + me.payload.message, "error");
-			}
-			if (me.payload.displayName == user.displayName) {
+			if (me.status != Status.success)
+				return alert("Error: " + me.payload.message);
+			if (me.payload.displayName == user.displayName)
 				await gotoPage("profile");
-			} else {
+			else
 				await gotoUserPage(user.displayName);
-			}
-		};
+		}
 
 		results.appendChild(card);
-	});
+
+	}
+	)
 }

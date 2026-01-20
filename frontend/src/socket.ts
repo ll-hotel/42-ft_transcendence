@@ -1,8 +1,19 @@
 import { api, Status } from "./api.js";
 
-export type Message = {
+type BaseMessage = {
 	topic: string,
 };
+type MatchMessage = BaseMessage & {
+	source: string,
+	match: number,
+	opponent: string,
+};
+
+type VersusMessage = BaseMessage & {
+	source: string,
+	target: string;
+};
+export type Message = VersusMessage | BaseMessage | MatchMessage;
 
 let socket: WebSocket | null = null;
 const hooks = new Map<string, ((m: Message) => void)[]>();
@@ -28,6 +39,8 @@ async function connect(): Promise<boolean> {
 			setTimeout(connect, 500);
 		}
 	};
+
+// HOOK MAINTENANT LIER AU TYPE PLUTOT QUE A LA SOURCE 
 	socket.onmessage = (event) => {
 		try {
 			const message = JSON.parse(event.data) as Message;
@@ -73,9 +86,11 @@ function removeListener(topic: string) {
 	}
 }
 
+
 export default {
 	connect,
 	send,
+	isAlive,
 	disconnect,
 	addListener,
 	removeListener,

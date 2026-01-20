@@ -47,6 +47,9 @@ export class OtherProfilePage implements AppPage {
 		try {
 			userinfo = res.payload.user;
 			this.displayname.innerHTML = userinfo.displayName;
+			const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
+			if (avatarImg)
+				avatarImg.src = userinfo.avatar.startsWith("/") ? userinfo.avatar : `/${userinfo.avatar}`;
 		} catch {
 		}
 		const statusDot = this.content.querySelector("#status-dot");
@@ -54,8 +57,9 @@ export class OtherProfilePage implements AppPage {
 		const contMatchList = this.content.querySelector("#match-list");
 		const cntFriendButton = this.content.querySelector(".friend-buttons");
 		
-		if (!contMatchList || !statusDot || !statusText)
+		if (!contMatchList || !statusDot || !statusText || !cntFriendButton)
 		{
+			console.log("Missing HTML info")
 			return;
 		}
 		
@@ -120,15 +124,12 @@ export class OtherProfilePage implements AppPage {
 		infoTourPlayed.textContent = Stat.nbTournament + " / " + Stat.nbTournamentVictory;
 		infoTourPlacement.textContent = Stat.Placement;
 
-		if (cntFriendButton)
-		{
-			const oldButton = cntFriendButton.querySelector("#friend-buttons-cnt");
-			if (oldButton)
-				oldButton.remove();
-		}
+		const oldButton = cntFriendButton.querySelector("#friend-buttons-cnt");
+		if (oldButton)
+			oldButton.remove();
 		
-		const friendButton = new FriendButton(displayName);
+		const friendButton = new FriendButton(userinfo.displayName);
 		friendButton.container.id= "friend-buttons-cnt";
-		cntFriendButton?.appendChild(friendButton.getFriendButton());
+		cntFriendButton.appendChild(friendButton.getFriendButton());
 	}
 };
