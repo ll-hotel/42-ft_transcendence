@@ -1,4 +1,15 @@
-import { tcheckFriends } from "./user/friend";
+import { friends } from './db/tables';
+import { and, eq, or } from 'drizzle-orm';
+import { db } from './db/database';
+
+async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
+	{
+	const res = await db.select({id:friends.id }).from(friends).where(and(
+		eq(friends.status, "accepted"), or( and(
+			eq(friends.senderId, user_1), eq(friends.receiverId, user_2)), and(
+				eq(friends.senderId,user_2), eq(friends.receiverId, user_1))))).limit(1);
+	return res.length > 0;
+}
 
 function privateRoomId(UserAId: string, UserBId: string): string {
 	const [a, b] = UserAId < UserBId ? [UserAId, UserBId] : [UserBId, UserAId];

@@ -1,12 +1,20 @@
 import { SingleStoreColumnWithAutoIncrement } from "drizzle-orm/singlestore-core";
 import { appendFile } from "fs";
-import { matches, users } from './db/tables';
+import { matches, users, friends } from './db/tables';
 import { db } from './db/database';
 import { and, eq, or } from 'drizzle-orm';
 import { matchesGlob } from "path";
 import { ucs2 } from "punycode";
-import { tcheckFriends } from "./user/friend";
 import { TableAliasProxyHandler } from "drizzle-orm";
+
+export async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
+	{
+	const res = await db.select({id:friends.id }).from(friends).where(and(
+		eq(friends.status, "accepted"), or( and(
+			eq(friends.senderId, user_1), eq(friends.receiverId, user_2)), and(
+				eq(friends.senderId,user_2), eq(friends.receiverId, user_1))))).limit(1);
+	return res.length > 0;
+}
 
 type Event = "message" | "disconnect";
 type Handler = (data?: any) => void;
