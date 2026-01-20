@@ -70,6 +70,16 @@ function initSearchBar() {
 
 		displayResultSearch(selectedUsers);
 	});
+
+	search.addEventListener("focusout", () => {
+		setTimeout( () => {
+			search.value = "";
+			const results = document.getElementById("user-results");
+
+			if (results) results.innerText = "";
+		}, 100);
+	});
+
 }
 
 function displayResultSearch(selectedUsers: any) {

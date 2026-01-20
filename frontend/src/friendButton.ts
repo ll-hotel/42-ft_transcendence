@@ -60,7 +60,7 @@ export class FriendButton {
 			case "sent": this.button.textContent = "Sent"; break;
 			case "accept": this.button.textContent = "Accept"; break;
 			case "friend":
-				this.button.textContent = "Friend";
+				this.button.textContent = "Remove";
 				if (!this.extraButton)
 				{
 					this.extraButton = document.createElement("button");
