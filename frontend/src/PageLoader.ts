@@ -8,7 +8,7 @@ import { ProfilePage } from "./pages/profile.js";
 import { RegisterPage } from "./pages/register.js";
 import { Tournament } from "./pages/tournament.js";
 import { Tournaments } from "./pages/tournaments.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "./pages/utils/notifs.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "home", new: newHomePage },

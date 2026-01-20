@@ -1,5 +1,5 @@
 import { api, Status } from "./api.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "./pages/utils/notifs.js";
 
 export type FriendStatus = "add" | "sent" | "friend" | "accept";
 

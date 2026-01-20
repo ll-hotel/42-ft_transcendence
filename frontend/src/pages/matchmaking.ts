@@ -1,6 +1,6 @@
 import { api, Status } from "../api.js";
 import socket, { Message } from "../socket.js";
-import { notify } from "../utils/notifs.js";
+import { notify } from "./utils/notifs.js";
 import AppPage from "./AppPage.js"
 
 export class MatchMaking implements AppPage {

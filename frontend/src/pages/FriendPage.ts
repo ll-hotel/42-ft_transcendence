@@ -15,7 +15,7 @@ import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { FriendChat } from "./FriendChat.js";
-import { notify } from "../utils/notifs.js";
+import { notify } from "./utils/notifs.js";
 
 type Message = {
 	source: string;
