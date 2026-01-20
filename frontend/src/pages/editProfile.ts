@@ -138,14 +138,15 @@ export class editProfile implements AppPage
 		const avatarFile = userFormData.get("avatar") as File | null;
 		
 		if (!displayName && (!avatarFile || avatarFile.size === 0))
-			return alert("No user info to update");
+			return notify("No user info to update", "error");
 		
 		if (displayName) {
 			const res = await api.patch("/api/user/profile", {displayName});
 			if (!res || !res.payload)
 				return;
 			if (res.status !== Status.success)
-				return alert("Error when editing user info: " + res.payload.message);
+				return notify("Error when editing user info: " + res.payload.message, "error");
+			notify("Display Name updated", "success");
 			this.updatePreview(displayName);
 		}
 
@@ -159,10 +160,11 @@ export class editProfile implements AppPage
 				body: fd,
 			});
 			if (!res.ok)
-				return alert("Error when uploading avatar");
+				return notify("Error when uploading avatar", "error");
 			
 			const data = await res.json();
 			this.updatePreview(undefined, `uploads/${data.file}`);
+			notify("Avatar updated", "success");
 		}
 		this.userForm.reset();
 	}

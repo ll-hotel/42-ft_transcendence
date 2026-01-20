@@ -100,13 +100,13 @@ export class FriendButton {
 			const res = await api.delete("/api/friend/remove", {displayName : this.displayName});
 			if (res && res.status === Status.success)
 			{
-				notify(`${this.displayName} has been deleted from friend list`, "success");
+				notify(`${this.displayName} Has been deleted from friend list`, "info");
 				this.status = "add";
 				this.render();
 			}
 			else
 			{
-				notify(`Failed to ban friend ${this.displayName}`, "error");
+				notify(`Failed to block ${this.displayName}`, "error");
 			}
 		}
 		else if (this.status == "accept")
@@ -122,16 +122,16 @@ export class FriendButton {
 
 	private async handle1vs1()
 	{
-		const confirmVs = confirm(`Do you want to play within ${this.displayName} ?`)
+		const confirmVs = confirm(`Do you want to play with ${this.displayName} ?`)
 		if (!confirmVs)
 			return;
 		
 		const me = await api.get("/api/me");
 		const friend = await api.get(`/api/user?displayName=${this.displayName}`);
 		if (!me || ! friend || !me.payload || !friend.payload)
-			return alert("Error when getting user ou friend info");
+			return notify("Error when getting user ou friend info", "error");
 		if (me.status !== Status.success || friend.status !== Status.success)
-			return alert("Error when getting user ou friend info: " + me.payload.message);
+			return notify("Error when getting user ou friend info: " + me.payload.message, "error");
 		console.log(me.payload.uuid, friend.payload.user.uuid);
 		socket.send({
 			source: me.payload.uuid,

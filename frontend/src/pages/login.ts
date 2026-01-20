@@ -77,7 +77,7 @@ export class Login implements AppPage {
 
 		const res = await api.post("/api/auth/login", { username, password, twoFACode });
 		if (!res) {
-			return alert("Invalid API response.");
+			return notify("Invalid API response.", "error");
 		}
 		if (!this.twoFAHidden) {
 			this.toggleTwoFA();

@@ -101,7 +101,7 @@ function displayResultSearch(selectedUsers: any) {
 			if (!me || !me.payload)
 				return;
 			if (me.status != Status.success)
-				return alert("Error: " + me.payload.message);
+				return notify("Error: " + me.payload.message, "error");
 			if (me.payload.displayName == user.displayName)
 				await gotoPage("profile");
 			else

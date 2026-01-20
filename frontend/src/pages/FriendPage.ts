@@ -261,7 +261,7 @@ export class FriendPage implements AppPage
 
 		blockBtn.disabled = !this.selectedCard;
 		blockBtn.onclick = async () => {
-			const confirmBlock = confirm(`Do you whant to ban ${targetDisplayname} ?`);
+			const confirmBlock = confirm(`Do you want to block ${targetDisplayname} ?`);
 			if (!confirmBlock)
 				return;
 
@@ -300,7 +300,7 @@ export class FriendPage implements AppPage
 			if (!me || !me.payload)
 				return;
 			if (me.status !== Status.success)
-				return alert("Error when getting user info: " + me.payload.message);
+				return notify("Error when getting user info: " + me.payload.message, "error");
 			socket.send({
 				source: me.payload.uuid,
 				topic: "vs:invite",

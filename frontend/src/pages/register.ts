@@ -45,7 +45,7 @@ export class RegisterPage implements AppPage {
 
 		const res = await api.post("/api/auth/register", { username, password, displayName: username, twofa })
 		if (!res) {
-			return alert("Invalid API response.");
+			return notify("Invalid API response.", "error");
 		}
 		if (res.status != Status.created) {
 			return notify(res.payload.message, "error");

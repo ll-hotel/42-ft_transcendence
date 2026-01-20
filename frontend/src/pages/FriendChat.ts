@@ -22,7 +22,7 @@ export class FriendChat {
 			return this.ws;
 		const me = await api.get("/api/me");
 		if (!me || !me.payload ||me.status!==Status.success)
-			return alert("Error API me");
+			return notify("Error API me", "error");
 		this.username = me.payload.username;
 		return new Promise<WebSocket>((resolve, reject) => {
 			this.ws = new WebSocket(url);
