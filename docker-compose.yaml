@@ -11,8 +11,6 @@ services:
       - frontend-src:/srv/app/src
       - secrets:/run/secrets:ro
       - frontend-src:/srv/app/src:ro
-    networks:
-      - api
 
   backend:
     container_name: backend
@@ -31,9 +29,8 @@ services:
       - backend-src:/srv/app/src
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
+    env_file: .env
       - uploads:/srv/app/uploads
-    networks:
-      - api
 
 volumes:
   frontend-static:
@@ -73,6 +70,3 @@ volumes:
       type: none
       o: bind
 
-networks:
-  api:
-    driver: bridge
