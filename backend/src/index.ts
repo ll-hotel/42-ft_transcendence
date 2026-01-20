@@ -9,7 +9,6 @@ import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
 import { chatRoute } from "./routes/chat";
 import socketRoute from "./routes/socket";
-import { friendService } from "./user/friend";
 import path from "path";
 
 async function main() {
@@ -31,7 +30,6 @@ async function main() {
 	app.register(fastifyCookie);
 	app.register(fastifyWebsocket);
 	app.register(fastifyMultipart);
-	app.register(f => friendService.setup(f));
 	app.register(gameQueue);
 	app.register(gameMatch);
 	app.register(socketRoute);

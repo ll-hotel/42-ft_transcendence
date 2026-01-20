@@ -47,6 +47,22 @@ services:
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
 
+  friend-service:
+    container_name: friend-service
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    build:
+      context: friend-service
+    volumes:
+      - friend-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - secrets:/run/secrets:ro
+
   tournament-service:
     container_name: tournament-service
     restart: on-failure
@@ -171,6 +187,12 @@ volumes:
     driver: local
     driver_opts:
       device: ./auth-service/src
+      type: none
+      o: bind
+  friend-service-src:
+    driver: local
+    driver_opts:
+      device: ./friend-service/src
       type: none
       o: bind
   tournament-service-src:

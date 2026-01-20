@@ -92,7 +92,7 @@ export class FriendPage implements AppPage
 	{
 		this.listContainer.innerHTML = "<div>Finding friends...</div>";
 
-		const friendRes = await api.get("/api/friends");
+		const friendRes = await api.get("/api/friend");
 		const requestRes = await api.get("/api/friend/requests")
 
 		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success ) {

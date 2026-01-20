@@ -1,9 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { db } from '../db/database';
-import { friends, users } from '../db/tables';
+import { db } from './utils/db/database';
+import { friends, users } from './utils/db/tables';
 import { eq, and, or} from 'drizzle-orm';
-import { authGuard } from '../security/authGuard';
-import { STATUS, MESSAGE, schema} from '../shared';
+import { authGuard } from './utils/security/authGuard';
+import { STATUS, MESSAGE, schema} from './utils/http-reply';
 
 
 export async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
@@ -22,9 +22,9 @@ class friend {
 		app.patch("/api/friend/accept", {preHandler: authGuard, schema: schema.body({displayName: "string"}, ["displayName"])}, this.acceptRequest);
 		app.patch("/api/friend/decline", {preHandler: authGuard, schema: schema.body({displayName: "string"}, ["displayName"])}, this.declineRequest);
 
-		app.get("/api/friends", {preHandler: authGuard}, this.getFriends);
+		app.get("/api/friend", {preHandler: authGuard}, this.getFriends);
 		app.get("/api/friend/requests", {preHandler: authGuard}, this.getPendingRequests);
-		app.get("/api/friends/status", {preHandler: authGuard, schema: schema.query({displayName: "string"}, ["displayName"])}, this.getFriendStatus);
+		app.get("/api/friend/status", {preHandler: authGuard, schema: schema.query({displayName: "string"}, ["displayName"])}, this.getFriendStatus);
 		app.delete("/api/friend/remove", {preHandler: authGuard, schema: schema.body({displayName: "string"}, ["displayName"])}, this.removeFriend);
 
 	}
