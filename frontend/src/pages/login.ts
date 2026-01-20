@@ -131,6 +131,7 @@ async function loginWithProvider(container: HTMLElement, provider: string, code:
 	const res = await api.get(path + code);
 	logging.remove();
 	if (!res || !res.payload.loggedIn) {
+		notify(res?.payload.message, "error");
 		return gotoPage("login");
 	}
 	notify(res.payload.message, "success");

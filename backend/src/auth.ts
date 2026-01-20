@@ -128,6 +128,8 @@ class AuthService {
 				});
 			} catch {}
 		}
+		if (user.isOnline == 1)
+			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.already_logged_in});
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		rep.setCookie('accessToken', accessToken, {
 			httpOnly: true, secure: true, sameSite: 'strict',
@@ -183,8 +185,11 @@ class AuthService {
 
 		const [userExists] = await db.select().from(users).where(eq(users.username, userData.login));
 		let user;
-		if (userExists)
+		if (userExists) {
 			user = userExists;
+			if (user.isOnline == 1)
+				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.already_logged_in});
+		}
 		else {
 			const uuid = uiidv4();
 			user = { uuid };
@@ -245,8 +250,11 @@ class AuthService {
 		const userData = await response.json();
 		const [userExists] = await db.select().from(users).where(eq(users.username, userData.email));
 		let user;
-		if (userExists)
+		if (userExists) {
 			user = userExists;
+			if (user.isOnline == 1)
+				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.already_logged_in});
+		}
 		else {
 			const uuid = uiidv4();
 			user = { uuid };

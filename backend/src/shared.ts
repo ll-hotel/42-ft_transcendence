@@ -22,7 +22,7 @@ export const MESSAGE = {
 	fail_gen2FAurl: "Failed to generate 2FA URL",
 	user_created: "User created",
 	logged_in: "Logged in",
-	already_logged_in: "Already logged in",
+	already_logged_in: "You are already logged in somewhere",
 	missing_token: "Missing token",
 	invalid_token: "Invalid or expired token",
 	logged_out: "Logged out",
