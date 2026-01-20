@@ -33,7 +33,21 @@ export class editProfile implements AppPage
 		avatarInput.addEventListener("change", () => {
 			const file = avatarInput.files?.[0];
 			if (!file) return;
-		
+			
+			const imgTypes = ["image/png", "image/jpeg", "image/webp"];
+
+			if (!imgTypes.includes(file.type)) {
+				notify("File must be a PNG, JPG or WEBP image", "error");
+				avatarInput.value = "";
+				return;
+			}
+
+			if (file.size > (2 * 1024 * 1024)) {
+				notify("Image is too large (max 2MB)", "error");
+				avatarInput.value = "";
+				return;
+  			}
+
 			const reader = new FileReader();
 			reader.onload = () => {
 				avatarPreview.src = reader.result as string;
