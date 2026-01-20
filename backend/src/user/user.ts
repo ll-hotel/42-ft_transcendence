@@ -12,6 +12,7 @@ import { generate2FASecret, generateQRCode } from "../security/2fa";
 import { authGuard } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
 import { MESSAGE, schema, STATUS } from "../shared";
+import { eq } from "drizzle-orm";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
@@ -55,8 +56,9 @@ class User {
 		const imgTypes = ["image/png", "image/jpeg", "image/webp"];
 		if (!imgTypes.includes(data.mimetype))
 			return rep.code(STATUS.bad_request).send({ message: "Invalid image file "});
-
-		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}`)
+		
+		const otherUserAvatar = await db.select().from(users).where(eq(users.avatar, usr.avatar));
+		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}` && otherUserAvatar.length < 2)
 			fs.unlink(usr.avatar, (err) => {});
 
 		const newAvatar = `uploads/${data.filename}`;

@@ -188,6 +188,7 @@ export class FriendPage implements AppPage
 			if (acceptRes && acceptRes.status == Status.success)
 			{
 				console.log(`Tu es ami avec ${request.requestFrom}`);
+				notify(`You are now friend with ${request.requestFrom}`, "success");
 				card.remove();
 				this.loadFriends();
 			}
@@ -205,6 +206,7 @@ export class FriendPage implements AppPage
 			if (declineRes && declineRes.status == Status.success)
 			{
 				console.log(`Tu n'es pas ami avec ${request.requestFrom}`);
+				notify(`You declined friend request from ${request.requestFrom}`, "info");
 				card.remove();
 			}
 			else
