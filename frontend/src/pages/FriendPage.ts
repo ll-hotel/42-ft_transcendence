@@ -15,6 +15,7 @@ import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { FriendChat } from "./FriendChat.js";
+import { notify } from "./utils/notifs.js";
 import socket from "../socket.js";
 
 type Message = {
@@ -187,6 +188,7 @@ export class FriendPage implements AppPage
 			if (acceptRes && acceptRes.status == Status.success)
 			{
 				console.log(`Tu es ami avec ${request.requestFrom}`);
+				notify(`You are now friend with ${request.requestFrom}`, "success");
 				card.remove();
 				this.loadFriends();
 			}
@@ -204,6 +206,7 @@ export class FriendPage implements AppPage
 			if (declineRes && declineRes.status == Status.success)
 			{
 				console.log(`Tu n'es pas ami avec ${request.requestFrom}`);
+				notify(`You declined friend request from ${request.requestFrom}`, "info");
 				card.remove();
 			}
 			else
@@ -260,13 +263,13 @@ export class FriendPage implements AppPage
 
 		blockBtn.disabled = !this.selectedCard;
 		blockBtn.onclick = async () => {
-			const confirmBlock = confirm(`Do you whant to ban ${targetDisplayname} ?`);
+			const confirmBlock = confirm(`Do you want to block ${targetDisplayname} ?`);
 			if (!confirmBlock)
 				return;
 
 			const res = await api.delete("/api/friend/remove", { displayName: targetDisplayname });
 			if (res && res.status === Status.success) {
-				alert(`${targetDisplayname} isn't your friend anymore.`);
+				notify(`${targetDisplayname} isn't your friend anymore.`, "info");
 
 				await this.loadFriends();
 
@@ -280,7 +283,7 @@ export class FriendPage implements AppPage
 				blockBtn.disabled = true;
 			}
 			else {
-				alert("Error while deleting this friend.");
+				notify("Error while deleting this friend.", "error");
 			}
 		};
 	}
@@ -299,7 +302,7 @@ export class FriendPage implements AppPage
 			if (!me || !me.payload)
 				return;
 			if (me.status !== Status.success)
-				return alert("Error when getting user info: " + me.payload.message);
+				return notify("Error when getting user info: " + me.payload.message, "error");
 			socket.send({
 				source: me.payload.uuid,
 				topic: "vs:invite",

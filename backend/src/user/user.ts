@@ -12,6 +12,7 @@ import { generate2FASecret, generateQRCode } from "../security/2fa";
 import { authGuard } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
 import { MESSAGE, schema, STATUS } from "../shared";
+import { eq } from "drizzle-orm";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
@@ -38,20 +39,27 @@ class User {
 		const usr = req.user!;
 		
 		if (!req.isMultipart())
-			return rep.send({message : " ERROR "});
-		
+			return rep.code(STATUS.bad_request).send({ message : "Request is not multipart" });
+
 		const data = await req.file();
 		if (!data)
-			return;
-		// dimensions / size check
+			return rep.code(STATUS.bad_request).send({ message : "No file uploaded" });
+
 		const buffer = await data.toBuffer();
-		await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${data.filename}`);
+		try {
+			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${data.filename}`);
+		}
+		catch {
+			return rep.code(STATUS.bad_request).send({ message: "Invalid image file" })
+		}
 
-
-		// rm old pp from upload
-		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}`)
+		const imgTypes = ["image/png", "image/jpeg", "image/webp"];
+		if (!imgTypes.includes(data.mimetype))
+			return rep.code(STATUS.bad_request).send({ message: "Invalid image file "});
+		
+		const otherUserAvatar = await db.select().from(users).where(eq(users.avatar, usr.avatar));
+		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}` && otherUserAvatar.length < 2)
 			fs.unlink(usr.avatar, (err) => {});
-
 
 		const newAvatar = `uploads/${data.filename}`;
 		await db.update(users).set({ avatar: newAvatar }).where(orm.eq(users.id, usr.id));
@@ -120,7 +128,7 @@ class User {
 
 		if (displayName) {
 			if (REGEX_USERNAME.test(displayName) === false) {
-				return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName }));
+				return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName + " : Must contain 3 minimum characters (alphanumerical only)" }));
 			}
 			const exists = await db.select().from(users).where(orm.eq(users.displayName, displayName));
 			if (exists.length != 0) {

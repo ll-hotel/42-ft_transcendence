@@ -1,6 +1,7 @@
 import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
+import { notify } from "./utils/notifs.js";
 
 export class editProfile implements AppPage
 {
@@ -32,7 +33,21 @@ export class editProfile implements AppPage
 		avatarInput.addEventListener("change", () => {
 			const file = avatarInput.files?.[0];
 			if (!file) return;
-		
+			
+			const imgTypes = ["image/png", "image/jpeg", "image/webp"];
+
+			if (!imgTypes.includes(file.type)) {
+				notify("File must be a PNG, JPG or WEBP image", "error");
+				avatarInput.value = "";
+				return;
+			}
+
+			if (file.size > (2 * 1024 * 1024)) {
+				notify("Image is too large (max 2MB)", "error");
+				avatarInput.value = "";
+				return;
+  			}
+
 			const reader = new FileReader();
 			reader.onload = () => {
 				avatarPreview.src = reader.result as string;
@@ -66,9 +81,9 @@ export class editProfile implements AppPage
 		if (!userInfo) {
 			const resMe = await api.get("/api/me");
 			if (!resMe || !resMe.payload)
-				return alert("Error when loading user info");
+				return notify("Error when loading user info", "error");
 			if ( resMe.status != Status.success)
-				return alert("Error when loading user info :" + resMe.payload.message);
+				return notify("Error when loading user info :" + resMe.payload.message, "error");
 			userInfo = JSON.stringify(resMe.payload);
 		}
 		try {
@@ -117,13 +132,13 @@ export class editProfile implements AppPage
 /*		const avatar = userFormData.get("avatar")?.toString();
 
 		if (!displayName && !avatar)
-			return alert("No user info to update");
+			return notify("No user info to update", "info");
 
 		const res = await api.patch("/api/user/profile", {displayName, avatar});
 		if (!res || !res.payload)
 			return;
 		if (res.status !== Status.success)
-			return alert("Error when editing user info: " + res.payload.message);
+			return notify("Error when editing user info: " + res.payload.message, "error");
 
 		this.updatePreview(displayName, avatar);
 		this.userForm.reset();*/
@@ -137,14 +152,15 @@ export class editProfile implements AppPage
 		const avatarFile = userFormData.get("avatar") as File | null;
 		
 		if (!displayName && (!avatarFile || avatarFile.size === 0))
-			return alert("No user info to update");
+			return notify("No user info to update", "error");
 		
 		if (displayName) {
 			const res = await api.patch("/api/user/profile", {displayName});
 			if (!res || !res.payload)
 				return;
 			if (res.status !== Status.success)
-				return alert("Error when editing user info: " + res.payload.message);
+				return notify(res.payload.message, "error");
+			notify("Display Name updated", "success");
 			this.updatePreview(displayName);
 		}
 
@@ -158,10 +174,11 @@ export class editProfile implements AppPage
 				body: fd,
 			});
 			if (!res.ok)
-				return alert("Error when uploading avatar");
+				return notify("Error when uploading avatar", "error");
 			
 			const data = await res.json();
 			this.updatePreview(undefined, `uploads/${data.file}`);
+			notify("Avatar updated", "success");
 		}
 		this.userForm.reset();
 	}
@@ -174,17 +191,17 @@ export class editProfile implements AppPage
 		const confirm = formData.get("confirm-password")?.toString();
 
 	if (!currentPassword || !newPassword || newPassword !== confirm)
-		return alert("Passwords do not match");
+		return notify("Passwords do not match", "error");
 
 	const res = await api.patch("/api/user/password", {currentPassword, newPassword});
 
 	if (!res || !res.payload)
 		return;
 	if (res.status !== Status.success)
-		return alert("Error when edit password: " + res.payload.message);
+		return notify(res.payload.message, "error");
 
 	this.passwordForm.reset();
-	alert("Password updated");
+	notify("Password updated", "success");
 }
 
 	updatePreview(displayName?: string, avatar?: string) {

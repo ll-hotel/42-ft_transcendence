@@ -2,6 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import AppPage from "./AppPage.js";
+import { notify } from "./utils/notifs.js";
 
 export class Login implements AppPage {
 	content: HTMLElement;
@@ -76,20 +77,21 @@ export class Login implements AppPage {
 
 		const res = await api.post("/api/auth/login", { username, password, twoFACode });
 		if (!res) {
-			return alert("Invalid API response.");
+			return notify("Invalid API response.", "error");
 		}
 		if (!this.twoFAHidden) {
 			this.toggleTwoFA();
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
 			socket.connect();
+			notify(res.payload.message, "success");
 			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {
 			this.toggleTwoFA();
 			return;
 		}
-		alert("Error: " + res.payload.message);
+		notify(res.payload.message, "error");
 	}
 	toggleTwoFA() {
 		if (this.twoFAHidden) {
@@ -129,8 +131,10 @@ async function loginWithProvider(container: HTMLElement, provider: string, code:
 	const res = await api.get(path + code);
 	logging.remove();
 	if (!res || !res.payload.loggedIn) {
+		notify(res?.payload.message, "error");
 		return gotoPage("login");
 	}
+	notify(res.payload.message, "success");
 	await socket.connect();
 	return gotoPage("profile");
 }

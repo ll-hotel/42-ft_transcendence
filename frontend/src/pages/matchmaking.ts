@@ -1,5 +1,6 @@
 import { api, Status } from "../api.js";
 import socket, { Message } from "../socket.js";
+import { notify } from "./utils/notifs.js";
 import AppPage from "./AppPage.js"
 
 export class MatchMaking implements AppPage {
@@ -11,10 +12,10 @@ export class MatchMaking implements AppPage {
 		queueButton?.addEventListener("click", async () => {
 			const join = await api.post("/api/matchmaking/join");
 			if (!join || join.status != Status.success) {
-				alert(join ? join.payload.message : "Can not join queue.");
+				notify(join ? join.payload.message : "Can not join queue.", "error");
 			} else {
 				this.inQueue = true;
-				alert(join.payload.message);
+				notify(join.payload.message, "success");
 			}
 		});
 	}
@@ -40,6 +41,6 @@ export class MatchMaking implements AppPage {
     	if (message.type != "found") return;
     	const { match, opponent } = m as any as { match: number, opponent: string };
     	
-    	alert("Match found!\n" + `Match id: ${match}\nOpponent: ${opponent}`);
+    	notify("Match found!\n" + `Match id: ${match}\nOpponent: ${opponent}`, "success");
     }
 };

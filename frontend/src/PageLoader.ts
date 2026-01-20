@@ -12,6 +12,7 @@ import { RegisterPage } from "./pages/register.js";
 import { editProfile } from "./pages/editProfile.js";
 import { Tournament } from "./pages/tournament.js";
 import { Tournaments } from "./pages/tournaments.js";
+import { notify } from "./pages/utils/notifs.js";
 import socket from "./socket.js";
 
 const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
@@ -72,7 +73,7 @@ class PageLoader {
 		const html = await downloadHtmlBody(pageName);
 		const page = pages.find(p => p.name == pageName)!.new(html);
 		if (page === null) {
-			return alert("Could not load " + pageName);
+			return notify("Could not load " + pageName, "error");
 		}
 		this.list.set(name, page);
 	}
