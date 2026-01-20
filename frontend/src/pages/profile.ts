@@ -47,7 +47,7 @@ export class ProfilePage implements AppPage {
 		const contMatchList = this.content.querySelector("#match-list");
 		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
 		if (avatarImg)
-			avatarImg.src = userInfo.avatar.startsWith("/") ? userInfo.avatar : `/${userInfo.avatar}`;
+			avatarImg.src = userInfo.avatar == "DEFAULT_AVATAR" ? "default_pp.png" : userInfo.avatar;
 		this.displayname.innerHTML = userInfo.displayName;
 		
 		const resMatch = await api.get("/api/me/history");

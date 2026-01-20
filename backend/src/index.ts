@@ -14,12 +14,13 @@ import socketRoute from "./routes/socket";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
 import path from "path";
+import pingRoute from "./routes/ping";
 
 async function main() {
 	createTables();
 
 	const app: FastifyInstance = Fastify({
-		// logger: true,
+		logger: true,
 		https: {
 			key: fs.readFileSync("/run/secrets/privatekey.pem"),
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
@@ -45,6 +46,7 @@ async function main() {
 	app.register(gameMatch);
 	app.register(socketRoute);
 	app.register(chatRoute);
+	app.register(pingRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, (err) => {
 		if (err) {

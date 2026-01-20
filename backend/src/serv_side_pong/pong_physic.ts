@@ -128,7 +128,7 @@ export class ServerSidedGame
 
 	p1_event_listener(msg: InputMessage)
 	{
-		if (msg.source == 'pong' && msg.type == 'input')
+		if (msg.topic == 'pong' && msg.type == 'input')
 		{
 			this.input.set("p1_up", msg.up);
 			this.input.set("p1_down",msg.down);
@@ -138,7 +138,7 @@ export class ServerSidedGame
 
 	p2_event_listener(msg: InputMessage)
 	{
-		if (msg.source == 'pong' && msg.type == 'input')
+		if (msg.topic == 'pong' && msg.type == 'input')
 		{
 			this.input.set("p2_up", msg.up);
 			this.input.set("p2_down",msg.down);
@@ -148,7 +148,7 @@ export class ServerSidedGame
 
 	local_input_listener(msg: LocalMessage)
 	{
-		if (msg.source !== "pong" || msg.type !== "input")
+		if (msg.topic !== "pong" || msg.type !== "input")
 			return;
 		this.input.set("p1_up",msg.p1_up);
 		this.input.set("p1_down",msg.p1_down);
@@ -159,7 +159,7 @@ export class ServerSidedGame
 	send_to_players(state: State)
 	{
 		let init_msg : StateMessage = {
-			source: "pong",
+			topic: "pong",
 			type: TypeMsg.state,
 			ball: {x: this.ball.pos.x, y: this.ball.pos.y, speed: this.ball.speed},
 			paddles: {p1_Y: this.paddle_p1.pos.y, p2_Y: this.paddle_p2.pos.y},
@@ -258,7 +258,7 @@ export class PongBall extends PhysicObject
 	send_score_to_players()
 	{
 		let init_msg : ScoreMessage = {
-			source: "pong",
+			topic: "pong",
 			type: TypeMsg.score,
 			p1_score: this.score.p1,
 			p2_score: this.score.p2

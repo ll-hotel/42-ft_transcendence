@@ -1,6 +1,6 @@
 import { api, Status } from "./api.js";
 
-type BaseMessage = {
+export type BaseMessage = {
 	topic: string,
 };
 type MatchMessage = BaseMessage & {

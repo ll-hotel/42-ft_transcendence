@@ -12,7 +12,7 @@ type Client = {
 	onDisconnect: (() => void)[],
 	lastOnlineTime: number,
 };
-type BaseMessage = {
+export type BaseMessage = {
 	topic: string;
 };
 type MatchMessage = BaseMessage & {

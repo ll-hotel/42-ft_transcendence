@@ -1,4 +1,4 @@
-import socket, {Message} from "./socket.js";
+import socket, {BaseMessage, Message} from "./socket.js";
 
 type Position = {x: number, y: number};
 type Score = {p1: number, p2: number};
@@ -35,23 +35,18 @@ enum State
 	on_going = "on_going",
 }
 
-type BaseMessage = {
-	source: string;
-	type: string;
-};
-
 type StateMessage = BaseMessage & {
-		"type": "state",
-		"ball": {
-			"x": number, "y": number, "speed": Vector2D,
-		},
-		"paddles": {
-			"p1_Y": number,
-			"p2_Y": number
-		},
-		"score": { "p1": number, "p2": number },
-		"status": State;
-	}
+	"type": "state",
+	"ball": {
+		"x": number, "y": number, "speed": Vector2D,
+	},
+	"paddles": {
+		"p1_Y": number,
+		"p2_Y": number
+	},
+	"score": { "p1": number, "p2": number },
+	"status": State;
+}
 
 type InputMessage = BaseMessage & {
 	type: "input",
@@ -65,7 +60,7 @@ type ScoreMessage = BaseMessage & {
 	p2_score: number
 }
 
-type PongMessage = InputMessage | StateMessage | Message;
+type PongMessage = InputMessage | StateMessage | ScoreMessage;
 
 function debug_message(msg: string, obj?: any): void
 {
@@ -205,7 +200,7 @@ export class Game
 			this.input_sender = () => this.send_local_input();
 		else
 			this.input_sender = () => this.send_remote_input();
-		socket.addListener("pong", (msg) => {this.pong_event_listener(msg)})
+		socket.addListener("pong", (msg) => {this.pong_event_listener(msg as PongMessage)})
 	}
 
        pong_event_listener(msg: PongMessage): void
@@ -243,7 +238,7 @@ export class Game
 	send_local_input()
 	{
 		let msg : LocalMessage = {
-			source: "pong",
+			topic: "pong",
 			type: "input",
 			p1_up: this.input.get("p1_up")!,
 			p1_down: this.input.get("p1_down")!,
@@ -256,7 +251,7 @@ export class Game
 	send_remote_input()
 	{
 		let msg : InputMessage = {
-			source: "pong",
+			topic: "pong",
 			type: "input",
 			up: this.input.get("p1_up")!,
 			down: this.input.get("p1_down")!

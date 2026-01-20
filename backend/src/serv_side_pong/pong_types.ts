@@ -1,3 +1,4 @@
+import { BaseMessage } from "../socket";
 
 export enum TypeMsg
 {
@@ -16,34 +17,28 @@ export enum State
 	on_going = "on_going",
 }
 
-export type BaseMessage = {
-	source: string;
-	type: string;
-};
-
-export type StateMessage = BaseMessage &
-{
-		"type": "state",
-		"ball": {
-			"x": number, "y": number, "speed": Vector2D,
-		},
-		"paddles": {
-			"p1_Y": number,
-			"p2_Y": number
-		},
-		"score": { "p1": number, "p2": number },
-		"status": State
-	}
+export type StateMessage = BaseMessage & {
+	type: "state",
+	ball: {
+		"x": number, "y": number, "speed": Vector2D,
+	},
+	paddles: {
+		"p1_Y": number,
+		"p2_Y": number
+	},
+	score: { "p1": number, "p2": number },
+	status: State
+}
 
 export type InputMessage = {
-	source: string,
+	topic: string,
 	type: "input",
 	up: boolean,
 	down: boolean
 }
 
 export type LocalMessage = {
-	source: string,
+	topic: string,
 	type: "input",
 	p1_up: boolean,
 	p1_down: boolean,
