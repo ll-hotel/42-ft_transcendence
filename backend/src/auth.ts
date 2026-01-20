@@ -10,6 +10,7 @@ import { generate2FASecret, generateQRCode, verify2FAToken } from './security/2f
 import fs from "fs";
 import { authGuard } from './security/authGuard';
 import socket from './socket';
+import sharp from "sharp";
 
 const SCHEMA_REGISTER = {
 	body: {
@@ -26,12 +27,13 @@ const SCHEMA_LOGIN = SCHEMA_REGISTER;
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 const oauthKeys = JSON.parse(fs.readFileSync("/run/secrets/oauthKeys", "utf-8").trim());
 
-if (!process.env.HOSTNAME) {
+process.env.HOSTURL = "localhost";//dev
+/* if (!process.env.HOSTURL) {
 	throw new Error("Missing server hostname");
 }
-
-const redirect42 = `https://${process.env.HOSTNAME}:8443/login?provider=42`;
-const redirectGoogle = `https://${process.env.HOSTNAME}:8443/login?provider=google`;
+ */
+const redirect42 = `https://${process.env.HOSTURL}:8443/login?provider=42`;
+const redirectGoogle = `https://${process.env.HOSTURL}:8443/login?provider=google`;
 
 /// Usernames are formed of alphanumerical characters ONLY.
 const REGEX_USERNAME = /^[a-zA-Z0-9]{3,24}$/;
@@ -54,10 +56,10 @@ class AuthService {
 		const { username, password, displayName, twofa } = body;
 
 		if (REGEX_USERNAME.test(username) === false)
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username + " : Must contain 3 minimum characters (alphanumerical only)" });
 
 		if (REGEX_PASSWORD.test(password) === false)
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password + " : Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum" });
 
 		if (REGEX_USERNAME.test(displayName) === false)
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName });
@@ -85,7 +87,7 @@ class AuthService {
 		await db.insert(users).values({
 			uuid: uiidv4(),
 			username,
-			displayName,
+			displayName: username,
 			password: hashedPass,
 			twofaKey,
 			twofaEnabled,
@@ -124,10 +126,7 @@ class AuthService {
 					loggedIn: true,
 					accessToken: tokenCookie,
 				});
-			} catch {
-//				await db.update(users).set({ isOnline: 0 }).where(eq(users.id, user.id));
-				// token expired, process reconnection
-			}
+			} catch {}
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		rep.setCookie('accessToken', accessToken, {
@@ -190,12 +189,21 @@ class AuthService {
 			const uuid = uiidv4();
 			user = { uuid };
 			const pass = await hashPassword("42AuthUser____" + uuid);
+			const res = await fetch(userData.image.versions.medium);
+			const buffer = Buffer.from(await res.arrayBuffer());
+			const filename = `avatar___${uuid}.png`
+			let avatarPath = 'uploads/default_pp.png';
+			try {
+				avatarPath = `./uploads/${filename}`
+				await sharp(buffer).resize(751, 751, { fit : "cover" }).png().toFile(avatarPath);
+			}
+			catch { avatarPath = 'uploads/default_pp.png'; }
 			await db.insert(users).values({
 				uuid,
 				username: userData.login,
 				displayName: userData.login,
 				password: pass,
-				// avatar = image?
+				avatar: avatarPath,
 			});
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
@@ -243,17 +251,25 @@ class AuthService {
 			const uuid = uiidv4();
 			user = { uuid };
 			const pass = await hashPassword("GoogleUser___" + uuid);
+			const res = await fetch(userData.picture);
+			const buffer = Buffer.from(await res.arrayBuffer());
+			const filename = `avatar___${uuid}.png`
+			let avatarPath = 'uploads/default_pp.png';
+			try {
+				avatarPath = `./uploads/${filename}`
+				await sharp(buffer).resize(751, 751, { fit : "cover" }).png().toFile(avatarPath);
+			}
+			catch { avatarPath = 'uploads/default_pp.png'; }
 			await db.insert(users).values({
 				uuid,
 				username: userData.email,
 				displayName: userData.given_name,
 				password: pass,
-				// avatar: userData.picture,
+				avatar: avatarPath,
 			});
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: '1h' });
 		rep.setCookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'strict', path: '/api' });
-//		await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, user.uuid));
 		rep.code(STATUS.success).send({
 		  	message: MESSAGE.logged_in,
 		  	loggedIn: true,
