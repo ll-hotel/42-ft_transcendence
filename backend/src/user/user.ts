@@ -120,7 +120,7 @@ class User {
 
 		if (displayName) {
 			if (REGEX_USERNAME.test(displayName) === false) {
-				return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName }));
+				return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName + " : Must contain 3 minimum characters (alphanumerical only)" }));
 			}
 			const exists = await db.select().from(users).where(orm.eq(users.displayName, displayName));
 			if (exists.length != 0) {

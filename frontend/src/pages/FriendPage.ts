@@ -267,7 +267,7 @@ export class FriendPage implements AppPage
 
 			const res = await api.delete("/api/friend/remove", { displayName: targetDisplayname });
 			if (res && res.status === Status.success) {
-				notify(`${targetDisplayname} isn't your friend anymore.`, "success");
+				notify(`${targetDisplayname} isn't your friend anymore.`, "info");
 
 				await this.loadFriends();
 

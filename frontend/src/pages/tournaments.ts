@@ -44,9 +44,10 @@ export class Tournaments implements AppPage {
 
 		const rep = await api.post("/api/tournament/create", { name, size });
 		if (!rep || rep.status != Status.created) {
-			notify("Can not create tournament: " + rep?.payload.message, "error");
+			notify("Can not create tournament : " + rep?.payload.message, "error");
 			return;
 		}
+		notify("Tournament [" + name + "] created", "success");
 		await this.loadTournamentList();
 		await this.joinTournament(name);
 	}
@@ -95,7 +96,7 @@ export class Tournaments implements AppPage {
 		if (joinRep.status == Status.success) {
 			return gotoPage("tournament", "?name=" + name);
 		}
-		notify("Can not join tournament: " + joinRep.payload.message, "error");
+		notify("Can not join tournament : " + joinRep.payload.message, "error");
 	}
 }
 

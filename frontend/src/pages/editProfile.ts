@@ -145,7 +145,7 @@ export class editProfile implements AppPage
 			if (!res || !res.payload)
 				return;
 			if (res.status !== Status.success)
-				return notify("Error when editing user info: " + res.payload.message, "error");
+				return notify(res.payload.message, "error");
 			notify("Display Name updated", "success");
 			this.updatePreview(displayName);
 		}

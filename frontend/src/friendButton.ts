@@ -129,9 +129,9 @@ export class FriendButton {
 		const me = await api.get("/api/me");
 		const friend = await api.get(`/api/user?displayName=${this.displayName}`);
 		if (!me || ! friend || !me.payload || !friend.payload)
-			return notify("Error when getting user ou friend info", "error");
+			return notify("Error when getting user or friend info", "error");
 		if (me.status !== Status.success || friend.status !== Status.success)
-			return notify("Error when getting user ou friend info: " + me.payload.message, "error");
+			return notify("Error when getting user or friend info: " + me.payload.message, "error");
 		console.log(me.payload.uuid, friend.payload.user.uuid);
 		socket.send({
 			source: me.payload.uuid,

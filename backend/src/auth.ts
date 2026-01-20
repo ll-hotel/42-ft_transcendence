@@ -56,10 +56,10 @@ class AuthService {
 		const { username, password, displayName, twofa } = body;
 
 		if (REGEX_USERNAME.test(username) === false)
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username + " : Must contain 3 minimum characters (alphanumerical only)" });
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username + ": Must contain 3 minimum characters (alphanumerical only)" });
 
 		if (REGEX_PASSWORD.test(password) === false)
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password + " : Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum" });
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password + ": Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum" });
 
 		if (REGEX_USERNAME.test(displayName) === false)
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName });
