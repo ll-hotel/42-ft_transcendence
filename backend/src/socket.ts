@@ -1,6 +1,7 @@
 type ClientId = string;
 type Client = {
 	sockets: WebSocket[];
+	handlers: { source: string, fn: (data?: any) => void }[];
 };
 type BaseMessage = {
 	source: string;
@@ -26,7 +27,7 @@ export function connect(clientId: ClientId, socket: WebSocket) {
 	console.log("[socket]", "connect", clientId);
 	socket.addEventListener("close", () => disconnect(clientId, socket));
 	if (!clients.has(clientId)) {
-		clients.set(clientId, { sockets: [] });
+		clients.set(clientId, { sockets: [], handlers: [] });
 	}
 	clients.get(clientId)!.sockets.push(socket);
 	socket.addEventListener("message", (ev) => onMessage(clientId, ev));
@@ -38,6 +39,11 @@ function onMessage(clientId: ClientId, ev: MessageEvent) {
 		if (json.source != "ping") {
 			console.log("[socket]", "message", clientId, json);
 		}
+		clients.get(clientId)!.handlers.forEach((handler) => {
+			if (handler.source === json.source) {
+				handler.fn(json);
+			}
+		});
 	} catch (_) {
 		if (ev.data) {
 			console.log("[socket]", "message", clientId, '"' + ev.data + '"');
@@ -47,7 +53,7 @@ function onMessage(clientId: ClientId, ev: MessageEvent) {
 
 export function send(target: ClientId, message: Message) {
 	if (isAlive(target)) {
-		console.log("[socket]", "send", target, message);
+		// console.log("[socket]", "send", target, message);
 		try {
 			const data = JSON.stringify(message);
 			clients.get(target)!.sockets.forEach(socket => socket.send(data));
@@ -55,9 +61,10 @@ export function send(target: ClientId, message: Message) {
 	}
 }
 
-export function addListener(client: ClientId, event: string, hook: () => void) {
+type HandlerFn = (data?:any) => void;
+export function addListener(client: ClientId, source: string, fn: HandlerFn) {
 	if (clients.has(client)) {
-		clients.get(client)!.sockets.forEach(s => s.addEventListener(event, hook));
+		clients.get(client)!.handlers.push({ source, fn });
 	}
 }
 
@@ -73,8 +80,19 @@ export function disconnect(target: ClientId, socket?: WebSocket) {
 		client.sockets = client.sockets.filter(e => e != socket);
 		socket.close(4001);
 	} else {
-		clients.delete(target);
 		client.sockets.forEach(e => e.close(4001));
+		client.sockets = [];
+	}
+	if (client.sockets.length == 0) {
+		client.handlers = [];
+	}
+}
+
+/** Removes all listeners of `source`. */
+export function removeListener(uuid: ClientId, source: string) {
+	if (clients.has(uuid)) {
+		const client = clients.get(uuid)!;
+		client.handlers = client.handlers.filter((handler) => handler.source !== source);
 	}
 }
 

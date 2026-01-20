@@ -11,7 +11,6 @@ import socketRoute from "./socketRoute";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
 import * as logger from "./serv_side_pong/myLogger";
-import pongModule from "./serv_side_pong/pong_api";
 
 async function main() {
 	await createTables();
@@ -36,7 +35,6 @@ async function main() {
 	app.register(gameQueue);
 	app.register(gameMatch);
 	app.register(socketRoute);
-	app.register(pongModule);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
 		if (err) {

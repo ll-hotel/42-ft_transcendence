@@ -1,17 +1,29 @@
 import socket, {Message} from "./socket.js";
-import {api} from "./api";
-let DEBUG = 1;
 
 type Position = {x: number, y: number};
 type Score = {p1: number, p2: number};
 type Size = {w: number, h: number};
+
+export enum Mode
+{
+	local = 'local',
+	remote = 'remote'
+}
 
 enum TypeMsg
 {
 	state = 'state',
 	input = 'input',
 	error = 'error',
-	score = "score"
+	score = 'score'
+}
+
+type LocalMessage = BaseMessage & {
+	type: "input",
+	p1_up: boolean,
+	p1_down: boolean,
+	p2_up: boolean,
+	p2_down: boolean
 }
 
 enum State
@@ -28,8 +40,7 @@ type BaseMessage = {
 	type: string;
 };
 
-type StateMessage = BaseMessage &
-	{
+type StateMessage = BaseMessage & {
 		"type": "state",
 		"ball": {
 			"x": number, "y": number, "speed": Vector2D,
@@ -58,8 +69,7 @@ type PongMessage = InputMessage | StateMessage | Message;
 
 function debug_message(msg: string, obj?: any): void
 {
-	if (DEBUG == 1)
-		console.debug(msg, obj ? JSON.parse(JSON.stringify(obj)) : "");
+	console.debug(msg, obj ? JSON.parse(JSON.stringify(obj)) : "");
 }
 
 function draw_hit_box(context: CanvasRenderingContext2D, obj:PhysicObject): void
@@ -163,13 +173,9 @@ export class Game
 	public paddle_p2: PongPaddle;
 	readonly score: Score;
 	public input: Map<string, boolean>;
+	private mode: Mode;
 
-	//loop
-	private last_timestamp: number;
-	private buffer: number;
-	private tick_interval: number;
 	private tick_rate: number;
-	private is_running: Boolean;
 
 	//HTMLElement
 	private score_viewer: HTMLElement;
@@ -178,9 +184,9 @@ export class Game
 	private current_interval_id: number | null = null;
 	private canvas_ratio: Size;
 	private speed_ratio: number;
+	private input_sender: () => void;
 
-
-	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement)
+	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement, mode: Mode)
 	{
 		this.canvas = html.querySelector("#pong-canvas")!;
 		this.context = this.canvas.getContext("2d")!;
@@ -189,15 +195,16 @@ export class Game
 		this.score = {p1: 0, p2: 0};
 		this.paddle_p1 = new PongPaddle({x: 0, y: this.canvas.height / 2} , paddle_texture);
 		this.paddle_p2 = new PongPaddle({x: this.canvas.width, y: this.canvas.height / 2}, paddle_texture);
-		this.ball = new PongBall(this.canvas, this.score, this.paddle_p1, this.paddle_p2, ball_texture);
-		this.is_running = false;
-		this.last_timestamp = 0;
-		this.buffer = 0;
-		this.tick_rate = 90;
-		this.tick_interval = 1000 / this.tick_rate;
+		this.ball = new PongBall(this.canvas, this.context, ball_texture);
+		this.tick_rate = 60;
 		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
 		this.canvas_ratio = {w: this.canvas.width / 500, h: this.canvas.height / 250 };
 		this.speed_ratio = (10 / this.tick_rate);
+		this.mode = mode;
+		if (this.mode == Mode.local)
+			this.input_sender = () => this.send_local_input();
+		else
+			this.input_sender = () => this.send_remote_input();
 		socket.addListener("pong", (msg) => {this.pong_event_listener(msg)})
 	}
 
@@ -220,14 +227,42 @@ export class Game
                }
                else if ((msg as StateMessage).status == "on_going")
                {
-                       clearInterval(this.current_interval_id!);
+				   clearInterval(this.current_interval_id!);
                }
-
+			   else if ((msg as StateMessage).status == "ended")
+			   {
+				   clearInterval(this.current_interval_id!);
+				   return;
+			   }
                this.update_state(msg as StateMessage);
+			   this.input_sender();
                this.current_interval_id = setInterval(() => {
                        this.update()}, 1000 / this.tick_rate);
        }
 
+	send_local_input()
+	{
+		let msg : LocalMessage = {
+			source: "pong",
+			type: "input",
+			p1_up: this.input.get("p1_up")!,
+			p1_down: this.input.get("p1_down")!,
+			p2_up: this.input.get("p2_up")!,
+			p2_down: this.input.get("p2_down")!
+		};
+		socket.send(msg);
+	}
+
+	send_remote_input()
+	{
+		let msg : InputMessage = {
+			source: "pong",
+			type: "input",
+			up: this.input.get("p1_up")!,
+			down: this.input.get("p1_down")!
+		};
+		socket.send(msg);
+	}
 
 	update_state(msg: StateMessage)
 	{
@@ -239,76 +274,55 @@ export class Game
 		this.paddle_p2.pos.y = msg.paddles.p2_Y * this.canvas_ratio.h;
 	}
 
-	update_paddle_texture() : void
+	update_texture_pos()
 	{
 		this.paddle_p1.updateTextPos(this.context!);
 		this.paddle_p2.updateTextPos(this.context!);
-	}
-
-	update_ball_texture() : void
-	{
 		this.ball.updateTextPos(this.context!);
-	}
-
-	update_texture_pos()
-	{
-		this.update_paddle_texture();
-		this.update_ball_texture();
 	}
 
 	game_init() : void
 	{
 		this.update_texture_pos();
-		window.addEventListener("keydown", (event) => {
-			if (event.key === "ArrowDown")
-				this.input.set("ArrowDown", true);
-			if (event.key === "ArrowUp")
-				this.input.set("ArrowUp", true);
-			if (event.key === "s" || event.key === "S")
-				this.input.set("s", true);
-			if (event.key === "w" || event.key === "W")
-				this.input.set("w", true);
-		});
-
-		window.addEventListener("keyup", (event) => {
-			if (event.key === "ArrowDown")
-				this.input.set("ArrowDown", false);
-			if (event.key === "ArrowUp")
-				this.input.set("ArrowUp", false);
-			if (event.key === "s" || event.key === "S")
-				this.input.set("s", false);
-			if (event.key === "w" || event.key === "W")
-				this.input.set("w", false);
-		}
-		);
-
-	}
-
-	start() : void
-	{
-		debug_message("start");
-		this.score.p1 = 0;
-		this.score.p2 = 0;
-		this.is_running = true;
-	}
-
-	resume() : void
-	{
-		debug_message("resume");
-		if (this.is_running == false)
+		if (this.mode == Mode.local)
 		{
-			this.canvas.hidden = false;
-			this.is_running = true;
-		}
-	}
+			window.addEventListener("keydown", (event) => {
+				if (event.key === "ArrowDown")
+					this.input.set("p2_down", true);
+				if (event.key === "ArrowUp")
+					this.input.set("p2_up", true);
+				if (event.key === "s" || event.key === "S")
+					this.input.set("p1_down", true);
+				if (event.key === "w" || event.key === "W")
+					this.input.set("p1_up", true);
+			});
 
-	pause() : void
-	{
-		debug_message("pause");
-		if (this.is_running)
+			window.addEventListener("keyup", (event) => {
+				if (event.key === "ArrowDown")
+					this.input.set("p2_down", false);
+				if (event.key === "ArrowUp")
+					this.input.set("p2_up", false);
+				if (event.key === "s" || event.key === "S")
+					this.input.set("p1_down", false);
+				if (event.key === "w" || event.key === "W")
+					this.input.set("p1_up", false);
+			});
+		}
+		else if (this.mode == Mode.remote)
 		{
-			this.is_running = false;
-			this.canvas.hidden = true;
+			window.addEventListener("keydown", (event) => {
+				if (event.key === "s" || event.key === "S")
+					this.input.set("p1_down", true);
+				if (event.key === "w" || event.key === "W")
+					this.input.set("p1_up", true);
+			});
+
+			window.addEventListener("keyup", (event) => {
+				if (event.key === "s" || event.key === "S")
+					this.input.set("p1_down", false);
+				if (event.key === "w" || event.key === "W")
+					this.input.set("p1_up", false);
+			});
 		}
 	}
 
@@ -339,28 +353,15 @@ export class PongPaddle extends PhysicObject
 export class PongBall extends PhysicObject
 {
 	private		canvas: HTMLCanvasElement;
-	private		score: Score;
-	readonly	paddle_p1:PongPaddle;
-	readonly	paddle_p2:PongPaddle;
+	private	context: CanvasRenderingContext2D;
 	private		texture : HTMLImageElement;
-	readonly	top_normal : Vector2D;
-	readonly	bottom_normal : Vector2D;
-	readonly	left_normal : Vector2D;
-	readonly	right_normal : Vector2D;
 
-	constructor(canvas: HTMLCanvasElement, score: Score, paddle_p1: PongPaddle, paddle_p2: PongPaddle, texture : HTMLImageElement)
+	constructor(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D ,texture : HTMLImageElement)
 	{
 		super({x: canvas.width / 2, y: canvas.height / 2}, {w:10, h:10}, new Vector2D(0,0));
 		this.canvas = canvas;
-		this.score = score;
-		this.paddle_p1 = paddle_p1;
-		this.paddle_p2 = paddle_p2;
+		this.context = context;
 		this.texture = texture;
-
-		this.top_normal = new Vector2D(0, 1);
-		this.bottom_normal = new Vector2D(0, -1);
-		this.left_normal = new Vector2D(1, 0);
-		this.right_normal = new Vector2D(-1, 0);
 	}
 
 	updateTextPos(context : CanvasRenderingContext2D): void {

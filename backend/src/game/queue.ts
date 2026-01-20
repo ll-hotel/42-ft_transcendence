@@ -5,7 +5,8 @@ import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
 import { STATUS } from "../shared";
 import socket from "../socket";
-import { init_game } from "../serv_side_pong/init_lobby";
+import { create_game } from "../serv_side_pong/pong_physic";
+import {Mode} from "../serv_side_pong/pong_types"
 
 function notifyUser(uuid: string, match: number, opponent: string) {
 	socket.send(uuid, {
@@ -71,7 +72,7 @@ class Queue {
 		const [user2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p2.userId));
 		notifyUser(user1.uuid, match.id, user2.username);
 		notifyUser(user2.uuid, match.id, user1.username);
-		init_game(match.id, user1.uuid, user2.uuid);
+		create_game(match.id, user1.uuid, user2.uuid, Mode.remote);
 		return true;
 	}
 

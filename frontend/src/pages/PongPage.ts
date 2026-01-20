@@ -1,17 +1,14 @@
-import { Game } from "../pong.js";
+import { Game, Mode } from "../pong_client_side.js";
 import AppPage from "./AppPage.js";
-import * as socket from "../socket"
-import {api, Status} from "../api";
-import * as matchmaking from "./matchmaking"
 
 export class PongPage implements AppPage {
 	content: HTMLElement;
 	game: Game;
 	onclick: () => void;
 
-	private constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement) {
+	private constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement, mode: Mode) {
 		this.content = html;
-		this.game = new Game(html, ball, paddle);
+		this.game = new Game(html, ball, paddle, mode);
 		html.querySelector("#game-clickbox")?.addEventListener("click", () => this.onclick());
 		this.onclick = () => this.showGame();
 	}
@@ -30,13 +27,14 @@ export class PongPage implements AppPage {
 			alert("Could not fetch sprites.");
 			return null;
 		}
-		return new PongPage(html, ball, paddle);
+		//TODO changer le Mode ("local")
+		return new PongPage(html, ball, paddle, Mode.remote);
 	}
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
 		console.debug("[PongPage] loadInto");
-		this.showStart();
+		this.showGame();
 	}
 
 	unload() {
@@ -49,7 +47,7 @@ export class PongPage implements AppPage {
 		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-score")?.setAttribute("hidden", "");
-		// this.game.game_init();
+		this.game.game_init();
 	}
 	showGame() {
 		this.onclick = () => this.showPause();
@@ -63,13 +61,11 @@ export class PongPage implements AppPage {
 		this.onclick = () => this.hidePause();
 		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-pause")?.removeAttribute("hidden");
-		this.game.pause();
 	}
 	hidePause() {
 		this.onclick = () => this.showPause();
 		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
-		this.game.resume();
 	}
 	showScore() {
 		this.onclick = () => this.showStart();
@@ -89,7 +85,6 @@ export class PongPage implements AppPage {
 		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
-		//this.game.end();
 		setTimeout(() => this.showStart(), 5000);
 	}
 }
