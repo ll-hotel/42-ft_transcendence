@@ -1,5 +1,7 @@
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import fs from "fs";
+import sharp from "sharp";
 import { db } from "../db/database";
 import * as tables from "../db/tables";
 import { generate2FASecret, generateQRCode, verify2FAToken } from "../security/2fa";
@@ -33,6 +35,31 @@ class User {
 			{ preHandler, schema: schema.body({ code: "string" }) },
 			User.activateTwofa,
 		);
+
+		app.post("/api/user/updateAvatar", { preHandler }, User.updateAvatar);
+	}
+
+	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+		if (!req.isMultipart()) {
+			return rep.send({ message: " ERROR " });
+		}
+		const data = await req.file();
+		if (!data) {
+			return;
+		}
+		// dimensions / size check
+		const buffer = await data.toBuffer();
+		await sharp(buffer).resize(751, 751, { fit: "cover" }).png().toFile(`./uploads/${data.filename}`);
+
+		// rm old pp from upload
+		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}`) {
+			fs.unlink(usr.avatar, (err) => {});
+		}
+		const newAvatar = `uploads/${data.filename}`;
+		await db.update(tables.users).set({ avatar: newAvatar }).where(orm.eq(tables.users.id, usr.id));
+
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: data.filename });
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
