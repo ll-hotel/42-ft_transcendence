@@ -5,7 +5,7 @@ services:
     build:
       context: frontend
     ports:
-      - "8443:443"
+      - "443:443"
     volumes:
       - frontend-static:/srv/app/static
       - frontend-src:/srv/app/src
@@ -29,8 +29,8 @@ services:
       - backend-src:/srv/app/src
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
-    env_file: .env
       - uploads:/srv/app/uploads
+    env_file: .env
 
 volumes:
   frontend-static:

@@ -1,5 +1,10 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+export enum TwofaState {
+	disabled = 0,
+	enabled = 1,
+	pending = 2,
+}
 export const users = sqliteTable("users", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
 	uuid: text("uuid").notNull().unique(),
