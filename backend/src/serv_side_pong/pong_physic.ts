@@ -1,6 +1,6 @@
-import socket from "../socket";
+import socket from "../socket.js";
 import {clearInterval, setInterval} from "node:timers";
-import * as db from "../db/methods";
+import * as dbM from "../db/methods.js";
 import {
 	InputMessage,
 	LocalMessage,
@@ -13,7 +13,7 @@ import {
 	StateMessage,
 	TypeMsg,
 	Vector2D
-} from "./pong_types";
+} from "./pong_types.js";
 
 
 export function create_game(game_id: number, p1_uuid: string, p2_uuid: string, mode: Mode)
@@ -114,12 +114,10 @@ export class ServerSidedGame
 
 		if (mode == Mode.local)
 		{
-			console.log("local !!!!!");
 			socket.addListener(this.p1_uuid, "pong", (msg) => {this.local_input_listener(msg)});
 		}
 		else if (mode == Mode.remote)
 		{
-			console.log("remote !!!!!");
 			socket.addListener(this.p1_uuid, "pong", (msg) => {this.p1_event_listener(msg)});
 			socket.addListener(this.p2_uuid, "pong", (msg) => {this.p2_event_listener(msg)});
 		}
@@ -130,9 +128,9 @@ export class ServerSidedGame
 	{
 		if (msg.topic == 'pong' && msg.type == 'input')
 		{
+
 			this.input.set("p1_up", msg.up);
 			this.input.set("p1_down",msg.down);
-			console.log("p1_event_listener %d", this.input.get("p1_down"));
 		}
 	}
 
@@ -142,7 +140,6 @@ export class ServerSidedGame
 		{
 			this.input.set("p2_up", msg.up);
 			this.input.set("p2_down",msg.down);
-			console.log("p2_event_listener %d", this.input.get("p2_down"));
 		}
 	}
 
@@ -162,8 +159,14 @@ export class ServerSidedGame
 			topic: "pong",
 			type: TypeMsg.state,
 			ball: {x: this.ball.pos.x, y: this.ball.pos.y, speed: this.ball.speed},
-			paddles: {p1_Y: this.paddle_p1.pos.y, p2_Y: this.paddle_p2.pos.y},
+			paddles: {
+				p1_Y: this.paddle_p1.pos.y,
+				p1_input: {up: this.input.get("p1_up"), down: this.input.get("p1_down")},
+				p2_Y: this.paddle_p2.pos.y,
+				p2_input: {up: this.input.get("p2_up"), down: this.input.get("p2_down")},
+			},
 			status: state,
+			score: this.score,
 		} as StateMessage;
 		socket.send(this.p1_uuid, init_msg);
 		socket.send(this.p2_uuid, init_msg);
@@ -209,7 +212,7 @@ export class ServerSidedGame
 	{
 		console.log("end");
 		this.is_running = false;
-		let discard = db.endMatch(this.game_id);
+		let discard = dbM.endMatch(this.game_id);
 
 	}
 }
@@ -314,7 +317,7 @@ export class PongBall extends PhysicObject
 				this.score.p1++;
 				next_side = -1;
 			}
-			let discard = db.updateMatchInfo(this.game_id, this.score.p1, this.score.p2);
+			let discard = dbM.updateMatchInfo(this.game_id, this.score.p1, this.score.p2);
 			this.respawn(next_side);
 			this.send_score_to_players();
 		}

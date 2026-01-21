@@ -20,13 +20,15 @@ export enum State
 export type StateMessage = BaseMessage & {
 	type: "state",
 	ball: {
-		"x": number, "y": number, "speed": Vector2D,
+		x: number, y: number, speed: Vector2D,
 	},
 	paddles: {
-		"p1_Y": number,
-		"p2_Y": number
+		p1_Y: number,
+		p1_input: {up: boolean, down: boolean},
+		p2_Y: number,
+		p2_input: {up: boolean, down: boolean},
 	},
-	score: { "p1": number, "p2": number },
+	score: { p1: number, p2: number },
 	status: State
 }
 

@@ -1,19 +1,56 @@
 import { api, Status } from "./api.js";
+import {Vector2D, State} from "./pong_client_side.js";
 
 export type BaseMessage = {
 	topic: string,
 };
-type MatchMessage = BaseMessage & {
+
+export type MatchMessage = BaseMessage & {
 	source: string,
 	match: number,
 	opponent: string,
 };
 
-type VersusMessage = BaseMessage & {
+export type VersusMessage = BaseMessage & {
 	source: string,
 	target: string;
 };
-export type Message = VersusMessage | BaseMessage | MatchMessage;
+
+export type StateMessage = BaseMessage & {
+	"type": "state",
+	"ball": {
+		"x": number, "y": number, "speed": Vector2D,
+	},
+	"paddles": {
+		"p1_Y": number,
+		"p2_Y": number
+	},
+	"score": { "p1": number, "p2": number },
+	"status": State;
+}
+
+export type InputMessage = BaseMessage & {
+	type: "input",
+	up: boolean,
+	down: boolean
+}
+
+export type ScoreMessage = BaseMessage & {
+	type: "score",
+	p1_score: number,
+	p2_score: number
+}
+
+export type LocalMessage = BaseMessage & {
+	type: "input",
+	p1_up: boolean,
+	p1_down: boolean,
+	p2_up: boolean,
+	p2_down: boolean
+}
+
+export type PongMessage = InputMessage | ScoreMessage | LocalMessage | StateMessage;
+export type Message = VersusMessage | BaseMessage | MatchMessage | PongMessage;
 
 let socket: WebSocket | null = null;
 const hooks = new Map<string, ((m: Message) => void)[]>();

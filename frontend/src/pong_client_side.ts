@@ -1,8 +1,14 @@
-import socket, {BaseMessage, Message} from "./socket.js";
+import socket, {Message, PongMessage, ScoreMessage, StateMessage, InputMessage, LocalMessage} from "./socket.js";
 
 type Position = {x: number, y: number};
 type Score = {p1: number, p2: number};
 type Size = {w: number, h: number};
+
+/*TODO
+   -smooth les mouvements des paddles
+   -les inputs marchent plus si je refresh
+   -check de la position de la balle et la replacer si jamais
+   */
 
 export enum Mode
 {
@@ -18,15 +24,8 @@ enum TypeMsg
 	score = 'score'
 }
 
-type LocalMessage = BaseMessage & {
-	type: "input",
-	p1_up: boolean,
-	p1_down: boolean,
-	p2_up: boolean,
-	p2_down: boolean
-}
 
-enum State
+export enum State
 {
 	ended = "ended",
 	paused = "paused",
@@ -34,33 +33,6 @@ enum State
 	not_started = "not_started",
 	on_going = "on_going",
 }
-
-type StateMessage = BaseMessage & {
-	"type": "state",
-	"ball": {
-		"x": number, "y": number, "speed": Vector2D,
-	},
-	"paddles": {
-		"p1_Y": number,
-		"p2_Y": number
-	},
-	"score": { "p1": number, "p2": number },
-	"status": State;
-}
-
-type InputMessage = BaseMessage & {
-	type: "input",
-	up: boolean,
-	down: boolean
-}
-
-type ScoreMessage = BaseMessage & {
-	type: "score",
-	p1_score: number,
-	p2_score: number
-}
-
-type PongMessage = InputMessage | StateMessage | ScoreMessage;
 
 function debug_message(msg: string, obj?: any): void
 {
@@ -169,12 +141,10 @@ export class Game
 	readonly score: Score;
 	public input: Map<string, boolean>;
 	private mode: Mode;
-
 	private tick_rate: number;
 
 	//HTMLElement
 	private score_viewer: HTMLElement;
-	private start_button : HTMLElement;
 
 	private current_interval_id: number | null = null;
 	private canvas_ratio: Size;
@@ -183,10 +153,9 @@ export class Game
 
 	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement, mode: Mode)
 	{
-		this.canvas = html.querySelector("#pong-canvas")!;
+		this.canvas = html.querySelector("#pong-canvas")! as HTMLCanvasElement;
 		this.context = this.canvas.getContext("2d")!;
-		this.score_viewer = html.querySelector("#panel-score")!;
-		this.start_button = html.querySelector("#panel-start")!;
+		this.score_viewer = html.querySelector("#panel-score")! as HTMLElement;
 		this.score = {p1: 0, p2: 0};
 		this.paddle_p1 = new PongPaddle({x: 0, y: this.canvas.height / 2} , paddle_texture);
 		this.paddle_p2 = new PongPaddle({x: this.canvas.width, y: this.canvas.height / 2}, paddle_texture);
@@ -256,8 +225,12 @@ export class Game
 			up: this.input.get("p1_up")!,
 			down: this.input.get("p1_down")!
 		};
+		console.log(JSON.parse(JSON.stringify(msg)));
 		socket.send(msg);
 	}
+	//
+	// ball": {
+	// "x": number, "y": number, "speed": Vector2D,
 
 	update_state(msg: StateMessage)
 	{
@@ -265,6 +238,8 @@ export class Game
 		msg.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
 		coef_product(msg.ball.speed, this.speed_ratio);
 		this.ball.speed = msg.ball.speed;
+		this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
+		this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
 		this.paddle_p1.pos.y = msg.paddles.p1_Y * this.canvas_ratio.h;
 		this.paddle_p2.pos.y = msg.paddles.p2_Y * this.canvas_ratio.h;
 	}

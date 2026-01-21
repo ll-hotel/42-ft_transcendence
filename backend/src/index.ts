@@ -20,7 +20,7 @@ async function main() {
 	createTables();
 
 	const app: FastifyInstance = Fastify({
-		logger: true,
+		// logger: true,
 		https: {
 			key: fs.readFileSync("/run/secrets/privatekey.pem"),
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),

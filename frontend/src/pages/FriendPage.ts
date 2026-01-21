@@ -295,7 +295,7 @@ export class FriendPage implements AppPage
 			if (!confirmVs)
 				return;
 
-			const me = await api.get("api/me");
+			const me = await api.get("/api/me");
 			if (!me || !me.payload)
 				return;
 			if (me.status !== Status.success)
