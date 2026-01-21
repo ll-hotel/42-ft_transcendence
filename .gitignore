@@ -4,4 +4,4 @@ node_modules/
 secrets/
 *.lock
 *.sqlite
-backend/uploads/*
+uploads/

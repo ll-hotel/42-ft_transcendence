@@ -1,38 +1,35 @@
 import fastifyCookie from "@fastify/cookie";
-import fastifyWebsocket from "@fastify/websocket";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
+import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
+import path from "path";
 import authModule from "./auth";
 import { createTables } from "./db/database";
 import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
 import gameTournament from "./game/tournament";
 import { chatRoute } from "./routes/chat";
+import pingRoute from "./routes/ping";
 import socketRoute from "./routes/socket";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
-import path from "path";
-import pingRoute from "./routes/ping";
 
 async function main() {
 	createTables();
 
 	const app: FastifyInstance = Fastify({
-		// logger: true,
+		logger: true,
 		https: {
 			key: fs.readFileSync("/run/secrets/privatekey.pem"),
 			cert: fs.readFileSync("/run/secrets/certificate.pem"),
-		}
+		},
 	});
-	// app.addHook("onRequest", (request: FastifyRequest) => {
-	// 	logger.info("incoming request: " + request.url);
-	// });
 
 	app.register(fastifyStatic, {
-  		root: path.join(__dirname, "..", "uploads"),
-  		prefix: "/uploads/",
+		root: path.join(__dirname, "..", "uploads"),
+		prefix: "/uploads/",
 	});
 
 	app.register(fastifyCookie);
