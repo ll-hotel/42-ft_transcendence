@@ -8,7 +8,7 @@ export class editProfile implements AppPage {
 	userForm: HTMLFormElement;
 	passwordForm: HTMLFormElement;
 	twofaForm: HTMLFormElement;
-	activateTwofaForm: HTMLFormElement;
+	twofaActivateForm: HTMLFormElement;
 
 	constructor(content: HTMLElement) {
 		this.content = content;
@@ -16,7 +16,7 @@ export class editProfile implements AppPage {
 		this.userForm = content.querySelector("#profile-form")!;
 		this.passwordForm = content.querySelector("#password-form")!;
 		this.twofaForm = content.querySelector("#twofa-form")!;
-		this.activateTwofaForm = content.querySelector("#twofa-activate-form")!;
+		this.twofaActivateForm = content.querySelector("#twofa-activate-form")!;
 
 		this.userForm.addEventListener("submit", (event) => {
 			event.preventDefault();
@@ -61,9 +61,9 @@ export class editProfile implements AppPage {
 			this.submitTwofaForm();
 			return (false);
 		});
-		this.activateTwofaForm.addEventListener("submit", (event) => {
+		this.twofaActivateForm.addEventListener("submit", (event) => {
 			event.preventDefault();
-			this.submitActivateTwofaForm();
+			this.submitTwofaActivate();
 			return (false);
 		});
 	}
@@ -107,73 +107,11 @@ export class editProfile implements AppPage {
 		const enabled = this.twofaForm.querySelector<HTMLInputElement>("[name='twofa-enabled']");
 		if (enabled) enabled.checked = user.twofa;
 	}
-	/*	async submitUserForm() {
-		const userFormData = new FormData(this.userForm);
-
-		const displayName = userFormData.get("displayname")?.toString();
-		const avatar = userFormData.get("avatar")?.toString();
-		const avatarFile = userFormData.get("avatar") as File | null;
-
-		if (!displayName && (!avatarFile || avatarFile.size === 0))
-			return alert("No user info to update");
-
-		if (displayName) {
-			const res = await api.patch("/api/user/profile", {displayName});
-			if (!res || !res.payload)
-				return;
-			if (res.status !== Status.success)
-				return alert("Error when editing user info: " + res.payload.message);
-			this.updatePreview(displayName);
-		}
-
-		if (avatarFile && avatarFile.size > 0) {
-			const fd = new FormData();
-			fd.append("avatar", avatarFile);
-
-			const res = await fetch("/api/user/updateAvatar", {
-				method: "POST",
-				credentials: "include",
-				body: fd,
-			});
-			if (!res.ok)
-				return alert("Error when uploading avatar");
-
-			const data = await res.json();
-			this.updatePreview(undefined, `uploads/${data.file}`);
-		}*/
-	/*		const avatar = userFormData.get("avatar")?.toString();
-
-<<<<<<< Updated upstream
-		if (!displayName && !avatar)
-			return notify("No user info to update", "info");
-=======
-		if (!displayName && !avatar) {
-			return alert("No user info to update");
-		}
->>>>>>> Stashed changes
-
-		const res = await api.patch("/api/user/profile", { displayName, avatar });
-		if (!res || !res.payload) {
-			return;
-<<<<<<< Updated upstream
-		if (res.status !== Status.success)
-			return notify("Error when editing user info: " + res.payload.message, "error");
-=======
-		}
-		if (res.status !== Status.success) {
-			return alert("Error when editing user info: " + res.payload.message);
-		}
->>>>>>> Stashed changes
-
-		this.updatePreview(displayName, avatar);
-		this.userForm.reset();*/
-	// 	}
 
 	async submitUserForm() {
 		const userFormData = new FormData(this.userForm);
 
 		const displayName = userFormData.get("displayname")?.toString();
-		// 		const avatar = userFormData.get("avatar")?.toString();
 		const avatarFile = userFormData.get("avatar") as File | null;
 
 		if (!displayName && (!avatarFile || avatarFile.size === 0)) {
@@ -259,9 +197,9 @@ export class editProfile implements AppPage {
 	showActivateTwofa(qrCode: string) {
 		this.passwordForm.setAttribute("hidden", "");
 		this.twofaForm.setAttribute("hidden", "");
-		this.activateTwofaForm.removeAttribute("hidden");
+		this.twofaActivateForm.removeAttribute("hidden");
 
-		const imgElement = this.activateTwofaForm.querySelector<HTMLImageElement>("#twofa-qrcode");
+		const imgElement = this.twofaActivateForm.querySelector<HTMLImageElement>("#twofa-qrcode");
 		if (imgElement) {
 			imgElement.src = qrCode;
 		}
@@ -269,13 +207,13 @@ export class editProfile implements AppPage {
 	hideActivateTwofa() {
 		this.passwordForm.removeAttribute("hidden");
 		this.twofaForm.removeAttribute("hidden");
-		this.activateTwofaForm.setAttribute("hidden", "");
-		const img = this.activateTwofaForm.querySelector<HTMLImageElement>("#twofa-qrcode");
+		this.twofaActivateForm.setAttribute("hidden", "");
+		const img = this.twofaActivateForm.querySelector<HTMLImageElement>("#twofa-qrcode");
 		if (img) img.src = "";
 	}
 
-	async submitActivateTwofaForm() {
-		const formData = new FormData(this.twofaForm);
+	async submitTwofaActivate() {
+		const formData = new FormData(this.twofaActivateForm);
 		const twofaCode = formData.get("twofa-code")?.toString() || null;
 		console.log(twofaCode);
 		const res = await api.post("/api/user/twofa/activate", { code: twofaCode });
@@ -287,7 +225,7 @@ export class editProfile implements AppPage {
 		}
 		if (res.status == Status.bad_request) {
 			this.twofaForm.reset();
-			this.activateTwofaForm.reset();
+			this.twofaActivateForm.reset();
 			this.hideActivateTwofa();
 		}
 	}
