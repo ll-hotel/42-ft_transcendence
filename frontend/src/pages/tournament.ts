@@ -1,7 +1,7 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
 
 type TournamentMessage = {

@@ -1,7 +1,7 @@
 import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class editProfile implements AppPage
 {

@@ -268,10 +268,16 @@ class AuthService {
 				await sharp(buffer).resize(751, 751, { fit : "cover" }).png().toFile(avatarPath);
 			}
 			catch { avatarPath = 'uploads/default_pp.png'; }
+			let displayName;
+			const displayNameExists = await db.select().from(users).where(eq(users.displayName, userData.given_name));
+			if (displayNameExists.length > 0)
+				displayName = userData.email;
+			else
+				displayName = userData.given_name;
 			await db.insert(users).values({
 				uuid,
 				username: userData.email,
-				displayName: userData.given_name,
+				displayName: displayName,
 				password: pass,
 				avatar: avatarPath,
 			});

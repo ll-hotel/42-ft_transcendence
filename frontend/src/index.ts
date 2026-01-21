@@ -1,9 +1,13 @@
 import { api, Status } from "./api.js";
 import { gotoPage, gotoUserPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
-import { notify } from "./pages/utils/notifs.js";
+import { notify } from "./utils/notifs.js";
 import { initSocket } from "./socketListener.js";
+import { initBlackHole } from "./utils/background.js";
 
+
+/* initBlackHole(); */
+ 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
 	if (content === null) {

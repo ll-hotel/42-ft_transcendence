@@ -3,7 +3,7 @@ import { gotoPage } from "../PageLoader.js";
 import { FriendButton } from "../friendButton.js";
 import AppPage from "./AppPage.js"
 import { MatchInfo } from "./profile/matches.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class OtherProfilePage implements AppPage {
 	content: HTMLElement;
