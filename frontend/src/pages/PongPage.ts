@@ -27,17 +27,17 @@ export class PongPage implements AppPage {
 			alert("Could not fetch sprites.");
 			return null;
 		}
-		//TODO changer le Mode ("local")
+		// TODO changer le Mode ("local")
 		return new PongPage(html, ball, paddle, Mode.remote);
 	}
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
-		console.debug("[PongPage] loadInto");
 		this.showGame();
 	}
 
 	unload() {
+		this.game.deinit();
 		this.content.remove();
 	}
 
@@ -47,15 +47,15 @@ export class PongPage implements AppPage {
 		this.content.querySelector("#panel-game")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-pause")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-score")?.setAttribute("hidden", "");
-		this.game.game_init();
+		this.game.init();
 	}
 	showGame() {
 		this.onclick = () => this.showPause();
 		this.content.querySelector("#panel-start")?.setAttribute("hidden", "");
 		this.content.querySelector("#panel-game")?.removeAttribute("hidden");
-		this.game.game_init();
+		this.game.init();
 		// this.game.start();
-		//setTimeout(() => this.showScore(), 5000);
+		// setTimeout(() => this.showScore(), 5000);
 	}
 	showPause() {
 		this.onclick = () => this.hidePause();
@@ -77,7 +77,7 @@ export class PongPage implements AppPage {
 			} else if (score.p2 > score.p1) {
 				scorePanel.innerHTML = "<p>Player 2 Won!</p>";
 			} else {
-				scorePanel.innerHTML = "It's a tie!"
+				scorePanel.innerHTML = "It's a tie!";
 			}
 			scorePanel.innerHTML += "<br>" + `<p>${score.p1} : ${score.p2}</p>`;
 			scorePanel.removeAttribute("hidden");

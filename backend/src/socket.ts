@@ -1,30 +1,30 @@
-import { matches, users } from './db/tables';
-import { db } from './db/database';
-import * as orm from 'drizzle-orm';
+import * as orm from "drizzle-orm";
+import { db } from "./db/database";
+import { matches, users } from "./db/tables";
 import { tcheckFriends } from "./user/friend";
 
 type HandlerFn = (data?: any) => void;
 type UUID = string;
 type Client = {
-	sockets: WebSocket[];
-	handlers: { topic: string, fn: (data?: any) => void }[];
+	sockets: WebSocket[],
+	handlers: { topic: string, fn: (data?: any) => void }[],
 	onMessage: HandlerFn[],
 	onDisconnect: (() => void)[],
 	lastOnlineTime: number,
 };
 export type BaseMessage = {
-	topic: string;
+	topic: string,
 };
 type MatchMessage = BaseMessage & {
-	source: string;
-	match: number;
-	opponent: string;
+	source: string,
+	match: number,
+	opponent: string,
 };
 
 type VersusMessage = BaseMessage & {
-	source: string;
-	target: string;
-}
+	source: string,
+	target: string,
+};
 type Message = BaseMessage | MatchMessage | VersusMessage;
 
 export const clients: Map<UUID, Client> = new Map();
@@ -59,14 +59,14 @@ export async function connect(uuid: UUID, socket: WebSocket) {
 
 	addListener(uuid, "vs:invite", (json) => {
 		if (isOnline(json.target)) {
-			send(json.target, {source: uuid, topic: "vs:invite", target: json.target});
+			send(json.target, { source: uuid, topic: "vs:invite", target: json.target });
 		}
 	});
 	addListener(uuid, "vs:accept", (json) => {
 		createMatchBetween(uuid, json.target);
 	});
 	addListener(uuid, "vs:decline", (json) => {
-		send(json.target, {source: uuid, topic: "vs:decline", target:json.target});
+		send(json.target, { source: uuid, topic: "vs:decline", target: json.target });
 	});
 }
 
@@ -107,7 +107,7 @@ export function addListener(clientId: UUID, topic: string, fn: HandlerFn) {
 	} else if (topic == "disconnect") {
 		client.onDisconnect.push(fn);
 	} else {
-		client.handlers.push({ topic: topic, fn })
+		client.handlers.push({ topic, fn });
 	}
 }
 
@@ -134,11 +134,11 @@ export function disconnect(uuid: UUID, socket?: WebSocket) {
 	}
 }
 
-/** Removes all listeners of `source`. */
-export function removeListener(uuid: UUID, source: string) {
-	const client = clients.get(uuid)!;
-	if (clients.has(uuid)) {
-		client.handlers = client.handlers.filter((handler) => handler.topic !== source);
+/** Removes all listeners for `topic`. */
+export function removeListener(uuid: UUID, topic: string) {
+	const client = clients.get(uuid);
+	if (client) {
+		client.handlers = client.handlers.filter((handler) => handler.topic !== topic);
 	}
 }
 
@@ -146,10 +146,11 @@ async function createMatchBetween(uuid1: string, uuid2: string) {
 	const [p1] = await db.select().from(users).where(orm.eq(users.uuid, uuid1));
 	const [p2] = await db.select().from(users).where(orm.eq(users.uuid, uuid2));
 
-	if (!p1 || !p2)
+	if (!p1 || !p2) {
 		return;
+	}
 
-	if (await !tcheckFriends(p1.id, p2.id))	{
+	if (await !tcheckFriends(p1.id, p2.id)) {
 		// They aren't friend anymore, so we can't create a game, sorry :(
 		return;
 	}
@@ -164,20 +165,19 @@ async function createMatchBetween(uuid1: string, uuid2: string) {
 		orm.eq(matches.status, "ongoing"),
 	));
 
-	if (matchAlreadyGoing.length > 0)	{
+	if (matchAlreadyGoing.length > 0) {
 		// Someone is already in a match, sorry :(
 		return;
 	}
 
-
 	const [match] = await db.insert(matches).values({
-		player1Id : p1.id,
-		player2Id : p2.id,
+		player1Id: p1.id,
+		player2Id: p2.id,
 		status: "ongoing",
 	}).returning();
 
-	send(uuid1, {source: "server", topic : "vs:start", match:match.id, opponent: p2.username});
-	send(uuid2, {source: "server", topic : "vs:start", match:match.id, opponent: p1.username});
+	send(uuid1, { source: "server", topic: "vs:start", match: match.id, opponent: p2.username });
+	send(uuid2, { source: "server", topic: "vs:start", match: match.id, opponent: p1.username });
 }
 
 export default {
@@ -187,4 +187,5 @@ export default {
 	connect,
 	disconnect,
 	addListener,
+	removeListener,
 };

@@ -1,5 +1,5 @@
 import { api, Status } from "./api.js";
-import {Vector2D, State} from "./pong_client_side.js";
+import * as game from "./pong_client_side.js";
 
 export type BaseMessage = {
 	topic: string,
@@ -13,41 +13,43 @@ export type MatchMessage = BaseMessage & {
 
 export type VersusMessage = BaseMessage & {
 	source: string,
-	target: string;
+	target: string,
 };
 
 export type StateMessage = BaseMessage & {
 	"type": "state",
 	"ball": {
-		"x": number, "y": number, "speed": Vector2D,
+		"x": number,
+		"y": number,
+		"speed": game.Vector2D,
 	},
 	"paddles": {
 		"p1_Y": number,
-		"p2_Y": number
+		"p2_Y": number,
 	},
 	"score": { "p1": number, "p2": number },
-	"status": State;
-}
+	"status": game.Status,
+};
 
 export type InputMessage = BaseMessage & {
 	type: "input",
 	up: boolean,
-	down: boolean
-}
+	down: boolean,
+};
 
 export type ScoreMessage = BaseMessage & {
 	type: "score",
 	p1_score: number,
-	p2_score: number
-}
+	p2_score: number,
+};
 
 export type LocalMessage = BaseMessage & {
 	type: "input",
 	p1_up: boolean,
 	p1_down: boolean,
 	p2_up: boolean,
-	p2_down: boolean
-}
+	p2_down: boolean,
+};
 
 export type PongMessage = InputMessage | ScoreMessage | LocalMessage | StateMessage;
 export type Message = VersusMessage | BaseMessage | MatchMessage | PongMessage;
@@ -120,7 +122,6 @@ function removeListener(topic: string) {
 		hooks.delete(topic);
 	}
 }
-
 
 export default {
 	connect,

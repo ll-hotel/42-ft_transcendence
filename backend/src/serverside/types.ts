@@ -1,43 +1,43 @@
 import { BaseMessage } from "../socket";
 
-export enum TypeMsg
-{
-	state = 'state',
-	input = 'input',
-	error = 'error',
-	score = 'score'
+export enum TypeMsg {
+	state = "state",
+	input = "input",
+	error = "error",
+	score = "score",
 }
 
-export enum State
-{
+export enum Status {
 	ended = "ended",
 	paused = "paused",
 	stopped = "stopped",
-	not_started = "not_started",
-	on_going = "on_going",
+	started = "started",
+	ongoing = "ongoing",
 }
 
 export type StateMessage = BaseMessage & {
 	type: "state",
 	ball: {
-		x: number, y: number, speed: Vector2D,
+		x: number,
+		y: number,
+		speed: Vector2D,
 	},
 	paddles: {
-		p1_Y: number,
-		p1_input: {up: boolean, down: boolean},
-		p2_Y: number,
-		p2_input: {up: boolean, down: boolean},
+		p1_y: number,
+		p1_input: { up: boolean, down: boolean },
+		p2_y: number,
+		p2_input: { up: boolean, down: boolean },
 	},
 	score: { p1: number, p2: number },
-	status: State
-}
+	status: Status,
+};
 
 export type InputMessage = {
 	topic: string,
 	type: "input",
 	up: boolean,
-	down: boolean
-}
+	down: boolean,
+};
 
 export type LocalMessage = {
 	topic: string,
@@ -45,79 +45,69 @@ export type LocalMessage = {
 	p1_up: boolean,
 	p1_down: boolean,
 	p2_up: boolean,
-	p2_down: boolean
-}
+	p2_down: boolean,
+};
 
 export type ScoreMessage = BaseMessage & {
 	type: "score",
 	p1_score: number,
-	p2_score: number
-}
+	p2_score: number,
+};
 
 export type Message = BaseMessage | StateMessage | InputMessage | LocalMessage;
 
-export enum Mode
-{
+export enum Mode {
 	local = "local",
-	remote = "remote"
+	remote = "remote",
 }
 
-export type Position = {x: number, y: number};
-export type Size = {w: number, h: number};
-export type Score = {p1: number, p2: number};
-export type Input = {name: string, value: boolean};
+export type Position = { x: number, y: number };
+export type Size = { w: number, h: number };
+export type Score = { p1: number, p2: number };
+export type Input = { name: string, value: boolean };
 
-export class Vector2D
-{
+export class Vector2D {
 	private x: number;
 	private y: number;
 	private norm: number;
 
-	constructor(x: number, y: number)
-	{
+	constructor(x: number, y: number) {
 		this.x = x;
 		this.y = y;
 		this.norm = Math.sqrt(this.x * this.x + this.y * this.y);
 	}
 
-	addVector2D(other: Vector2D)
-	{
+	addVector2D(other: Vector2D) {
 		this.x += other.x;
 		this.y += other.y;
 		this.updateValue();
 	}
 
-	coef_product(coef: number)
-	{
+	scale(coef: number) {
 		this.x *= coef;
 		this.y *= coef;
 		this.updateValue();
 	}
 
-	private updateValue()
-	{
+	private updateValue() {
 		this.norm = Math.sqrt(this.x * this.x + this.y * this.y);
 	}
 
-	unitVector()
-	{
-		return ({x: (this.x / this.norm), y: (this.y / this.norm), norm: 1});
+	unitVector() {
+		return ({ x: (this.x / this.norm), y: (this.y / this.norm), norm: 1 });
 	}
 
-	unit_himself()
-	{
+	unit_himself() {
 		this.x = this.x / this.norm;
 		this.y = this.y / this.norm;
 		this.updateValue();
 	}
 
-	getX()
-	{
+	getX() {
 		return this.x;
 	}
 
-	getY()
-	{
+	getY() {
 		return this.y;
 	}
 

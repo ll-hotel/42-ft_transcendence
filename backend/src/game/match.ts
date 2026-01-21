@@ -79,4 +79,6 @@ class Match {
 
 export default function(fastify: FastifyInstance) {
 	Match.setup(fastify);
+	// Stop all ongoing matches.
+	db.update(tables.matches).set({ status: "ended" }).where(drizzle.eq(tables.matches.status, "ongoing"));
 }
