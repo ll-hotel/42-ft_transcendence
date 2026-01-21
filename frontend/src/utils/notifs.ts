@@ -64,3 +64,6 @@ export function notify(message: string, type: "success" | "error" | "info") {
 		setTimeout(() => el.remove(), 200);
 	}, duration);
 }
+
+
+
