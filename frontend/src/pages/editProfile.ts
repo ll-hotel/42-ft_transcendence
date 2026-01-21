@@ -184,12 +184,12 @@ export class editProfile implements AppPage {
 		}
 		const reply = res.payload as { message: string, qrCode?: string };
 		if (res.status == Status.success) {
-			return alert(reply.message);
+			return notify(reply.message, "success");
 		}
 		if (reply.qrCode) {
 			this.showActivateTwofa(reply.qrCode);
 		} else {
-			alert(reply.message);
+			notify(reply.message, "error");
 			this.twofaForm.reset();
 		}
 	}
@@ -215,19 +215,16 @@ export class editProfile implements AppPage {
 	async submitTwofaActivate() {
 		const formData = new FormData(this.twofaActivateForm);
 		const twofaCode = formData.get("twofa-code")?.toString() || null;
-		console.log(twofaCode);
 		const res = await api.post("/api/user/twofa/activate", { code: twofaCode });
 		if (!res) return;
 		if (res.status == Status.success) {
-			alert("Two factor authentication enabled.");
+			notify(res.payload.message, "success");
 		} else {
-			alert(res.payload.message);
+			notify(res.payload.message, "error");
 		}
-		if (res.status == Status.bad_request) {
-			this.twofaForm.reset();
-			this.twofaActivateForm.reset();
-			this.hideActivateTwofa();
-		}
+		this.twofaForm.reset();
+		this.twofaActivateForm.reset();
+		this.hideActivateTwofa();
 	}
 
 	updatePreview(displayName?: string, avatar?: string) {

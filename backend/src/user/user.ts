@@ -146,47 +146,47 @@ class User {
 	static async updateTwofa(req: FastifyRequest, rep: FastifyReply) {
 		const user = req.user!;
 		const twofa = req.body as { enable: boolean, code?: string };
+		const TwofaState = tables.TwofaState;
 
 		if (twofa.enable == false) {
-			if (user.twofaEnabled != tables.TwofaState.disabled) {
-				await db.update(tables.users).set({ twofaEnabled: tables.TwofaState.disabled, twofaKey: null })
+			if (user.twofaEnabled != TwofaState.disabled) {
+				await db.update(tables.users).set({ twofaEnabled: TwofaState.disabled, twofaKey: null })
 					.where(
 						orm.eq(tables.users.id, user.id),
 					);
 			}
-			if (user.twofaEnabled != tables.TwofaState.enabled) {
+			if (user.twofaEnabled != TwofaState.enabled) {
 				return rep.code(STATUS.success).send({ message: "Twofa already disabled" });
 			}
 			return rep.code(STATUS.success).send({ message: "Twofa disabled" });
 		}
-		if (user.twofaEnabled == tables.TwofaState.enabled) {
+		if (user.twofaEnabled == TwofaState.enabled) {
 			return rep.code(STATUS.success).send({ message: "Twofa already enabled" });
 		}
-		if (user.twofaEnabled == tables.TwofaState.disabled) {
-			const secret = generate2FASecret(user.username);
-			if (!secret.otpauth_url) {
-				return rep.code(STATUS.bad_request).send({ message: MESSAGE.fail_gen2FAurl });
-			}
-			await db.update(tables.users).set({ twofaKey: secret.base32, twofaEnabled: tables.TwofaState.pending })
-				.where(
-					orm.eq(tables.users.id, user.id),
-				);
-			const qrCode = await generateQRCode(secret.otpauth_url);
-			return rep.code(STATUS.bad_request).send({ message: "Awaiting validation", qrCode });
+		const secret = generate2FASecret(user.username);
+		if (!secret.otpauth_url) {
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.fail_gen2FAurl });
 		}
+		await db.update(tables.users).set({ twofaKey: secret.base32, twofaEnabled: TwofaState.pending })
+			.where(
+				orm.eq(tables.users.id, user.id),
+			);
+		const qrCode = await generateQRCode(secret.otpauth_url);
+		return rep.code(STATUS.bad_request).send({ message: "Awaiting validation", qrCode });
 	}
 
 	static async activateTwofa(req: FastifyRequest, rep: FastifyReply) {
 		const user = req.user!;
 		const twofa = req.body as { code?: string };
+		const TwofaState = tables.TwofaState;
 
 		if (!twofa.code || verify2FAToken(user.twofaKey!, twofa.code!) == false) {
-			await db.update(tables.users).set({ twofaKey: null, twofaEnabled: tables.TwofaState.disabled }).where(
+			await db.update(tables.users).set({ twofaKey: null, twofaEnabled: TwofaState.disabled }).where(
 				orm.eq(tables.users.id, user.id),
 			);
-			rep.code(STATUS.bad_request).send({ message: "Invalid twofa code" });
+			return rep.code(STATUS.bad_request).send({ message: "Invalid twofa code" });
 		}
-		await db.update(tables.users).set({ twofaEnabled: tables.TwofaState.enabled }).where(
+		await db.update(tables.users).set({ twofaEnabled: TwofaState.enabled }).where(
 			orm.eq(tables.users.id, user.id),
 		);
 		return rep.code(STATUS.success).send({ message: "Twofa enabled" });
