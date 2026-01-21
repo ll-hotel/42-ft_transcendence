@@ -16,6 +16,10 @@ export class editProfile implements AppPage
 		this.userForm = content.querySelector("#profile-form")!;
 		this.passwordForm = content.querySelector("#password-form")!;
 
+		const avatarInput = this.userForm.querySelector<HTMLInputElement>("[name=avatar]")!;
+		const avatarBtn = this.userForm.querySelector<HTMLButtonElement>("#avatar-upload-btn")!;
+		avatarBtn.addEventListener("click", () => { avatarInput.click(); });
+
 		this.userForm.addEventListener("submit", (event) => {
 			event.preventDefault();
 			this.submitUserForm();
@@ -27,7 +31,7 @@ export class editProfile implements AppPage
 			return (false);
 		});
 
-		const avatarInput = this.userForm.querySelector<HTMLInputElement>("[name=avatar]")!;
+		
 		const avatarPreview = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview")!;
 
 		avatarInput.addEventListener("change", () => {
