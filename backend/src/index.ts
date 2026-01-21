@@ -1,19 +1,20 @@
 import fastifyCookie from "@fastify/cookie";
-import fastifyWebsocket from "@fastify/websocket";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyStatic from "@fastify/static";
+import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
+import path from "path";
 import authModule from "./auth";
 import { createTables } from "./db/database";
 import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
 import gameTournament from "./game/tournament";
 import { chatRoute } from "./routes/chat";
+import pingRoute from "./routes/ping";
 import socketRoute from "./routes/socket";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
-import path from "path";
 
 async function main() {
 	createTables();
@@ -27,8 +28,8 @@ async function main() {
 	});
 
 	app.register(fastifyStatic, {
-  		root: path.join(__dirname, "..", "uploads"),
-  		prefix: "/uploads/",
+		root: path.join(__dirname, "..", "uploads"),
+		prefix: "/uploads/",
 	});
 
 	app.register(fastifyCookie);
@@ -42,6 +43,7 @@ async function main() {
 	app.register(gameMatch);
 	app.register(socketRoute);
 	app.register(chatRoute);
+	app.register(pingRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, (err) => {
 		if (err) {
