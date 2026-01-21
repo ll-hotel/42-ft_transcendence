@@ -254,7 +254,7 @@ export class PongBall extends PhysicObject {
 	}
 
 	test_collide(line_position: Position, normal: Vector2D) {
-		var distance_from_line = dot_product(
+		let distance_from_line = dot_product(
 			this.pos.x - line_position.x,
 			this.pos.y - line_position.y,
 			normal.getX(),
@@ -284,14 +284,14 @@ export class PongBall extends PhysicObject {
 	}
 
 	ball_scored(line_position: Position, normal: Vector2D) {
-		var distance_from_line = dot_product(
+		let distance_from_line = dot_product(
 			this.pos.x - line_position.x,
 			this.pos.y - line_position.y,
 			normal.getX(),
 			normal.getY(),
 		);
 
-		var next_side;
+		let next_side;
 		if (distance_from_line < this.size.w / 2) {
 			next_side = 1;
 			if (this.pos.x <= this.size.w) {
@@ -307,7 +307,7 @@ export class PongBall extends PhysicObject {
 	}
 
 	paddle_blocked(pos: Position, normal: Vector2D) {
-		var distanceToWall = dot_product(
+		let distanceToWall = dot_product(
 			this.pos.x - pos.x,
 			this.pos.y - pos.y,
 			normal.getX(),
@@ -319,7 +319,7 @@ export class PongBall extends PhysicObject {
 			&& (pos.y - this.pos.y > -(this.paddle_p1.size.h / 2))
 			&& (pos.y - this.pos.y) < (this.paddle_p1.size.h / 2)
 		) {
-			var new_normal = normal;
+			let new_normal = normal;
 
 			new_normal.unit_himself();
 			this.pos.x = pos.x + ((this.size.w / 2) * normal.getX());
