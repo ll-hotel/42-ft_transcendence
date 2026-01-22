@@ -106,16 +106,16 @@ const noTournamentsCard = `
 </div>`;
 
 const tournamentCardHTML = `
-<div class="grid grid-rows-2 grid-cols-3 border-b-2 border-b-[#04809f] gap-2 py-2 px-4">
+<div class="grid grid-rows-2 grid-cols-3 border-b-2 border-b-black gap-2 py-2 px-4">
 	<h2 name="card-name"></h2>
-	<p class="ml-auto italic text-[#04809f]">Players</p>
+	<p class="ml-auto italic text-black font-bold">Players</p>
 	<div class="row-span-2 flex">
 		<button name="tournament-join"
-			class="flex my-auto ml-auto size-fit p-2 gap-2 bg-[#04809f] text-white rounded-md">
+			class="flex my-auto ml-auto size-fit p-2 gap-2 bg-green-700 text-white rounded-md hover:cursor-pointer hover:bg-green-600  hover:scale-105 transition">
 			<img src="play-icon.svg" class="size-4 my-auto" />
 			<p>Join</p>
 		</button>
 	</div>
-	<p name="card-created-by" class="italic text-[#04809f]"></p>
+	<p name="card-created-by" class="italic text-black font-bold"></p>
 	<p name="card-player-count" class="ml-auto"></p>
 </div>`;

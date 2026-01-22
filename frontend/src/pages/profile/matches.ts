@@ -50,7 +50,7 @@ export class MatchInfo {
 			<p class="text-sm sm:text-base" name="me">${this.me.name}</p>
 			<p class="text-sm sm:text-base" name="score">${this.me.score} - ${this.opponent.score}</p>
 			<p class="text-sm sm:text-base" name="opponent">${this.opponent.name}</p>
-			<button name="go-to" title="Send friend request" class="w-full text-sm sm:text-base ml-auto p-1 sm:p-2 bg-black hover:bg-neutral-600 hover:scale-105 hover:cursor-pointer text-white rounded-md sm:rounded-xl transition">Player profile</button>
+			<button name="go-to" title="Send friend request" class="w-full text-sm sm:text-base ml-auto p-1 sm:p-2 bg-black hover:bg-neutral-900 hover:scale-105 hover:cursor-pointer text-white rounded-md sm:rounded-xl transition">Player profile</button>
 		`;
 		const goToButton = h.querySelector("button")!;
 		goToButton.onclick = async () => {
