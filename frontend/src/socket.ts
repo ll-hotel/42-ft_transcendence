@@ -1,14 +1,19 @@
 import { api, Status } from "./api.js";
 
 type BaseMessage = {
-	source: string,
-	type: string,
+	topic: string,
 };
 type MatchMessage = BaseMessage & {
+	source: string,
 	match: number,
 	opponent: string,
 };
-export type Message = BaseMessage | MatchMessage;
+
+type VersusMessage = BaseMessage & {
+	source: string,
+	target: string;
+};
+export type Message = VersusMessage | BaseMessage | MatchMessage;
 
 let socket: WebSocket | null = null;
 const hooks = new Map<string, ((m: Message) => void)[]>();
@@ -19,7 +24,7 @@ async function connect(): Promise<boolean> {
 	if (socket) {
 		return true;
 	} else {
-		const me = await api.get("/api/me")
+		const me = await api.get("/api/me");
 		if (!me || me.status == Status.unauthorized) {
 			return false;
 		}
@@ -34,23 +39,25 @@ async function connect(): Promise<boolean> {
 			setTimeout(connect, 500);
 		}
 	};
+
+// HOOK MAINTENANT LIER AU TYPE PLUTOT QUE A LA SOURCE 
 	socket.onmessage = (event) => {
 		try {
 			const message = JSON.parse(event.data) as Message;
-			if (hooks.has(message.source)) {
-				hooks.get(message.source)!.forEach(hook => hook(message));
+			if (hooks.has(message.topic)) {
+				hooks.get(message.topic)!.forEach(hook => hook(message));
 			}
 		} catch (err) {
 			console.log(err);
 		}
-	}
+	};
 	wasConnected = true;
 	pingLoop();
 	return true;
 }
 function pingLoop() {
 	setTimeout(() => {
-		send({source: "ping", type: "ping"}) && pingLoop();
+		send({ topic: "ping" }) && pingLoop();
 	}, 4000);
 }
 function isAlive() {
@@ -67,21 +74,23 @@ function disconnect() {
 	wasConnected = false;
 	socket?.close();
 }
-function addListener(source: string, hook: (m: Message) => void) {
-	if (!hooks.has(source)) {
-		hooks.set(source, []);
+function addListener(topic: string, hook: (m: Message) => void) {
+	if (!hooks.has(topic)) {
+		hooks.set(topic, []);
 	}
-	hooks.get(source)!.push(hook);
+	hooks.get(topic)!.push(hook);
 }
-function removeListener(source: string) {
-	if (hooks.has(source)) {
-		hooks.delete(source);
+function removeListener(topic: string) {
+	if (hooks.has(topic)) {
+		hooks.delete(topic);
 	}
 }
+
 
 export default {
 	connect,
 	send,
+	isAlive,
 	disconnect,
 	addListener,
 	removeListener,
