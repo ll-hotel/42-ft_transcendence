@@ -41,22 +41,17 @@ export class RegisterPage implements AppPage {
 		const data = new FormData(this.form);
 		const username = data.get("username")?.toString() || "";
 		const password = data.get("password")?.toString() || "";
-		const twofa = data.get("twofa")?.valueOf() || false;
 
-		const res = await api.post("/api/auth/register", { username, password, displayName: username, twofa })
+		const res = await api.post("/api/auth/register", { username, password, displayName: username });
 		if (!res) {
 			return notify("Invalid API response.", "error");
 		}
 		if (res.status != Status.created) {
 			return notify(res.payload.message, "error");
 		}
-		if (res.payload.qrCode) {
-			window.open(res.payload.qrCode);
-		}
 		if (res.status == Status.created) {
 			notify("User successfuly created", "success");
 		}
-
 		await gotoPage("login");
 	}
 }

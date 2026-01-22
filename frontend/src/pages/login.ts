@@ -47,6 +47,9 @@ export class Login implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement) {
+		this.hideTwofa();
+		container.appendChild(this.content);
+
 		const params = new URLSearchParams(location.search);
 		const provider = params.get("provider");
 		const code = params.get("code");
@@ -56,12 +59,6 @@ export class Login implements AppPage {
 		if (await socket.connect()) {
 			return gotoPage("profile");
 		}
-//		if (localStorage.getItem("accessToken")) {
-			// Already connected. Redirecting to user profile page.
-//			gotoPage("profile");
-//			return;
-//		}
-		container.appendChild(this.content);
 	}
 	unload(): void {
 		this.content.remove();
@@ -77,10 +74,7 @@ export class Login implements AppPage {
 
 		const res = await api.post("/api/auth/login", { username, password, twoFACode });
 		if (!res) {
-			return notify("Invalid API response.", "error");
-		}
-		if (!this.twoFAHidden) {
-			this.toggleTwoFA();
+			return this.hideTwofa();
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
 			socket.connect();
@@ -88,31 +82,33 @@ export class Login implements AppPage {
 			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {
-			this.toggleTwoFA();
-			return;
+			return this.showTwofa();
 		}
 		notify(res.payload.message, "error");
 	}
+	hideTwofa() {
+		this.form.querySelector("#form-username")?.removeAttribute("hidden");
+		this.form.querySelector("#form-password")?.removeAttribute("hidden");
+		this.content.querySelector("#button-intra")?.removeAttribute("hidden");
+		this.content.querySelector("#button-google")?.removeAttribute("hidden");
+		this.content.querySelector("#button-register")?.removeAttribute("hidden");
+		this.form.reset();
+		this.twoFAHidden = true;
+	}
+	showTwofa() {
+		this.form.querySelector("#form-username")?.setAttribute("hidden", "");
+		this.form.querySelector("#form-password")?.setAttribute("hidden", "");
+		this.content.querySelector("#button-intra")?.setAttribute("hidden", "");
+		this.content.querySelector("#button-google")?.setAttribute("hidden", "");
+		this.content.querySelector("#button-register")?.setAttribute("hidden", "");
+		this.form.querySelector("#form-twoFACode")?.removeAttribute("hidden");
+		this.twoFAHidden = false;
+	}
 	toggleTwoFA() {
 		if (this.twoFAHidden) {
-			this.form.querySelector("#form-username")?.setAttribute("hidden", "");
-			this.form.querySelector("#form-password")?.setAttribute("hidden", "");
-			this.content.querySelector("#button-intra")?.setAttribute("hidden", "");
-			this.content.querySelector("#button-register")?.setAttribute("hidden", "");
-			this.form.querySelector("#form-twoFACode")?.removeAttribute("hidden");
-			this.twoFAHidden = false;
+			this.showTwofa();
 		} else {
-			this.form.querySelector("#form-username")?.removeAttribute("hidden");
-			this.form.querySelector("#form-password")?.removeAttribute("hidden");
-			this.content.querySelector("#button-intra")?.removeAttribute("hidden");
-			this.content.querySelector("#button-register")?.removeAttribute("hidden");
-			const twoFACodeForm = this.form.querySelector("#form-twoFACode");
-			if (twoFACodeForm) {
-				twoFACodeForm.setAttribute("hidden", "");
-				const twoFACodeInput = twoFACodeForm.querySelector("input");
-				if (twoFACodeInput) twoFACodeInput.value = "";
-			}
-			this.twoFAHidden = true;
+			this.hideTwofa();
 		}
 	}
 }
