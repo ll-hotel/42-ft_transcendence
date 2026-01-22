@@ -1,9 +1,10 @@
 services:
+
   frontend:
     container_name: frontend
     restart: on-failure
     build:
-      context: frontend
+      context: src/frontend
     ports:
       - "8443:443"
     volumes:
@@ -23,7 +24,7 @@ services:
     ports:
       - "8080:8080"
     build:
-      context: backend
+      context: src/backend
     volumes:
       - backend-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -34,14 +35,8 @@ services:
   auth-service:
     container_name: auth-service
     restart: on-failure
-    healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
-      interval: 10s
-      timeout: 2s
-      retries: 3
-      start_period: 2s
     build:
-      context: auth-service
+      context: src/services/auth
     volumes:
       - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -50,14 +45,8 @@ services:
   friend-service:
     container_name: friend-service
     restart: on-failure
-    healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
-      interval: 10s
-      timeout: 2s
-      retries: 3
-      start_period: 2s
     build:
-      context: friend-service
+      context: src/services/friend
     volumes:
       - friend-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -66,14 +55,8 @@ services:
   tournament-service:
     container_name: tournament-service
     restart: on-failure
-    healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
-      interval: 10s
-      timeout: 2s
-      retries: 3
-      start_period: 2s
     build:
-      context: tournament-service
+      context: src/services/tournament
     volumes:
       - tournament-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -82,14 +65,8 @@ services:
   user-service:
     container_name: user-service
     restart: on-failure
-    healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
-      interval: 10s
-      timeout: 2s
-      retries: 3
-      start_period: 2s
     build:
-      context: user-service
+      context: src/services/user
     volumes:
       - user-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -136,8 +113,8 @@ services:
   #     - ES_JAVA_OPTS=-Xms1g -Xmx1g
   #     - xpack.security.enabled=false
   #   ports:
-  #     - "9200:9200"
-  #     - "9300:9300"
+  #     - 9200:9200
+  #     - 9300:9300
   #
   # filebeat:
   #   image: docker.elastic.co/beats/filebeat:9.2.4
@@ -159,7 +136,7 @@ services:
   #   environment:
   #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
   #   ports:
-  #     - "5601:5601" # Expose Kibana on port 5601
+  #     - 5601:5601
   #   depends_on:
   #     - elasticsearch
 
@@ -168,49 +145,49 @@ volumes:
   frontend-static:
     driver: local
     driver_opts:
-      device: ./frontend/static
+      device: ./src/frontend/static
       type: none
       o: bind
   frontend-src:
     driver: local
     driver_opts:
-      device: ./frontend/src
+      device: ./src/frontend/src
       type: none
       o: bind
   backend-src:
     driver: local
     driver_opts:
-      device: ./backend/src
+      device: ./src/backend/src
       type: none
       o: bind
   auth-service-src:
     driver: local
     driver_opts:
-      device: ./auth-service/src
+      device: ./src/services/auth/src
       type: none
       o: bind
   friend-service-src:
     driver: local
     driver_opts:
-      device: ./friend-service/src
+      device: ./src/services/friend/src
       type: none
       o: bind
   tournament-service-src:
     driver: local
     driver_opts:
-      device: ./tournament-service/src
+      device: ./src/services/tournament/src
       type: none
       o: bind
   user-service-src:
     driver: local
     driver_opts:
-      device: ./user-service/src
+      device: ./src/services/user/src
       type: none
       o: bind
   backend-db:
     driver: local
     driver_opts:
-      device: ./backend/db
+      device: ./database
       type: none
       o: bind
   secrets:
@@ -222,6 +199,6 @@ volumes:
   uploads:
     driver: local
     driver_opts:
-      device: ./backend/uploads
+      device: ./src/backend/uploads
       type: none
       o: bind
