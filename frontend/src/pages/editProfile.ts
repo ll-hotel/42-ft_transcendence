@@ -1,6 +1,6 @@
 import { api, Status } from "../api.js";
 import AppPage from "./AppPage.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class editProfile implements AppPage {
 	content: HTMLElement;
@@ -33,9 +33,8 @@ export class editProfile implements AppPage {
 			return (false);
 		});
 
-		
 		const avatarPreview = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview")!;
-
+		
 		avatarInput.addEventListener("change", () => {
 			const file = avatarInput.files?.[0];
 			if (!file) return;

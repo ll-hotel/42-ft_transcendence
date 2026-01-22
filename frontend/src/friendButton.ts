@@ -17,7 +17,7 @@ export class FriendButton {
 		this.status = initialStatus;
 		this.container = document.createElement("div");
 		this.button = document.createElement("button");
-		this.button.className = "px-4 py-2 rounded border border-white bg-black hover:bg-neutral-600 text-white";
+		this.button.className = "px-4 py-2 rounded bg-black hover:bg-neutral-800 hover:cursor-pointer hover:scale-105 text-white sm:rounded-xl transition";
 		this.button.addEventListener("click", () => this.handleClick());
 		this.container.appendChild(this.button);
 
@@ -65,7 +65,7 @@ export class FriendButton {
 				if (!this.extraButton)
 				{
 					this.extraButton = document.createElement("button");
-					this.extraButton.className = "px-4 py-2 rounded border border-white bg-[#04809F] text-white";
+					this.extraButton.className = "px-4 py-2 rounded bg-black hover:bg-neutral-800 hover:cursor-pointer hover:scale-105 text-white sm:rounded-xl transition";
 					this.extraButton.textContent = "1VS1";
 					this.extraButton.addEventListener("click", () => this.handle1vs1());
 					this.container.appendChild(this.extraButton);

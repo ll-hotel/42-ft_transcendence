@@ -32,8 +32,6 @@ async function main() {
 		prefix: "/uploads/",
 	});
 
-	console.log(Date.now());
-
 	app.register(fastifyCookie);
 	app.register(fastifyWebsocket);
 	app.register(fastifyMultipart);

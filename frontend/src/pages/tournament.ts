@@ -55,7 +55,7 @@ export class Tournament implements AppPage {
 
 	displayTournament(info: TournamentInfo) {
 		const nameElement = this.html.querySelector("#tournament-name") as HTMLElement | null;
-		if (nameElement) nameElement.innerText = "Tournament: " + info.name;
+		if (nameElement) nameElement.innerText = "Tournament [" + info.name + "]";
 		if (info.rounds.length > 0) {
 			this.displayRounds(info);
 		} else {
