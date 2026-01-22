@@ -72,6 +72,10 @@ abstract class PhysicObject {
 	public set pos(pos: Position) {
 		this.position = pos;
 	}
+
+	public setY(y: number) {
+		this.position.y = y;
+	}
 }
 
 function resolution_update(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
@@ -194,6 +198,7 @@ export class Game {
 			this.update();
 		}, 1000 / this.tick_rate);
 	}
+
 	stop() {
 		this.running = false;
 		if (this.current_interval_id !== null) {
@@ -221,6 +226,7 @@ export class Game {
 			up: this.input.get("p1_up")!,
 			down: this.input.get("p1_down")!,
 		};
+		debug_message("remote input", msg);
 		socket.send(msg);
 	}
 
@@ -231,11 +237,8 @@ export class Game {
 
 		this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
 		this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
-
-		this.paddle_p1.pos.y = msg.paddles.p1_Y * this.canvas_ratio.h;
-		this.paddle_p2.pos.y = msg.paddles.p2_Y * this.canvas_ratio.h;
-
-		console.log(this.paddle_p1.pos, this.paddle_p2.pos);
+		this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_ratio.h);
+		this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
 	}
 
 	render() {
@@ -250,6 +253,7 @@ export class Game {
 		this.stop();
 		socket.removeListener("pong");
 	}
+
 	init(): void {
 		this.running = false;
 		socket.addListener("pong", (msg) => {
@@ -262,6 +266,7 @@ export class Game {
 			this.setRemoteInputHandler();
 		}
 	}
+
 	setLocalInputHandler() {
 		window.addEventListener("keydown", (event) => {
 			if (event.key === "ArrowDown") {
@@ -293,6 +298,7 @@ export class Game {
 			}
 		});
 	}
+
 	setRemoteInputHandler() {
 		window.addEventListener("keydown", (event) => {
 			if (event.key === "s" || event.key === "S") {
@@ -317,13 +323,14 @@ export class Game {
 		if (this.running == false) {
 			return;
 		}
-		this.render();
 		this.ball.tick();
+		this.render();
 		this.score_viewer.innerText = this.score.p1.toString() + " - " + this.score.p2.toString();
 		if (this.shouldSendInputs()) {
 			this.sendInputs();
 		}
 	}
+
 	shouldSendInputs(): boolean {
 		for (const value of this.input.values()) {
 			if (value == true) return true;

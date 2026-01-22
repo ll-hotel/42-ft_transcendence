@@ -137,9 +137,9 @@ export class GameInstance {
 			type: TypeMsg.state,
 			ball: { x: this.ball.pos.x, y: this.ball.pos.y, speed: this.ball.speed },
 			paddles: {
-				p1_y: this.paddle_p1.pos.y,
+				p1_Y: this.paddle_p1.pos.y,
 				p1_input: { up: this.input.p1.up, down: this.input.p1.down },
-				p2_y: this.paddle_p2.pos.y,
+				p2_Y: this.paddle_p2.pos.y,
 				p2_input: { up: this.input.p2.up, down: this.input.p2.down },
 			},
 			status: state,
@@ -191,6 +191,7 @@ export class GameInstance {
 		}
 		this.sendState(Status.ongoing);
 	}
+
 	end() {
 		this.sendState(Status.ended);
 		this.is_running = false;
@@ -278,9 +279,9 @@ export class PongBall extends PhysicObject {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
 		// TODO remettre l'angle aleatoire
-
-		this.speed.setX = 5;
-		this.speed.setY = 5;
+		let new_dir = 45 + Math.random() * 90;
+		this.speed.setX = Math.cos(new_dir) * 5;
+		this.speed.setY = Math.sin(new_dir) * 5;
 	}
 
 	ball_scored(line_position: Position, normal: Vector2D) {
