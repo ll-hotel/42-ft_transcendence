@@ -42,6 +42,16 @@ services:
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
 
+  chat-service:
+    container_name: chat-service
+    restart: on-failure
+    build:
+      context: src/services/chat
+    volumes:
+      - chat-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - secrets:/run/secrets:ro
+
   friend-service:
     container_name: friend-service
     restart: on-failure
@@ -164,6 +174,12 @@ volumes:
     driver: local
     driver_opts:
       device: ./src/services/auth/src
+      type: none
+      o: bind
+  chat-service-src:
+    driver: local
+    driver_opts:
+      device: ./src/services/chat/src
       type: none
       o: bind
   friend-service-src:

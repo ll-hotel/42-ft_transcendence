@@ -7,7 +7,6 @@ import fs from "fs";
 import { createTables } from "./db/database";
 import gameMatch from "./game/match";
 import gameQueue from "./game/queue";
-import { chatRoute } from "./routes/chat";
 import socketRoute from "./routes/socket";
 import path from "path";
 
@@ -33,7 +32,6 @@ async function main() {
 	app.register(gameQueue);
 	app.register(gameMatch);
 	app.register(socketRoute);
-	app.register(chatRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, (err) => {
 		if (err) {

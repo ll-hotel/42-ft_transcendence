@@ -1,8 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import Chat from "../chat";
-import { authGuard } from "../security/authGuard";
-import { STATUS } from "../shared";
-import { getUserIdByUsername } from "../db/methods";
+import Chat from "./chat";
+import { authGuard } from "./utils/security/authGuard";
+import { STATUS } from "./utils/http-reply";
+import { getUserIdByUsername } from "./utils/db/methods";
 
 export function chatRoute(fastify: FastifyInstance) {
 	fastify.get(

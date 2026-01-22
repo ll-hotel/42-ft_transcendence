@@ -1,6 +1,6 @@
-import { friends } from './db/tables';
+import { friends } from './utils/db/tables';
 import { and, eq, or } from 'drizzle-orm';
-import { db } from './db/database';
+import { db } from './utils/db/database';
 
 async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
 	{
