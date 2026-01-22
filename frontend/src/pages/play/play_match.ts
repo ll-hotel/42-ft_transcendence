@@ -1,5 +1,5 @@
-import { api } from "../api.js";
-import AppPage from "./AppPage.js";
+import { api } from "../../api.js";
+import AppPage from "../AppPage.js";
 
 export default class PlayMatch implements AppPage {
     html: HTMLElement;
