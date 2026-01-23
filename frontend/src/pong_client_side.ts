@@ -144,8 +144,13 @@ export class Game {
 		this.context = this.canvas.getContext("2d")!;
 		this.score_viewer = html.querySelector("#panel-score")! as HTMLElement;
 		this.score = { p1: 0, p2: 0 };
-		this.paddle_p1 = new PongPaddle({ x: 0, y: this.canvas.height / 2 }, paddle_texture);
-		this.paddle_p2 = new PongPaddle({ x: this.canvas.width, y: this.canvas.height / 2 }, paddle_texture);
+		const paddle_size = { w: this.canvas.width * 0.01, h: this.canvas.height * 0.1 };
+		this.paddle_p1 = new PongPaddle({ x: 0, y: this.canvas.height / 2 }, paddle_texture, paddle_size);
+		this.paddle_p2 = new PongPaddle(
+			{ x: this.canvas.width, y: this.canvas.height / 2 },
+			paddle_texture,
+			paddle_size,
+		);
 		this.ball = new PongBall(this.canvas, this.context, ball_texture);
 		this.tick_rate = 60;
 		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
@@ -243,6 +248,7 @@ export class Game {
 		this.paddle_p1.render(this.context!);
 		this.paddle_p2.render(this.context!);
 		this.ball.render(this.context!);
+		draw_hit_box(this.context!, this.ball as PhysicObject);
 	}
 
 	deinit(): void {
@@ -335,8 +341,8 @@ export class Game {
 export class PongPaddle extends PhysicObject {
 	private texture: HTMLImageElement;
 
-	constructor(position: Position, texture: HTMLImageElement) {
-		super(position, { w: 10, h: 30 }, new Vector2D(0, 0));
+	constructor(position: Position, texture: HTMLImageElement, size: Size) {
+		super(position, size, new Vector2D(0, 0));
 		this.texture = texture;
 	}
 
@@ -357,7 +363,11 @@ export class PongBall extends PhysicObject {
 	private texture: HTMLImageElement;
 
 	constructor(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, texture: HTMLImageElement) {
-		super({ x: canvas.width / 2, y: canvas.height / 2 }, { w: 10, h: 10 }, new Vector2D(0, 0));
+		super(
+			{ x: canvas.width / 2, y: canvas.height / 2 },
+			{ w: canvas.height * 0.05, h: canvas.height * 0.05 },
+			new Vector2D(0, 0),
+		);
 		this.canvas = canvas;
 		this.context = context;
 		this.texture = texture;

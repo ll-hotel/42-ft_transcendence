@@ -23,9 +23,9 @@ export type StateMessage = BaseMessage & {
 		speed: Vector2D,
 	},
 	paddles: {
-		p1_y: number,
+		p1_Y: number,
 		p1_input: { up: boolean, down: boolean },
-		p2_y: number,
+		p2_Y: number,
 		p2_input: { up: boolean, down: boolean },
 	},
 	score: { p1: number, p2: number },

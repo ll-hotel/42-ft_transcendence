@@ -46,13 +46,15 @@ abstract class PhysicObject {
 	}
 }
 
+const table_width = 500;
+const table_ratio = 9 / 16;
 const table = {
-	width: 500,
-	height: 250,
+	width: table_width,
+	height: table_width * table_ratio,
 };
 
-const paddleWidth = 10;
-const paddleHeight = 30;
+const paddleWidth = table.width * 0.01;
+const paddleHeight = table.height * 0.1;
 
 export class GameInstance {
 	ball: PongBall;
@@ -137,9 +139,9 @@ export class GameInstance {
 			type: TypeMsg.state,
 			ball: { x: this.ball.pos.x, y: this.ball.pos.y, speed: this.ball.speed },
 			paddles: {
-				p1_y: this.paddle_p1.pos.y,
+				p1_Y: this.paddle_p1.pos.y,
 				p1_input: { up: this.input.p1.up, down: this.input.p1.down },
-				p2_y: this.paddle_p2.pos.y,
+				p2_Y: this.paddle_p2.pos.y,
 				p2_input: { up: this.input.p2.up, down: this.input.p2.down },
 			},
 			status: state,
@@ -226,7 +228,11 @@ export class PongBall extends PhysicObject {
 		p2_ws: string,
 		game_id: number,
 	) {
-		super({ x: table.width / 2, y: table.height / 2 }, { w: 10, h: 10 }, new Vector2D(0, 0));
+		super(
+			{ x: table.width / 2, y: table.height / 2 },
+			{ w: table.width * 0.05, h: table.height * 0.05 },
+			new Vector2D(0, 0),
+		);
 		this.score = score;
 		this.paddle_p1 = paddle_p1;
 		this.paddle_p2 = paddle_p2;
