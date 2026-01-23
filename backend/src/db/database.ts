@@ -29,7 +29,7 @@ function createUserTable() {
 			twofaKey TEXT,
 			twofaEnabled INTEGER NOT NULL DEFAULT 0,
 			isOnline	INTEGER NOT NULL DEFAULT 0,
-			oauth TEXT,
+			oauth TEXT
 		);
 	`);
 }
