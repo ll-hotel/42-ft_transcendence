@@ -172,7 +172,7 @@ class AuthService {
 		});
 		const token = await tokenResponse.json();
 		if (!token.access_token) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_token });
+			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
 		}
 		const response = await fetch("https://api.intra.42.fr/v2/me", {
 			headers: { Authorization: "Bearer " + token.access_token },
@@ -241,7 +241,7 @@ class AuthService {
 
 		const token = await tokenResponse.json();
 		if (!token.access_token) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_token });
+			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
 		}
 		const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
 			headers: { Authorization: `Bearer ${token.access_token}` },
