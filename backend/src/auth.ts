@@ -51,8 +51,8 @@ class AuthService {
 	}
 
 	async register(req: FastifyRequest, rep: FastifyReply) {
-		const body = req.body as { username: string, password: string, displayName: string };
-		const { username, password, displayName } = body;
+		const body = req.body as { username: string, password: string };
+		const { username, password } = body;
 
 		if (REGEX_USERNAME.test(username) === false) {
 			return rep.code(STATUS.bad_request).send({
@@ -67,29 +67,16 @@ class AuthService {
 			});
 		}
 
-		if (REGEX_USERNAME.test(displayName) === false) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName });
-		}
-		let user_exists = await db.select().from(users).where(eq(users.username, username));
-		if (user_exists.length > 0) {
+		let user_exists = (await db.select().from(users).where(eq(users.username, username))).length > 0;
+		if (user_exists) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.username_taken });
 		}
-		user_exists = await db.select().from(users).where(eq(users.displayName, displayName));
-		if (user_exists.length > 0) {
+		user_exists = (await db.select().from(users).where(eq(users.displayName, username))).length > 0;
+		if (user_exists) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.displayName_taken });
 		}
 
 		const hashedPass = await hashPassword(password);
-
-		// if (twofa) {
-		// 	const secret = generate2FASecret(username);
-		// 	if (!secret.otpauth_url) {
-		// 		return rep.code(STATUS.bad_request).send({ message: MESSAGE.fail_gen2FAurl });
-		// 	}
-		// 	qrCode = await generateQRCode(secret.otpauth_url);
-		// 	twofaKey = secret.base32;
-		// 	twofaEnabled = 1;
-		// }
 
 		await db.insert(users).values({
 			uuid: uiidv4(),
