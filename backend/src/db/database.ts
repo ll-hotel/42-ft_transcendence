@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { sql } from "drizzle-orm";
+import * as orm from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 
 const path = "/srv/app/db/database.sqlite";
