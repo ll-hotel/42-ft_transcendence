@@ -45,29 +45,29 @@ class User {
 		if (!req.isMultipart())
 			return rep.code(STATUS.bad_request).send({ message : "Request is not multipart" });
 
-		const data = await req.file();
-		if (!data)
+		const uploadedFile = await req.file();
+		if (!uploadedFile)
 			return rep.code(STATUS.bad_request).send({ message : "No file uploaded" });
 
-		const buffer = await data.toBuffer();
+		const buffer = await uploadedFile.toBuffer();
 		try {
-			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${data.filename}`);
+			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${uploadedFile.filename}`);
 		} catch {
 			return rep.code(STATUS.bad_request).send({ message: "Invalid image file" });
 		}
 		
 		const imgTypes = ["image/png", "image/jpeg", "image/webp"];
-		if (!imgTypes.includes(data.mimetype))
+		if (!imgTypes.includes(uploadedFile.mimetype))
 			return rep.code(STATUS.bad_request).send({ message: "Invalid image file "});
 		
 		const otherUserAvatar = await db.select().from(tables.users).where(orm.eq(tables.users.avatar, usr.avatar));
-		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}` && otherUserAvatar.length < 2)
+		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${uploadedFile.filename}` && otherUserAvatar.length < 2)
 			fs.unlink(usr.avatar, () => {});
 
-		const newAvatar = `uploads/${data.filename}`;
+		const newAvatar = `uploads/${uploadedFile.filename}`;
 		await db.update(tables.users).set({ avatar: newAvatar }).where(orm.eq(tables.users.id, usr.id));
 
-		return rep.code(STATUS.success).send({ message: `avatar updated`, file: data.filename});		
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: uploadedFile.filename});		
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {

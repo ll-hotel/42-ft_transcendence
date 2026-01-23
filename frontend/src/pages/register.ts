@@ -42,7 +42,7 @@ export class RegisterPage implements AppPage {
 		const username = data.get("username")?.toString() || "";
 		const password = data.get("password")?.toString() || "";
 
-		const res = await api.post("/api/auth/register", { username, password, displayName: username });
+		const res = await api.post("/api/auth/register", { username, password });
 		if (!res) {
 			return notify("Invalid API response.", "error");
 		}

@@ -52,8 +52,8 @@ class AuthService {
 	}
 
 	async register(req: FastifyRequest, rep: FastifyReply) {
-		const body = req.body as { username: string, password: string, displayName: string };
-		const { username, password, displayName } = body;
+		const body = req.body as { username: string, password: string };
+		const { username, password } = body;
 
 		if (REGEX_USERNAME.test(username) === false) {
 			return rep.code(STATUS.bad_request).send({
@@ -68,29 +68,16 @@ class AuthService {
 			});
 		}
 
-		if (REGEX_USERNAME.test(displayName) === false) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName });
-		}
-		let user_exists = await db.select().from(users).where(eq(users.username, username));
-		if (user_exists.length > 0) {
+		let user_exists = (await db.select().from(users).where(eq(users.username, username))).length > 0;
+		if (user_exists) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.username_taken });
 		}
-		user_exists = await db.select().from(users).where(eq(users.displayName, displayName));
-		if (user_exists.length > 0) {
+		user_exists = (await db.select().from(users).where(eq(users.displayName, username))).length > 0;
+		if (user_exists) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.displayName_taken });
 		}
 
 		const hashedPass = await hashPassword(password);
-
-		// if (twofa) {
-		// 	const secret = generate2FASecret(username);
-		// 	if (!secret.otpauth_url) {
-		// 		return rep.code(STATUS.bad_request).send({ message: MESSAGE.fail_gen2FAurl });
-		// 	}
-		// 	qrCode = await generateQRCode(secret.otpauth_url);
-		// 	twofaKey = secret.base32;
-		// 	twofaEnabled = 1;
-		// }
 
 		await db.insert(users).values({
 			uuid: uiidv4(),
@@ -111,9 +98,11 @@ class AuthService {
 		if (!user) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
 		}
+
 		if (await comparePassword(password, user.password) == false) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
 		}
+
 		if (user.twofaEnabled == TwofaState.enabled) {
 			if (!twoFACode) {
 				return rep.code(STATUS.bad_request)
@@ -123,6 +112,7 @@ class AuthService {
 				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA });
 			}
 		}
+
 		const tokenCookie = req.cookies["accessToken"];
 		if (tokenCookie) {
 			try {
@@ -186,7 +176,7 @@ class AuthService {
 		});
 		const token = await tokenResponse.json();
 		if (!token.access_token) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_token });
+			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
 		}
 		const response = await fetch("https://api.intra.42.fr/v2/me", {
 			headers: { Authorization: "Bearer " + token.access_token },
@@ -256,7 +246,7 @@ class AuthService {
 
 		const token = await tokenResponse.json();
 		if (!token.access_token) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_token });
+			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
 		}
 		const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
 			headers: { Authorization: `Bearer ${token.access_token}` },
