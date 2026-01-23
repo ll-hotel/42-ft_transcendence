@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { eq } from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import fs from "fs";
@@ -5,25 +6,15 @@ import jwt from "jsonwebtoken";
 import sharp from "sharp";
 import { v4 as uiidv4 } from "uuid";
 import { db } from "./db/database";
-import { TwofaState, users } from "./db/tables";
+import { TwofaState, OAuth, users } from "./db/tables";
 import { verify2FAToken } from "./security/2fa";
 import { authGuard } from "./security/authGuard";
 import { comparePassword, hashPassword } from "./security/hash";
-import { MESSAGE, STATUS } from "./shared";
+import { MESSAGE, schema, STATUS } from "./shared";
 import socket from "./socket";
-import { randomBytes } from "crypto";
 
-const SCHEMA_REGISTER = {
-	body: {
-		type: "object",
-		required: ["username", "password"],
-		properties: {
-			username: { type: "string" },
-			password: { type: "string", format: "password" },
-		},
-	},
-};
-const SCHEMA_LOGIN = SCHEMA_REGISTER;
+const registerSchema = schema.body({ username: "string", password: "string" }, ["username", "password"]);
+const loginSchema = schema.body({ username: "string", password: "string" }, ["username", "password"]);
 
 const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
 const oauthKeys = JSON.parse(fs.readFileSync("/run/secrets/oauthKeys", "utf-8").trim());
@@ -42,8 +33,8 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class AuthService {
 	setup(app: FastifyInstance) {
-		app.post("/api/auth/register", { schema: SCHEMA_REGISTER }, this.register);
-		app.post("/api/auth/login", { schema: SCHEMA_LOGIN }, this.login);
+		app.post("/api/auth/register", { schema: registerSchema }, this.register);
+		app.post("/api/auth/login", { schema: loginSchema }, this.login);
 		app.post("/api/auth/logout", { preHandler: authGuard }, this.logout);
 		app.get("/api/auth42", this.auth42Redirect);
 		app.get("/api/auth42/callback", this.auth42Callback);
@@ -63,8 +54,8 @@ class AuthService {
 
 		if (REGEX_PASSWORD.test(password) === false) {
 			return rep.code(STATUS.bad_request).send({
-				message: MESSAGE.invalid_password
-					+ ": Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum",
+				message: MESSAGE.invalid_password +
+					": Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum",
 			});
 		}
 
@@ -208,6 +199,7 @@ class AuthService {
 				displayName: userData.login,
 				password: pass,
 				avatar: avatarPath,
+				oauth: OAuth.auth42,
 			});
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: "1h" });
@@ -277,6 +269,7 @@ class AuthService {
 				displayName: userData.given_name,
 				password: pass,
 				avatar: avatarPath,
+				oauth: OAuth.google,
 			});
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: "1h" });

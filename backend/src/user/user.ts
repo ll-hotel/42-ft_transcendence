@@ -184,6 +184,9 @@ class User {
 		const twofa = req.body as { enable: boolean, code?: string };
 		const TwofaState = tables.TwofaState;
 
+		if (user.oauth !== null) {
+			return rep.code(STATUS.bad_request).send({ message: "Cannot activate TwoFA with an OAuth account" });
+		}
 		if (twofa.enable == false) {
 			if (user.twofaEnabled != TwofaState.disabled) {
 				await db.update(tables.users).set({ twofaEnabled: TwofaState.disabled, twofaKey: null })
