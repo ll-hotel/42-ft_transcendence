@@ -53,6 +53,11 @@ export class Login implements AppPage {
 		const params = new URLSearchParams(location.search);
 		const provider = params.get("provider");
 		const code = params.get("code");
+		const error = params.get("error");
+		
+		if (error && provider) {
+			notify("Oauth failed", "error");
+		}
 		if (code && provider) {
 			return loginWithProvider(container, provider, code);
 		}

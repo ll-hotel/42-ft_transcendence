@@ -11,6 +11,7 @@ import { authGuard } from "./security/authGuard";
 import { comparePassword, hashPassword } from "./security/hash";
 import { MESSAGE, STATUS } from "./shared";
 import socket from "./socket";
+import { randomBytes } from "crypto";
 
 const SCHEMA_REGISTER = {
 	body: {
@@ -199,7 +200,8 @@ class AuthService {
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
-			const pass = await hashPassword("42AuthUser____" + uuid);
+			const randomKey = randomBytes(32).toString("hex");
+			const pass = await hashPassword(randomKey);
 			const res = await fetch(userData.image.versions.medium);
 			const buffer = Buffer.from(await res.arrayBuffer());
 			const filename = `avatar___${uuid}.png`;
@@ -267,7 +269,8 @@ class AuthService {
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
-			const pass = await hashPassword("GoogleUser___" + uuid);
+			const randomKey = randomBytes(32).toString("hex");
+			const pass = await hashPassword(randomKey);
 			const res = await fetch(userData.picture);
 			const buffer = Buffer.from(await res.arrayBuffer());
 			const filename = `avatar___${uuid}.png`;
