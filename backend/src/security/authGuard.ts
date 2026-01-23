@@ -45,7 +45,7 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 	const dbUser = dbUsers[0];
 	req.user = {
 		...dbUser,
-		oauth: dbUsers[0].oauth as OAuth | null,
+		oauth: dbUser.oauth as OAuth | null,
 	};
 }
 
