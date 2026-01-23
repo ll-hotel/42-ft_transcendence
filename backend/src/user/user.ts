@@ -8,6 +8,7 @@ import { generate2FASecret, generateQRCode, verify2FAToken } from "../security/2
 import { authGuard as preHandler } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
 import { MESSAGE, schema, STATUS } from "../shared";
+import { randomBytes } from "crypto";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
@@ -49,9 +50,11 @@ class User {
 		if (!uploadedFile)
 			return rep.code(STATUS.bad_request).send({ message : "No file uploaded" });
 
+		const randomKey = randomBytes(32).toString("hex");
+		
 		const buffer = await uploadedFile.toBuffer();
 		try {
-			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${uploadedFile.filename}`);
+			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile("./uploads/" + randomKey + ".png");
 		} catch {
 			return rep.code(STATUS.bad_request).send({ message: "Invalid image file" });
 		}
@@ -61,13 +64,14 @@ class User {
 			return rep.code(STATUS.bad_request).send({ message: "Invalid image file "});
 		
 		const otherUserAvatar = await db.select().from(tables.users).where(orm.eq(tables.users.avatar, usr.avatar));
-		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${uploadedFile.filename}` && otherUserAvatar.length < 2)
+		if (usr.avatar !== `uploads/default_pp.png` && otherUserAvatar.length < 2)
 			fs.unlink(usr.avatar, () => {});
 
-		const newAvatar = `uploads/${uploadedFile.filename}`;
+		const newAvatar = "uploads/" + randomKey + ".png";
+
 		await db.update(tables.users).set({ avatar: newAvatar }).where(orm.eq(tables.users.id, usr.id));
 
-		return rep.code(STATUS.success).send({ message: `avatar updated`, file: uploadedFile.filename});		
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: randomKey + ".png"});		
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
