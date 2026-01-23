@@ -3,7 +3,7 @@
 }
 
 .friend-card-home {
-	@apply hover:cursor-pointer bg-[#04809F] border-white text-white hover:bg-neutral-400 hover:bg-neutral-400 hover:cursor-pointer hover:scale-101 transition;
+	@apply hover:cursor-pointer bg-white border-white text-black hover:bg-[#04809F] hover:cursor-pointer hover:scale-101 transition;
 }
 
 .request-card {

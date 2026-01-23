@@ -1,6 +1,6 @@
 <div class="flex w-full h-screen items-center place-content-center p-24 md:p-16">
 	<div class="grid cols-1 h-full w-full xl:w-4/5 gap-8">
-		<section class="flex flex-col bg-neutral-600 border border-neutral-800 size-full rounded-2xl px-2 md:px-8 py-4 space-y-4 mt-5 hover:scale-102 transition">
+		<section class="flex flex-col bg-neutral-600 border border-neutral-800 size-full rounded-2xl px-2 md:px-8 py-4 space-y-4 mt-5 transition">
 			<h1 class="text-black text-xl font-bold text-white">New tournament</h1>
 			<div class="grid xl:grid-rows-1 xl:grid-cols-8 gap-8 w-full h-4/5">
 				<div class="xl:col-span-3 col-span-8 bg-neutral-200 rounded-md p-8 space-y-4">
@@ -21,14 +21,14 @@
 							<h2 class="text-lg w-fit text">
 								<label for="tournament-size">Tournament size</label>
 							</h2>
-							<select name="tournament-size" class="bg-black p-2 text-white hover:scale-105 hover:cursor-pointer rounded-md w-fit transition">
+							<select name="tournament-size" class="bg-black p-3 text-white hover:scale-105 hover:cursor-pointer rounded-md w-fit transition">
 								<option value="4">4 players</option>
 								<option value="8">8 players</option>
 							</select>
 						</div>
 						<div class="w-3/5 flex place-content-center">
 							<button id="tournament-create" type="submit"
-								class="flex size-fit p-2 gap-2 bg-green-700 hover:bg-green-600 hover:cursor-pointer text-white rounded-md items-center mt-7 hover:scale-105 transition">
+								class="flex size-fit p-3 gap-2 bg-green-700 hover:bg-green-600 hover:cursor-pointer text-white rounded-md items-center mt-7 hover:scale-105 transition">
 								<img src="vertical-cross.svg" class="size-4" />
 								<p>Create</p>
 							</button>
@@ -37,7 +37,7 @@
 				</div>
 			</div>
 		</section>
-		<section class="flex flex-col bg-neutral-600 border border-neutral-800 size-full rounded-2xl px-8 py-4 space-y-4 hover:scale-102 transition">
+		<section class="flex flex-col bg-neutral-600 border border-neutral-800 size-full rounded-2xl px-8 py-4 space-y-4 transition">
 			<h1 class="text-black text-xl font-bold text-white">Tournament list</h1>
 			<div class="grid xl:grid-rows-1 xl:grid-cols-8 gap-8">
 				<ul id="tournament-list" class="xl:col-span-5 bg-neutral-200 rounded-md">
