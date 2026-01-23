@@ -277,6 +277,7 @@ class AuthService {
 				displayName: userData.given_name,
 				password: pass,
 				avatar: avatarPath,
+				oauth: OAuth.google,
 			});
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: "1h" });

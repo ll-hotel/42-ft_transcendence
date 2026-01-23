@@ -18,7 +18,7 @@ export function createTables() {
 }
 
 function createUserTable() {
-	db.run(sql`
+	db.run(orm.sql`
 	    CREATE TABLE IF NOT EXISTS users (
 	    	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	    	uuid TEXT UNIQUE NOT NULL,
@@ -28,13 +28,14 @@ function createUserTable() {
 			avatar TEXT NOT NULL DEFAULT 'uploads/default_pp.png',
 			twofaKey TEXT,
 			twofaEnabled INTEGER NOT NULL DEFAULT 0,
-			isOnline	INTEGER NOT NULL DEFAULT 0
+			isOnline	INTEGER NOT NULL DEFAULT 0,
+			oauth TEXT,
 		);
 	`);
 }
 
 function createFriendsTable() {
-	db.run(sql`
+	db.run(orm.sql`
     CREATE TABLE IF NOT EXISTS friends (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       senderId INTEGER NOT NULL,
@@ -47,7 +48,7 @@ function createFriendsTable() {
 }
 
 function createMatchmakingQueueTable() {
-	db.run(sql`
+	db.run(orm.sql`
 		CREATE TABLE IF NOT EXISTS matchmakingQueue (
 		 id INTEGER PRIMARY KEY AUTOINCREMENT,
 		 userId INTEGER NOT NULL,
@@ -57,7 +58,7 @@ function createMatchmakingQueueTable() {
 }
 
 function createMatchesTable() {
-	db.run(sql`
+	db.run(orm.sql`
 	CREATE TABLE IF NOT EXISTS matches (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		player1Id INTEGER NOT NULL, 
@@ -75,7 +76,7 @@ function createMatchesTable() {
 }
 
 function createTournamentsTable() {
-	db.run(sql`
+	db.run(orm.sql`
 	CREATE TABLE IF NOT EXISTS tournaments (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		createdBy TEXT NOT NULL,
@@ -91,9 +92,8 @@ function createTournamentsTable() {
 	`);
 }
 
-
 function createTournamentPlayers() {
-	db.run(sql`
+	db.run(orm.sql`
 	CREATE TABLE IF NOT EXISTS tournamentPlayers (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 tournamentId INTEGER NOT NULL,
@@ -108,7 +108,7 @@ function createTournamentPlayers() {
 }
 
 function createTournamentMatches() {
-	db.run(sql`
+	db.run(orm.sql`
 	 CREATE TABLE IF NOT EXISTS TournamentMatches (
 	 id INTEGER PRIMARY KEY AUTOINCREMENT,
 	 tournamentId INTEGER NOT NULL,
