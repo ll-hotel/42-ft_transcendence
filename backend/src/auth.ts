@@ -97,9 +97,11 @@ class AuthService {
 		if (!user) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
 		}
+
 		if (await comparePassword(password, user.password) == false) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
 		}
+
 		if (user.twofaEnabled == TwofaState.enabled) {
 			if (!twoFACode) {
 				return rep.code(STATUS.bad_request)
@@ -109,6 +111,7 @@ class AuthService {
 				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA });
 			}
 		}
+
 		const tokenCookie = req.cookies["accessToken"];
 		if (tokenCookie) {
 			try {

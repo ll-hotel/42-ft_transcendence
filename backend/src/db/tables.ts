@@ -5,6 +5,7 @@ export enum TwofaState {
 	enabled = 1,
 	pending = 2,
 }
+
 export const users = sqliteTable("users", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
 	uuid: text("uuid").notNull().unique(),
