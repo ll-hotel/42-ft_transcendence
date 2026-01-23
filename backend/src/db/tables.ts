@@ -1,5 +1,6 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+/// Do not change this values as they are used inside the database.
 export enum TwofaState {
 	disabled = 0,
 	enabled = 1,
