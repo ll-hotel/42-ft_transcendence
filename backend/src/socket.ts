@@ -36,7 +36,7 @@ type Message = BaseMessage | MatchMessage | VersusMessage;
 
 export const clients: Map<ClientId, Client> = new Map();
 
-export function isOnline(id: ClientId) {
+export function isOnline(id: ClientId): boolean {
 	const client = clients.get(id);
 	if (!client) return false;
 	for (const socket of client.sockets) {
@@ -45,6 +45,7 @@ export function isOnline(id: ClientId) {
 			return true;
 		}
 	}
+	return false;
 }
 
 export async function connect(uuid: ClientId, socket: WebSocket) {
