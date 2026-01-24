@@ -88,6 +88,7 @@ export class GameInstance {
 	move_offset: number;
 	is_running: boolean;
 	status: Status = Status.started;
+	mode: Mode;
 
 	constructor(game_id: number, p1_uuid: string, p2_uuid: string, mode: Mode) {
 		this.game_id = game_id;
@@ -112,6 +113,7 @@ export class GameInstance {
 			this.p2_uuid,
 			this.game_id,
 		);
+		this.mode = mode;
 
 		if (mode == Mode.local) {
 			socket.addListener(this.p1_uuid, "pong", (msg) => {

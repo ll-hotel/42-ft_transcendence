@@ -2,10 +2,11 @@ import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
 import * as tables from "../db/tables";
+import { games as serverGames } from "../game/serverside";
+import { InputMessage, Mode } from "../game/types";
 import { authGuard } from "../security/authGuard";
 import { MESSAGE, schema, STATUS } from "../shared";
 import socket from "../socket";
-import { games as serverGames } from "../game/serverside";
 
 const stateSchema = schema.query({ matchId: "number" }, ["matchId"]);
 const inputSchema = schema.body({
@@ -37,7 +38,7 @@ async function getState(request: FastifyRequest, reply: FastifyReply): Promise<v
 	if (match == undefined) {
 		return reply.code(STATUS.not_found).send({ message: "Match not found" });
 	}
-	
+
 	const game = serverGames.get(query.matchId);
 	if (game == undefined) {
 		return reply.code(STATUS.bad_request).send({ message: "Match ended" });
@@ -52,5 +53,51 @@ async function getState(request: FastifyRequest, reply: FastifyReply): Promise<v
 }
 
 async function postInput(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-	// TODO
+	const body = request.body as {
+		matchId: number,
+		p1_up: boolean,
+		p1_down: boolean,
+		p2_up?: boolean,
+		p2_down?: boolean,
+	};
+
+	const matchById = db.select().from(tables.matches).where(orm.eq(tables.matches.id, orm.sql.placeholder("id")))
+		.prepare();
+
+	const match = matchById.get({ id: body.matchId });
+	if (match == undefined) {
+		return reply.code(STATUS.not_found).send({ message: "Match not found" });
+	}
+
+	const game = serverGames.get(body.matchId);
+	if (game == undefined) {
+		return reply.code(STATUS.bad_request).send({ message: "Match ended" });
+	}
+
+	if (game.mode != Mode.local && (body.p2_up != undefined || body.p2_down != undefined)) {
+		return reply.code(STATUS.bad_request).send({ message: "This is not a local match" });
+	}
+	if (game.mode == Mode.local && (body.p2_up == undefined || body.p2_down == undefined)) {
+		return reply.code(STATUS.bad_request).send({ message: "Missing player 2 inputs" });
+	}
+
+	const messageP1: InputMessage = {
+		topic: "pong",
+		type: "input",
+		up: body.p1_up,
+		down: body.p1_down,
+	};
+	game.p1_event_listener(messageP1);
+
+	if (game.mode == Mode.local) {
+		const messageP2: InputMessage = {
+			topic: "pong",
+			type: "input",
+			up: body.p2_up!,
+			down: body.p2_down!,
+		};
+		game.p2_event_listener(messageP2);
+	}
+
+	return reply.code(STATUS.success);
 }
