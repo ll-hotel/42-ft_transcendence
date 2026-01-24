@@ -15,11 +15,26 @@ import {
 	Vector2D,
 } from "./types";
 
+type GameState = {
+	ball: { x: number, y: number, speed: Vector2D },
+	paddles: {
+		p1_Y: number,
+		p1_input: { up: boolean, down: boolean },
+		p2_Y: number,
+		p2_input: { up: boolean, down: boolean },
+	},
+	status: Status,
+	score: Score,
+};
+
 type MatchId = number;
+
+export const games: Map<MatchId, GameInstance> = new Map();
 
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, mode: Mode) {
 	let discard = dbM.startMatch(matchId);
 	let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
+	games.set(matchId, game);
 	game.start();
 }
 
@@ -72,6 +87,7 @@ export class GameInstance {
 	game_id: number;
 	move_offset: number;
 	is_running: boolean;
+	status: Status = Status.started;
 
 	constructor(game_id: number, p1_uuid: string, p2_uuid: string, mode: Mode) {
 		this.game_id = game_id;
@@ -133,10 +149,20 @@ export class GameInstance {
 		this.input.p2.down = msg.p2_down;
 	}
 
-	sendState(state: Status) {
+	sendState(status: Status) {
+		this.status = status;
+		const state = this.state();
 		let message: StateMessage = {
 			topic: "pong",
 			type: TypeMsg.state,
+			...state
+		} as StateMessage;
+		socket.send(this.p1_uuid, message);
+		socket.send(this.p2_uuid, message);
+	}
+
+	state(): GameState {
+		return {
 			ball: { x: this.ball.pos.x, y: this.ball.pos.y, speed: this.ball.speed },
 			paddles: {
 				p1_Y: this.paddle_p1.pos.y,
@@ -144,11 +170,9 @@ export class GameInstance {
 				p2_Y: this.paddle_p2.pos.y,
 				p2_input: { up: this.input.p2.up, down: this.input.p2.down },
 			},
-			status: state,
+			status: this.status,
 			score: this.score,
-		} as StateMessage;
-		socket.send(this.p1_uuid, message);
-		socket.send(this.p2_uuid, message);
+		};
 	}
 
 	start(): void {
@@ -157,6 +181,7 @@ export class GameInstance {
 		this.ball.respawn(Math.random() < 0.5 ? -1 : 1);
 		this.sendState(Status.started);
 		this.is_running = true;
+		this.status = Status.started;
 
 		let id_interval = setInterval(() => {
 			this.update();
@@ -200,6 +225,7 @@ export class GameInstance {
 		let discard = dbM.endMatch(this.game_id);
 		socket.removeListener(this.p1_uuid, "pong");
 		socket.removeListener(this.p2_uuid, "pong");
+		games.delete(this.game_id);
 	}
 }
 

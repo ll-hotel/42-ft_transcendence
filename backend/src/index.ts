@@ -15,6 +15,7 @@ import pingRoute from "./routes/ping";
 import socketRoute from "./routes/socket";
 import { friendService } from "./user/friend";
 import userModule from "./user/user";
+import gameRoutes from "./routes/game";
 
 async function main() {
 	createTables();
@@ -44,6 +45,7 @@ async function main() {
 	app.register(socketRoute);
 	app.register(chatRoute);
 	app.register(pingRoute);
+	app.register(gameRoutes);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, (err) => {
 		if (err) {
