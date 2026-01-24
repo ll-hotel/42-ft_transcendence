@@ -4,8 +4,8 @@ import { db } from "../db/database";
 import * as dbM from "../db/methods";
 import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
-import { create_game } from "../serverside/engine";
-import { Mode } from "../serverside/types";
+import { create_game } from "./serverside";
+import { Mode } from "./types";
 import { STATUS } from "../shared";
 import socket from "../socket";
 
