@@ -146,8 +146,8 @@ export class Tournament implements AppPage {
 		const playerCard1 = matchDiv!.querySelector(`[name="@${match.p1.name}"]`)!;
 		const playerCard2 = matchDiv!.querySelector(`[name="@${match.p2.name}"]`)!;
 		if (match.winner === null) {
-			playerCard1.classList.add("bg-[#04809f]", "text-white");
-			playerCard2.classList.add("bg-[#04809f]", "text-white");
+			playerCard1.classList.add("bg-neutral-500", "text-white", "font-bold");
+			playerCard2.classList.add("bg-neutral-500", "text-white", "font-bold");
 		} else if (match.winner == 1) {
 			playerCard1.classList.add("bg-green-200");
 			playerCard2.classList.add("bg-red-200");
@@ -167,7 +167,7 @@ export class Tournament implements AppPage {
 		if (!playerList) return;
 		const avatar: string = await getUserAvatar(name);
 		const playerCard = createElement(
-			`<div name="@${name}" class="tournament-player-card bg-[#04809f] text-white">
+			`<div name="@${name}" class="tournament-player-card bg-neutral-500 text-white font-bold">
 				<img src="${avatar}" class="tournament-player-pic" />
 				<p class="tournament-player-username">${name}</p>
 			</div>`,

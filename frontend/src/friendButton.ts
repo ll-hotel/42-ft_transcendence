@@ -18,7 +18,7 @@ export class FriendButton {
 		this.container = document.createElement("div");
 		this.button = document.createElement("button");
 		if (this)
-		this.button.className = "px-4 py-2 rounded bg-black hover:cursor-pointer hover:scale-105 text-white sm:rounded-xl transition";
+		this.button.className = "px-4 py-2 mr-4 rounded bg-black hover:cursor-pointer hover:scale-105 text-white sm:rounded-xl transition";
 		this.button.addEventListener("click", () => this.handleClick());
 		this.container.appendChild(this.button);
 
@@ -62,7 +62,7 @@ export class FriendButton {
 			case "sent": this.button.textContent = "Request Sent"; break;
 			case "accept": this.button.textContent = "Accept"; break;
 			case "friend":
-				this.button.textContent = "Friend";
+				this.button.textContent = "Remove Friend";
 				if (!this.extraButton)
 				{
 					this.extraButton = document.createElement("button");
