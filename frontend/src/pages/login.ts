@@ -54,6 +54,7 @@ export class Login implements AppPage {
 		const provider = params.get("provider");
 		const code = params.get("code");
 		const error = params.get("error");
+		
 		if (error && provider) {
 			notify("Oauth failed", "error");
 		}

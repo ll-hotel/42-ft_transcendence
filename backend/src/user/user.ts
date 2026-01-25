@@ -8,6 +8,7 @@ import { generate2FASecret, generateQRCode, verify2FAToken } from "../security/2
 import { authGuard as preHandler } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
 import { MESSAGE, schema, STATUS } from "../shared";
+import { randomBytes } from "crypto";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
@@ -45,29 +46,32 @@ class User {
 		if (!req.isMultipart())
 			return rep.code(STATUS.bad_request).send({ message : "Request is not multipart" });
 
-		const data = await req.file();
-		if (!data)
+		const uploadedFile = await req.file();
+		if (!uploadedFile)
 			return rep.code(STATUS.bad_request).send({ message : "No file uploaded" });
 
-		const buffer = await data.toBuffer();
+		const randomKey = randomBytes(32).toString("hex");
+		
+		const buffer = await uploadedFile.toBuffer();
 		try {
-			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile(`./uploads/${data.filename}`);
+			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile("./uploads/" + randomKey + ".png");
 		} catch {
 			return rep.code(STATUS.bad_request).send({ message: "Invalid image file" });
 		}
 		
 		const imgTypes = ["image/png", "image/jpeg", "image/webp"];
-		if (!imgTypes.includes(data.mimetype))
+		if (!imgTypes.includes(uploadedFile.mimetype))
 			return rep.code(STATUS.bad_request).send({ message: "Invalid image file "});
 		
 		const otherUserAvatar = await db.select().from(tables.users).where(orm.eq(tables.users.avatar, usr.avatar));
-		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}` && otherUserAvatar.length < 2)
+		if (usr.avatar !== `uploads/default_pp.png` && otherUserAvatar.length < 2)
 			fs.unlink(usr.avatar, () => {});
 
-		const newAvatar = `uploads/${data.filename}`;
+		const newAvatar = "uploads/" + randomKey + ".png";
+
 		await db.update(tables.users).set({ avatar: newAvatar }).where(orm.eq(tables.users.id, usr.id));
 
-		return rep.code(STATUS.success).send({ message: `avatar updated`, file: data.filename});		
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: randomKey + ".png"});		
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
@@ -180,6 +184,9 @@ class User {
 		const twofa = req.body as { enable: boolean, code?: string };
 		const TwofaState = tables.TwofaState;
 
+		if (user.oauth !== null) {
+			return rep.code(STATUS.bad_request).send({ message: "Cannot activate TwoFA with an OAuth account" });
+		}
 		if (twofa.enable == false) {
 			if (user.twofaEnabled != TwofaState.disabled) {
 				await db.update(tables.users).set({ twofaEnabled: TwofaState.disabled, twofaKey: null })

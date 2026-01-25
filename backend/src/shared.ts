@@ -7,6 +7,7 @@ export const STATUS = {
 	unauthorized: 401,
 	not_found: 404,
 	internal_server_error: 500,
+	service_unavailable: 503,
 };
 
 export const MESSAGE = {
@@ -31,6 +32,7 @@ export const MESSAGE = {
 	user_notfound: "User not found",
 	database_error: "Database error",
 	missing_fields: "Missing fields",
+	oauth_service_is_unavailable: "OAuth service is unavailable",
 };
 
 export const catch_errors = (fn: any) => async (req: FastifyRequest, rep: FastifyReply) => {
