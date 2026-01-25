@@ -18,7 +18,7 @@ export class FriendButton {
 		this.container = document.createElement("div");
 		this.button = document.createElement("button");
 		if (this)
-		this.button.className = "px-4 py-2 mr-4 rounded bg-black hover:cursor-pointer hover:scale-105 text-white sm:rounded-xl transition";
+		this.button.className = "px-4 py-2 mr-4 rounded bg-black hover:cursor-pointer hover:bg-neutral-900  hover:scale-105 text-white sm:rounded-xl transition";
 		this.button.addEventListener("click", () => this.handleClick());
 		this.container.appendChild(this.button);
 
@@ -60,7 +60,7 @@ export class FriendButton {
 		{
 			case "add": this.button.textContent = "Add"; break;
 			case "sent": this.button.textContent = "Request Sent"; break;
-			case "accept": this.button.textContent = "Accept"; break;
+			case "accept": this.button.textContent = "Accept Request"; break;
 			case "friend":
 				this.button.textContent = "Remove Friend";
 				if (!this.extraButton)
@@ -98,6 +98,10 @@ export class FriendButton {
 		}
 		else if (this.status == "friend")
 		{
+			const confirmBlock = confirm(`Do you want to Remove ${this.displayName} from friends list?`);
+			if (!confirmBlock)
+				return;
+
 			const res = await api.delete("/api/friend/remove", {displayName : this.displayName});
 			if (res && res.status === Status.success)
 			{

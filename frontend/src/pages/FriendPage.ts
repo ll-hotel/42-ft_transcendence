@@ -263,7 +263,7 @@ export class FriendPage implements AppPage
 
 		blockBtn.disabled = !this.selectedCard;
 		blockBtn.onclick = async () => {
-			const confirmBlock = confirm(`Do you want to block ${targetDisplayname} ?`);
+			const confirmBlock = confirm(`Do you want to remove ${targetDisplayname} from friend's list?`);
 			if (!confirmBlock)
 				return;
 
