@@ -1,7 +1,7 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class RegisterPage implements AppPage {
 	content: HTMLElement;

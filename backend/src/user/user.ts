@@ -20,8 +20,8 @@ class User {
 		app.get("/api/me/stats", { preHandler }, User.getMyStat);
 
 		app.get("/api/user", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUser);
-		app.get("/api/user/history", { preHandler }, User.getUserHistory);
-		app.get("/api/user/stats", { preHandler }, User.getUserStat);
+		app.get("/api/user/history", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUserHistory);
+		app.get("/api/user/stats", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUserStat);
 		app.get("/api/users/all", { preHandler }, User.getallUsers);
 
 		app.patch("/api/user/profile", { preHandler, schema: schema.body({ displayName: "string" }, ["displayName"]) },User.updateProfile);

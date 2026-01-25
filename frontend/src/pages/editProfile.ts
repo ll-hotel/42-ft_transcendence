@@ -1,6 +1,6 @@
 import { api, Status } from "../api.js";
 import AppPage from "./AppPage.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class editProfile implements AppPage {
 	content: HTMLElement;
@@ -18,6 +18,10 @@ export class editProfile implements AppPage {
 		this.twofaForm = content.querySelector("#twofa-form")!;
 		this.twofaActivateForm = content.querySelector("#twofa-activate-form")!;
 
+		const avatarInput = this.userForm.querySelector<HTMLInputElement>("[name=avatar]")!;
+		const avatarBtn = this.userForm.querySelector<HTMLButtonElement>("#avatar-upload-btn")!;
+		avatarBtn.addEventListener("click", () => { avatarInput.click(); });
+
 		this.userForm.addEventListener("submit", (event) => {
 			event.preventDefault();
 			this.submitUserForm();
@@ -29,9 +33,8 @@ export class editProfile implements AppPage {
 			return (false);
 		});
 
-		const avatarInput = this.userForm.querySelector<HTMLInputElement>("[name=avatar]")!;
 		const avatarPreview = this.content.querySelector<HTMLImageElement>("#edit-avatar-preview")!;
-
+		
 		avatarInput.addEventListener("change", () => {
 			const file = avatarInput.files?.[0];
 			if (!file) return;

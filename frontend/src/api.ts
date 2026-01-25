@@ -1,4 +1,4 @@
-import { notify } from "./pages/utils/notifs.js";
+import { notify } from "./utils/notifs.js";
 
 export enum Status {
 	success = 200,

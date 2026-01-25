@@ -32,18 +32,17 @@ export class HomePage implements AppPage {
 	async loadHome()
 	{
 		const buttonLocalVs = this.html.querySelector<HTMLDivElement>("#local-vs");
-		const buttonLocalIa = this.html.querySelector<HTMLDivElement>("#local-ia");
 		const buttonOnlineVs = this.html.querySelector<HTMLDivElement>("#online-vs");
 		const buttonFindTournament = this.html.querySelector<HTMLDivElement>("#find");
 		const buttonCreateTournament = this.html.querySelector<HTMLDivElement>("#create");
 
-		if (!buttonLocalVs || !buttonLocalIa || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament)
+		if (!buttonLocalVs || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament)
 		{
 			console.log("Missing somme buttons in html");
 			return;
 		}
 
-		buttonLocalVs.onclick = buttonLocalIa.onclick = buttonOnlineVs.onclick = () => {
+		buttonLocalVs.onclick = buttonOnlineVs.onclick = () => {
 			gotoPage("match");
 		}
 

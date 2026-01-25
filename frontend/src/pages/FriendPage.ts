@@ -15,7 +15,7 @@ import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { FriendChat } from "./FriendChat.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 import socket from "../socket.js";
 
 type Message = {
@@ -263,7 +263,7 @@ export class FriendPage implements AppPage
 
 		blockBtn.disabled = !this.selectedCard;
 		blockBtn.onclick = async () => {
-			const confirmBlock = confirm(`Do you want to block ${targetDisplayname} ?`);
+			const confirmBlock = confirm(`Do you want to remove ${targetDisplayname} from friend's list?`);
 			if (!confirmBlock)
 				return;
 
