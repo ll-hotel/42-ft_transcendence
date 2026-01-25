@@ -94,6 +94,10 @@ class AuthService {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
 		}
 
+		if (user.isOnline) {
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
+		}
+
 		if (user.twofaEnabled == TwofaState.enabled) {
 			if (!twoFACode) {
 				return rep.code(STATUS.bad_request)
@@ -178,6 +182,8 @@ class AuthService {
 		let user;
 		if (userExists) {
 			user = userExists;
+			if (user.isOnline)
+				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
@@ -248,6 +254,8 @@ class AuthService {
 		let user;
 		if (userExists) {
 			user = userExists;
+			if (user.isOnline)
+				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
