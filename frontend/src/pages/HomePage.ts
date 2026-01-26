@@ -13,7 +13,7 @@ export class HomePage implements AppPage {
 		this.listContainer = html.querySelector("#friend-list-content")!;
 	}
 
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement) {
 		if (!content) {
 			return null;
 		}
@@ -47,12 +47,7 @@ export class HomePage implements AppPage {
 						return;
 					if (res.status == Status.not_found)
 					{
-						api.post("/api/matchmaking/join").then((res) => {
-							if (!res || !res.payload)
-								return
-							notify("Queue joined !", "success");
-							gotoPage("matchmaking");
-						}).catch((err) => {notify(err, "error");})
+						gotoPage("matchmaking");
 					}
 					else if (res.status == Status.success)
 						gotoPage("pong", "?matchId=" + res.payload.id);

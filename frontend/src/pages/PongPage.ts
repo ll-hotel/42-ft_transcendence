@@ -34,7 +34,7 @@ export class PongPage implements AppPage {
 		const canvas = this.html.querySelector("canvas")!;
 		const table_ratio = 9 / 16;
 		canvas.width = 1920;
-		canvas.height = canvas.width * table_ratio;
+		canvas.height = 1080;
 		// canvas.getContext("2d")!.imageSmoothingEnabled = false;
 		// TODO changer le Mode ("local")
 		// TODO: Change game mode dynamically.
@@ -61,7 +61,6 @@ export class PongPage implements AppPage {
 		this.game?.init();
 	}
 	showGame() {
-		this.onclick = () => this.showPause();
 		this.html.querySelector("#panel-start")?.setAttribute("hidden", "");
 		this.html.querySelector("#panel-game")?.removeAttribute("hidden");
 		// this.game.start();

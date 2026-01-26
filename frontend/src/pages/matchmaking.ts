@@ -43,12 +43,27 @@ export class MatchMaking implements AppPage {
 	}
     loadInto(container: HTMLElement): void {
 		container.appendChild(this.html);
-		socket.addListener("matchmaking", (m) => this.onQueueNotification(m));
+		api.post("/api/matchmaking/join").then((res) => {
+			if (!res || !res.payload)
+				return
+			notify("Queue joined !", "success");
+		}).catch((err) => {
+			notify(err, "error");
+		})
+		socket.addListener("matchmaking:found", (msg) =>
+		{
+			// this.onQueueNotification(msg);
+			const message = msg as any as { type: string }
+			if (message.type != "found") return;
+			const { match, opponent } = msg as any as { match: number, opponent: string };
+			notify("Match found: " + `opponent: ${opponent}`, "success");
+			gotoPage("pong", `?matchId=${match}`);
+		});
     }
 
     unload(): void {
     	this.html.remove();
-    	socket.removeListener("matchmaking");
+    	socket.removeListener("matchmaking:found");
     	if (this.inQueue) {
     		this.inQueue = false;
     		api.delete("/api/matchmaking/leave");

@@ -1,6 +1,6 @@
 import socket, { InputMessage, LocalMessage, Message, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
 import {api, Status} from "./api.js";
-import {notify} from "./pages/utils/notifs.js";
+// import {notify} from "./pages/utils/notifs.js";
 
 type Position = { x: number, y: number };
 type Score = { p1: number, p2: number };
@@ -124,11 +124,11 @@ export class Game {
 		this.context = this.canvas.getContext("2d")!;
 		this.score_viewer = html.querySelector("#panel-score")! as HTMLElement;
 		this.score = { p1: 0, p2: 0 };
-		this.canvas_ratio = { w: this.canvas.width / width_server, h: this.canvas.height / height_server };
-		const paddle_size = { w: this.canvas.width * 0.03, h: this.canvas.height * 0.2 };
-		this.paddle_p1 = new PongPaddle({ x: 0, y: this.canvas.height / 2 }, paddle_texture, paddle_size);
+		this.canvas_ratio = { w: this.canvas.width / width_server , h: this.canvas.height / height_server };
+		const paddle_size = { w: this.canvas.width * 0.06, h: this.canvas.width * 0.06 * 1.80 };
+		this.paddle_p1 = new PongPaddle({ x: paddle_size.w / 2 , y: this.canvas.height / 2 }, paddle_texture, paddle_size);
 		this.paddle_p2 = new PongPaddle(
-			{ x: this.canvas.width, y: this.canvas.height / 2 },
+			{ x: this.canvas.width - ( paddle_size.w / 2), y: this.canvas.height / 2 },
 			paddle_texture,
 			paddle_size,
 		);
