@@ -245,12 +245,24 @@
   width: fit-content;
   height: fit-content;
 }
+.tournament-carousel {
+  display: flex;
+  flex-direction: row;
+  gap: calc(var(--spacing) * 4);
+  @media (width >= 64rem) {
+    flex-direction: column;
+  }
+  @media (width >= 64rem) {
+    justify-items: center;
+  }
+}
 .tournament-player-card {
   display: flex;
+  height: calc(var(--spacing) * 24);
   width: calc(var(--spacing) * 80);
+  min-width: calc(var(--spacing) * 80);
   flex-direction: row;
   align-items: center;
-  gap: calc(var(--spacing) * 4);
   place-self: center;
   border-radius: var(--radius-sm);
   border-style: var(--tw-border-style);
@@ -258,10 +270,10 @@
   padding: calc(var(--spacing) * 4);
 }
 .tournament-player-pic {
-  max-height: calc(var(--spacing) * 24);
-  min-height: calc(var(--spacing) * 24);
-  max-width: calc(var(--spacing) * 24);
-  min-width: calc(var(--spacing) * 24);
+  max-height: calc(var(--spacing) * 20);
+  min-height: calc(var(--spacing) * 20);
+  max-width: calc(var(--spacing) * 20);
+  min-width: calc(var(--spacing) * 20);
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -277,7 +289,7 @@
   line-height: var(--tw-leading, var(--text-lg--line-height));
 }
 .tournament-player-score {
-  height: 100%;
+  height: fit-content;
   justify-self: flex-end;
   --tw-font-weight: var(--font-weight-bold);
   font-weight: var(--font-weight-bold);
@@ -634,6 +646,9 @@
   .hidden {
     display: none;
   }
+  .inline-block {
+    display: inline-block;
+  }
   .inline-flex {
     display: inline-flex;
   }
@@ -859,11 +874,11 @@
   .overflow-hidden {
     overflow: hidden;
   }
-  .overflow-scroll {
-    overflow: scroll;
-  }
   .overflow-y-auto {
     overflow-y: auto;
+  }
+  .overflow-y-scroll {
+    overflow-y: scroll;
   }
   .rounded {
     border-radius: 0.25rem;
@@ -1246,6 +1261,20 @@
       }
     }
   }
+  .hover\:bg-red-400 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-red-400);
+      }
+    }
+  }
+  .hover\:bg-red-700 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-red-700);
+      }
+    }
+  }
   .hover\:font-bold {
     &:hover {
       @media (hover: hover) {
@@ -1420,6 +1449,11 @@
   .md\:px-8 {
     @media (width >= 48rem) {
       padding-inline: calc(var(--spacing) * 8);
+    }
+  }
+  .lg\:flex-row {
+    @media (width >= 64rem) {
+      flex-direction: row;
     }
   }
   .xl\:col-span-3 {
