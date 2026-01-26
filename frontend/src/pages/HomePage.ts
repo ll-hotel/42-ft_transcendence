@@ -43,13 +43,14 @@ export class HomePage implements AppPage {
 			return;
 		}
 
-		buttonLocalVs.onclick = buttonLocalIa.onclick = buttonOnlineVs.onclick = () => {
-			gotoPage("match");
-		}
+		const gotoMatch = () => gotoPage("match");
+		buttonLocalVs.onclick = gotoMatch;
+		buttonLocalIa.onclick = gotoMatch;
+		buttonOnlineVs.onclick = gotoMatch;
 
-		buttonFindTournament.onclick = buttonCreateTournament.onclick = () => {
-			gotoPage("tournament");
-		}
+		const gotoTournaments = () => gotoPage("tournaments");
+		buttonFindTournament.onclick = gotoTournaments;
+		buttonCreateTournament.onclick = gotoTournaments;
 
 		await this.loadFriends();
 	}
