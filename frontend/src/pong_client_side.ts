@@ -1,4 +1,6 @@
 import socket, { InputMessage, LocalMessage, Message, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
+import {api, Status} from "./api.js";
+import {notify} from "./pages/utils/notifs.js";
 
 type Position = { x: number, y: number };
 type Score = { p1: number, p2: number };
@@ -8,6 +10,10 @@ type Size = { w: number, h: number };
 //  - smooth les mouvements des paddles
 //  - les inputs marchent plus si je refresh
 //  - check de la position de la balle et la replacer si jamais
+
+
+const width_server = 500;
+const height_server = width_server * (9/16);
 
 export enum Mode {
 	local = "local",
@@ -21,16 +27,14 @@ enum TypeMsg {
 	score = "score",
 }
 
-export enum Status {
+export enum PongStatus {
 	ended = "ended",
-	paused = "paused",
-	stopped = "stopped",
 	started = "started",
 	ongoing = "ongoing",
 }
 
 function debug_message(msg: string, obj?: any): void {
-	console.debug(msg, obj ? JSON.parse(JSON.stringify(obj)) : "");
+	console.debug(msg, obj ? obj : "");
 }
 
 function draw_hit_box(context: CanvasRenderingContext2D, obj: PhysicObject): void {
@@ -78,36 +82,6 @@ abstract class PhysicObject {
 	}
 }
 
-function resolution_update(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
-	const rect = canvas.getBoundingClientRect();
-	const dpr = (window.devicePixelRatio / 2) || 1;
-	canvas.width = rect.width * dpr;
-	canvas.height = rect.height * dpr;
-	canvas.style.width = rect.width + "px";
-	canvas.style.height = rect.height + "px";
-	let context = canvas.getContext("2d")!;
-	context.setTransform(dpr, 0, 0, dpr, 0, 0);
-	context.imageSmoothingEnabled = false;
-	// context.imageSmoothingQuality = "high";?
-
-	return context;
-	// const angle = Math.PI / 2;
-	// if (window.innerWidth < window.innerHeight)
-	// {
-	// 	debug_message("context rotation");
-	// 	let tmp = canvas.width;
-	// 	canvas.width = canvas.height;
-	// 	canvas.height = tmp;
-	// 	context.translate(canvas.height, 0)
-	// 	context.setTransform(
-	// 		Math.cos(angle), Math.sin(angle),
-	// 		-Math.sin(angle), Math.cos(angle),
-	// 		0, 0
-	// 	);
-	//
-	// }
-}
-
 export class Vector2D {
 	public x: number;
 	public y: number;
@@ -142,13 +116,16 @@ export class Game {
 	private speed_ratio: number;
 	private sendInputs: () => void;
 	running: boolean = false;
+	private matchId : number;
 
-	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement, mode: Mode) {
+	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement, mode: Mode, matchId: number) {
+		this.matchId = matchId;
 		this.canvas = html.querySelector("#pong-canvas")! as HTMLCanvasElement;
 		this.context = this.canvas.getContext("2d")!;
 		this.score_viewer = html.querySelector("#panel-score")! as HTMLElement;
 		this.score = { p1: 0, p2: 0 };
-		const paddle_size = { w: this.canvas.width * 0.01, h: this.canvas.height * 0.1 };
+		this.canvas_ratio = { w: this.canvas.width / width_server, h: this.canvas.height / height_server };
+		const paddle_size = { w: this.canvas.width * 0.03, h: this.canvas.height * 0.2 };
 		this.paddle_p1 = new PongPaddle({ x: 0, y: this.canvas.height / 2 }, paddle_texture, paddle_size);
 		this.paddle_p2 = new PongPaddle(
 			{ x: this.canvas.width, y: this.canvas.height / 2 },
@@ -158,7 +135,6 @@ export class Game {
 		this.ball = new PongBall(this.canvas, this.context, ball_texture);
 		this.tick_rate = 60;
 		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
-		this.canvas_ratio = { w: this.canvas.width / 500, h: this.canvas.height / 250 };
 		this.speed_ratio = 10 / this.tick_rate;
 		this.mode = mode;
 		if (this.mode == Mode.local) {
@@ -180,13 +156,13 @@ export class Game {
 			return;
 		}
 		const state = msg as StateMessage;
-		if (state.status == Status.started) {
+		if (state.status == PongStatus.started) {
 			this.run();
-		} else if (state.status == Status.ended) {
+		} else if (state.status == PongStatus.ended) {
 			this.stop();
 			alert("Match ended.");
 			return;
-		} else if (state.status == Status.ongoing) {
+		} else if (state.status == PongStatus.ongoing) {
 			if (this.current_interval_id === null) {
 				this.run();
 			}
@@ -236,14 +212,21 @@ export class Game {
 	}
 
 	update_state(msg: StateMessage) {
-		this.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
-		this.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
-		scale_vec(this.ball.speed, this.speed_ratio);
+		// const test = api.get(`/api/state/game?matchId=${this.matchId}`).then((test) => {
+		// 	if (!test || !test.payload)
+		// 		return;
+		// 	if (test.status != Status.success)
+		// 		return notify("Error: " + test.payload.message, "error");
+		// 	msg = test.payload;
+			this.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
+			this.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
+			scale_vec(this.ball.speed, this.speed_ratio);
 
-		this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
-		this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
-		this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_ratio.h);
-		this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
+			this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
+			this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
+			this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_ratio.h);
+			this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
+		// });
 	}
 
 	render() {
@@ -339,7 +322,8 @@ export class Game {
 
 	shouldSendInputs(): boolean {
 		for (const value of this.input.values()) {
-			if (value == true) return true;
+			if (value == true)
+				return true;
 		}
 		return false;
 	}
@@ -372,7 +356,7 @@ export class PongBall extends PhysicObject {
 	constructor(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, texture: HTMLImageElement) {
 		super(
 			{ x: canvas.width / 2, y: canvas.height / 2 },
-			{ w: canvas.height * 0.05, h: canvas.height * 0.05 },
+			{ w: canvas.height * 0.1, h: canvas.height * 0.1 },
 			new Vector2D(0, 0),
 		);
 		this.canvas = canvas;

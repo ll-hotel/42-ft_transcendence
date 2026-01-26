@@ -32,10 +32,11 @@ type MatchId = number;
 export const games: Map<MatchId, GameInstance> = new Map();
 
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, mode: Mode) {
-	let discard = dbM.startMatch(matchId);
-	let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
+	let discard = dbM.startMatch(matchId).then(() => {
+		let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
 	games.set(matchId, game);
 	game.start();
+	});
 }
 
 const server_tickrate: number = 10;
@@ -68,8 +69,8 @@ const table = {
 	height: table_width * table_ratio,
 };
 
-const paddleWidth = table.width * 0.01;
-const paddleHeight = table.height * 0.1;
+const paddleWidth = table.width * 0.03;
+const paddleHeight = table.height * 0.2;
 
 export class GameInstance {
 	ball: PongBall;
@@ -259,7 +260,7 @@ export class PongBall extends PhysicObject {
 	) {
 		super(
 			{ x: table.width / 2, y: table.height / 2 },
-			{ w: table.width * 0.05, h: table.height * 0.05 },
+			{ w: table.height * 0.1, h: table.height * 0.1 },
 			new Vector2D(0, 0),
 		);
 		this.score = score;
@@ -313,7 +314,7 @@ export class PongBall extends PhysicObject {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
 		// TODO remettre l'angle aleatoire
-		let new_dir = 45 + Math.random() * 90;
+		let new_dir = Math.random() * 90;
 		this.speed.setX = Math.cos(new_dir) * 5;
 		this.speed.setY = Math.sin(new_dir) * 5;
 	}
