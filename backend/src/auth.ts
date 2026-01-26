@@ -94,6 +94,10 @@ class AuthService {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
 		}
 
+		if (user.isOnline) {
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
+		}
+
 		if (user.twofaEnabled == TwofaState.enabled) {
 			if (!twoFACode) {
 				return rep.code(STATUS.bad_request)
@@ -178,6 +182,8 @@ class AuthService {
 		let user;
 		if (userExists) {
 			user = userExists;
+			if (user.isOnline)
+				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
@@ -248,6 +254,8 @@ class AuthService {
 		let user;
 		if (userExists) {
 			user = userExists;
+			if (user.isOnline)
+				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
@@ -263,10 +271,16 @@ class AuthService {
 			} catch {
 				avatarPath = "uploads/default_pp.png";
 			}
+			let displayName;
+			const displayNameExists = await db.select().from(users).where(eq(users.displayName, userData.given_name));
+			if (displayNameExists.length > 0)
+				displayName = userData.email;
+			else
+				displayName = userData.given_name;
 			await db.insert(users).values({
 				uuid,
 				username: userData.email,
-				displayName: userData.given_name,
+				displayName: displayName,
 				password: pass,
 				avatar: avatarPath,
 				oauth: OAuth.google,

@@ -8,10 +8,10 @@ import { schema, STATUS } from "../shared";
 class Match {
 	static setup(app: FastifyInstance) {
 		app.get("/api/match/current", { preHandler: authGuard }, Match.getCurrent);
-		app.get("/api/match/:id", { preHandler: authGuard, schema: schema.params({ id: "number" }) }, Match.getById);
+		app.get("/api/match/:id", { preHandler: authGuard, schema: schema.params({ id: "number" }, ["id"]) }, Match.getById);
 		// app.post("/api/match/:id/end", { preHandler: authGuard }, Match.end);
 		// use case: player invited to play by chat.
-		app.post("/api/match/create", { preHandler: authGuard }, Match.create);
+		app.post("/api/match/create", { preHandler: authGuard, schema: schema.body({p1Id: "number", p2Id: "number"}, ["p1Id", "p2Id"])}, Match.create);
 	}
 	static async getCurrent(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
@@ -47,6 +47,13 @@ class Match {
 	static async create(req: FastifyRequest, rep: FastifyReply) {
 		const { p1Id, p2Id } = req.body as { p1Id: number, p2Id: number };
 
+		const [p1] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p1Id));
+		if (!p1)
+			return rep.code(STATUS.bad_request).send({ message: "p1 doesn't exists" });
+		const [p2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p1Id));
+		if (!p2)
+			return rep.code(STATUS.bad_request).send({ message: "p2 doesn't exists" });
+
 		const [p1Playing] = await db.select().from(tables.matches).where(
 			drizzle.and(
 				drizzle.eq(tables.matches.status, "ongoing"),
@@ -63,6 +70,7 @@ class Match {
 				drizzle.eq(tables.matches.player2Id, p2Id),
 			),
 		));
+
 		if (p1Playing || p2Playing) {
 			return rep.code(STATUS.bad_request).send({ message: "Already in game" });
 		}

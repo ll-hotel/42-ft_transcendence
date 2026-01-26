@@ -2,7 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import AppPage from "./AppPage.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class Login implements AppPage {
 	content: HTMLElement;
@@ -125,6 +125,7 @@ async function loginWithProvider(container: HTMLElement, provider: string, code:
 	} else {
 		path = "/api/authGoogle/callback?code=";
 	}
+
 	const logging = document.createElement("p");
 	logging.className = "font-bold text-xl";
 	logging.innerText = "Logging in...";

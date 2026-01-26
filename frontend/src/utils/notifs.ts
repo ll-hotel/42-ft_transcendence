@@ -3,7 +3,7 @@ export function notify(message: string, type: "success" | "error" | "info") {
 	if (!container) {
 		container = document.createElement("div");
 		container.id = "notif-container";
-	//	container.className = "fixed bottom-4 right-4 z-50 flex flex-col-reverse space-y-reverse space-y-2"; // bot right notifs
+		//container.className = "fixed bottom-4 right-4 z-50 flex flex-col-reverse space-y-reverse space-y-2"; // bot right notifs
 		container.className = "fixed top-4 right-4 z-50 space-y-2" //top right notifs
 		
 		document.body.appendChild(container);
@@ -17,7 +17,7 @@ export function notify(message: string, type: "success" | "error" | "info") {
 	el.style.position = "relative";
 	el.style.overflow = "hidden";
 	el.style.opacity = "0";
-	el.style.transform = "translateY(8px)";
+	el.style.transform = "translateX(8px)";
 	el.style.transition = "opacity 0.2s ease, transform 0.2s ease";
 
 	let color = "";
@@ -33,7 +33,7 @@ export function notify(message: string, type: "success" | "error" | "info") {
 			break;
 	}
 
-	el.className = `px-4 py-2 rounded text-white font-semibold shadow ${color}`;
+	el.className = `px-4 py-2 rounded text-white font-semibold drop-shadow-xl/80 ${color}`;
 	el.textContent = message;
 
 	const bar = document.createElement("div");
@@ -42,7 +42,7 @@ export function notify(message: string, type: "success" | "error" | "info") {
 	bar.style.bottom = "0";
 	bar.style.height = "4px";
 	bar.style.width = "100%";
-	bar.style.backgroundColor = "black";
+	bar.style.backgroundColor = `black`;
 	bar.style.transformOrigin = "left";
 	bar.style.transform = "scaleX(1)";
 	bar.style.transition = `transform ${duration}ms linear`;
@@ -53,14 +53,17 @@ export function notify(message: string, type: "success" | "error" | "info") {
 	requestAnimationFrame(() => {
 		setTimeout(() => {
 			el.style.opacity = "1";
-			el.style.transform = "translateY(0)";
+			el.style.transform = "translateX(0)";
 			bar.style.transform = "scaleX(0)";
 		}, 10);
 	});
 
 	setTimeout(() => {
 		el.style.opacity = "0";
-		el.style.transform = "translateY(8px)";
+		el.style.transform = "translateX(8px)";
 		setTimeout(() => el.remove(), 200);
 	}, duration);
 }
+
+
+

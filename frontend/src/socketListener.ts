@@ -1,7 +1,7 @@
 import socket from "./socket.js"
 import { Message } from "./socket.js";
 import { gotoPage } from "./PageLoader.js";
-import { notify } from "./pages/utils/notifs.js";
+import { notify } from "./utils/notifs.js";
 let isSocket = false; 
 
 export async function initSocket() {
