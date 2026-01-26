@@ -16,13 +16,14 @@ import socket from "./socket";
 const registerSchema = schema.body({ username: "string", password: "string" }, ["username", "password"]);
 const loginSchema = schema.body({ username: "string", password: "string" }, ["username", "password"]);
 
-const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
-const oauthKeys = JSON.parse(fs.readFileSync("/run/secrets/oauthKeys", "utf-8").trim());
 
-// process.env.HOSTURL = "localhost"; // dev
-if (!process.env.HOSTURL) {
-	throw new Error("Missing server hostname");
+if (!process.env.OAUTH_KEYS || !process.env.JWT_SECRET || !process.env.HOSTURL) {
+	throw new Error("Missing Environement value");
 }
+
+const jwtSecret = process.env.JWT_SECRET!;
+const oauthKeys = JSON.parse(process.env.OAUTH_KEYS!);
+
 const redirect42 = `https://${process.env.HOSTURL}:8443/login?provider=42`;
 const redirectGoogle = `https://${process.env.HOSTURL}:8443/login?provider=google`;
 
