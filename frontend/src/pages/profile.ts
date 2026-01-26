@@ -18,7 +18,7 @@ export class ProfilePage implements AppPage {
 		logout.onclick = () => this.logoutClick();
 		edit.onclick = () => this.editClick();
 	}
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement): Promise<AppPage | null> {
 		const logout = content.querySelector("#logout");
 		const edit = content.querySelector("#edit");
 		const displayname = content.querySelector("#profile-displayname");
@@ -48,7 +48,7 @@ export class ProfilePage implements AppPage {
 		const contMatchList = this.content.querySelector("#match-list");
 		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
 		if (avatarImg)
-			avatarImg.src = userInfo.avatar.startsWith("/") ? userInfo.avatar : `/${userInfo.avatar}`;
+			avatarImg.src = userInfo.avatar == "DEFAULT_AVATAR" ? "default_pp.png" : userInfo.avatar;
 		this.displayname.innerHTML = userInfo.displayName;
 		
 		const resMatch = await api.get("/api/me/history");

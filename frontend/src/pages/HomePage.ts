@@ -2,6 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
+import {Mode} from "../pong_client_side";
 
 export class HomePage implements AppPage {
 	html: HTMLElement;
@@ -34,14 +35,35 @@ export class HomePage implements AppPage {
 		const buttonFindTournament = this.html.querySelector<HTMLDivElement>("#find");
 		const buttonCreateTournament = this.html.querySelector<HTMLDivElement>("#create");
 
-		if (!buttonLocalVs || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament) {
-			notify("Missing buttons", "error");
+		if (!buttonLocalVs  || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament)
+		{
+			console.log("Missing some buttons in html");
 			return;
 		}
 
-		const gotoMatch = () => gotoPage("match");
-		buttonLocalVs.onclick = gotoMatch;
-		buttonOnlineVs.onclick = gotoMatch;
+		buttonOnlineVs.onclick = () => {
+				api.get("/api/match/current").then((res) => {
+					if (!res)
+						return;
+					if (res.status == Status.not_found)
+					{
+						api.post("/api/matchmaking/join").then((res) => {
+							if (!res || !res.payload)
+								return
+							notify("Queue joined !", "success");
+							gotoPage("matchmaking");
+						}).catch((err) => {notify(err, "error");})
+					}
+					else if (res.status == Status.success)
+						gotoPage("pong", "?matchId=" + res.payload.id);
+					else
+						notify("Error " + res.status, "error");
+				});
+		}
+
+		buttonLocalVs.onclick = () => {
+			// gotoPage("pong",`?${Mode.local}`);
+		}
 
 		const gotoTournaments = () => gotoPage("tournaments");
 		buttonFindTournament.onclick = gotoTournaments;

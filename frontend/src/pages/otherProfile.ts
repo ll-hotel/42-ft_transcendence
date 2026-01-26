@@ -15,7 +15,7 @@ export class OtherProfilePage implements AppPage {
 		this.displayname = content.querySelector("#profile-displayname")!;
 		this.username = content.querySelector("#profile-username")!;
 	}
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement) {
 		const displayname = content.querySelector("#profile-displayname");
 		// const username = content.querySelector("#profile-username")!;
 		// if (!content || !logout || !displayname || !username) {
@@ -61,20 +61,20 @@ export class OtherProfilePage implements AppPage {
 		const statusText = this.content.querySelector("#status-text");
 		const contMatchList = this.content.querySelector("#match-list");
 		const cntFriendButton = this.content.querySelector(".friend-buttons");
-		
+
 		if (!contMatchList || !statusDot || !statusText || !cntFriendButton)
 		{
 			console.log("Missing HTML info")
 			return;
 		}
-		
+
 		statusText.innerHTML = "";
 		contMatchList.innerHTML = "";
 		const isOnline = userinfo.isOnline;
 		statusDot.className = isOnline ? "friend-round-online" : "friend-round-offline";
 		statusText.className = isOnline ? "friend-text-online" : "friend-text-offline";
 		statusText.textContent = isOnline ? "Online" : "Offline";
-		
+
 		const resMatch = await api.get(`/api/user/history?displayName=${displayName}`);
 		if (!resMatch || resMatch.status != Status.success) {
 			notify("Can't load matchs info", "error");
@@ -132,7 +132,7 @@ export class OtherProfilePage implements AppPage {
 		const oldButton = cntFriendButton.querySelector("#friend-buttons-cnt");
 		if (oldButton)
 			oldButton.remove();
-		
+
 		const friendButton = new FriendButton(userinfo.displayName);
 		friendButton.container.id= "friend-buttons-cnt";
 		cntFriendButton.appendChild(friendButton.getFriendButton());

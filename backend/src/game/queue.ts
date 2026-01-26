@@ -4,6 +4,8 @@ import { db } from "../db/database";
 import * as dbM from "../db/methods";
 import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
+import { create_game } from "./serverside";
+import { Mode } from "./types";
 import { STATUS } from "../shared";
 import socket from "../socket";
 
@@ -57,6 +59,7 @@ class Queue {
 
 		notifyUser(user1.uuid, match.id, user2.username);
 		notifyUser(user2.uuid, match.id, user1.username);
+		create_game(match.id, user1.uuid, user2.uuid, Mode.remote);
 		return true;
 	}
 

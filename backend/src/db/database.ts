@@ -1,6 +1,10 @@
 import Database from "better-sqlite3";
 import * as orm from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+import * as tables from "./tables";
+import * as dbM from "./methods";
+
+const sql = orm.sql;
 
 const path = "/srv/app/db/database.sqlite";
 
@@ -15,6 +19,13 @@ export function createTables() {
 	createTournamentsTable();
 	createTournamentPlayers();
 	createTournamentMatches();
+
+	// Stop all ongoing matches.
+	const selectOngoinMatches = db.select({ id: tables.matches.id }).from(tables.matches).where(
+		orm.eq(tables.matches.status, "ongoing"),
+	).prepare();
+	const matches = selectOngoinMatches.all();
+	matches.forEach((match) => dbM.endMatch(match.id));
 }
 
 function createUserTable() {

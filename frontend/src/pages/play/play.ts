@@ -20,7 +20,7 @@ export default class Play implements AppPage {
 		const createTournament = html.querySelector("#create-tournament")! as HTMLButtonElement;
 		createTournament?.addEventListener("click", () => this.createTournament());
 	}
-	static new(html: HTMLElement): AppPage | null {
+	static async new(html: HTMLElement): Promise<AppPage> {
 		return new Play(html);
 	}
 	loadInto(container: HTMLElement): void {

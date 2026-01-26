@@ -7,7 +7,7 @@ X Gestion de l'affichage des chats (api via l'id qui retourne les precedents mes
 PETITES TACHES
 ° Gerer mieux le responsive (card friend, container friend and mess)
 X Rendre visible l'ami séléctionner
-° link les bouttons Block, 1vs1 
+° link les bouttons Block, 1vs1
 X Link l'input text, et le button send
 
 */
@@ -21,7 +21,7 @@ import socket from "../socket.js";
 type Message = {
 	source: string;
 	target: string;
-	content: string 
+	content: string
 };
 
 
@@ -45,7 +45,7 @@ export class FriendPage implements AppPage
 					console.log("Error in html");
 	}
 
-	static new(content:HTMLElement)
+	static async new(content:HTMLElement)
 	{
 		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#friend-chat"))
 		{
@@ -90,7 +90,7 @@ export class FriendPage implements AppPage
 	}
 
 
-	async loadFriends() 
+	async loadFriends()
 	{
 		this.listContainer.innerHTML = "<div>Finding friends...</div>";
 
@@ -225,10 +225,10 @@ export class FriendPage implements AppPage
 	{
 		if (targetUsername == this.chat.targetUsername)
 			return;
-		
+
 		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name")!;
 		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
-		
+
 		if (!chatName || !chatList)
 		{
 			console.log("Missing chatName or chatList in html");
@@ -239,11 +239,11 @@ export class FriendPage implements AppPage
 		this.chat.cleanRoomState();
 		await this.chat.openRoom(targetUsername);
 		await this.chat.loadHistory();
-		
+
 		chatName.textContent = targetDisplayname;
 		chatName.classList.add("hover:text-[#04809F]");
 		chatName.classList.add("cursor-pointer");
-		chatName.onclick = async () => { 
+		chatName.onclick = async () => {
 			await gotoUserPage(targetDisplayname);
 		}
 		await this.setRemoveFriendButton(chatName, chatList, targetDisplayname);
@@ -251,7 +251,7 @@ export class FriendPage implements AppPage
 		await this.setVsButton(targetDisplayname, targetUuid);
 		this.renderMessages(chatList);
 		this.bindSend();
-		
+
 		if (this.renderInterval)
 			clearInterval(this.renderInterval);
 
@@ -330,7 +330,7 @@ export class FriendPage implements AppPage
 			if (!confirmVs)
 				return;
 
-			const me = await api.get("api/me");
+			const me = await api.get("/api/me");
 			if (!me || !me.payload)
 				return;
 			if (me.status !== Status.success)
@@ -366,7 +366,7 @@ export class FriendPage implements AppPage
 	renderMessages(chatList: HTMLDivElement) {
 		const msgs = this.chat.getRoomMessages();
 
-		const newMsgs = msgs.slice(this.chat.lastMessage); 
+		const newMsgs = msgs.slice(this.chat.lastMessage);
 
 		if (!newMsgs.length)
 			return;
@@ -374,7 +374,7 @@ export class FriendPage implements AppPage
 		for (let msg of newMsgs)
 		{
 			const divMsg = document.createElement("div");
-			msg.source === `@${this.chat.username}` ? 
+			msg.source === `@${this.chat.username}` ?
 				divMsg.classList.add("msg-me") : divMsg.classList.add("msg-target") ;
 			divMsg.textContent = msg.content;
 			chatList.appendChild(divMsg);

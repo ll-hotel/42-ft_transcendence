@@ -12,7 +12,7 @@ export class Tournament implements AppPage {
 	constructor(html: HTMLElement) {
 		this.html = html;
 	}
-	static new(html: HTMLElement) {
+	static async new(html: HTMLElement) {
 		return new Tournament(html);
 	}
 	async loadInto(container: HTMLElement) {

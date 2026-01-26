@@ -1,19 +1,60 @@
 import { api, Status } from "./api.js";
+import * as game from "./pong_client_side.js";
 
-type BaseMessage = {
+export type BaseMessage = {
 	topic: string,
 };
-type MatchMessage = BaseMessage & {
+
+export type MatchMessage = BaseMessage & {
 	source: string,
 	match: number,
 	opponent: string,
 };
 
-type VersusMessage = BaseMessage & {
+export type VersusMessage = BaseMessage & {
 	source: string,
-	target: string;
+	target: string,
 };
-export type Message = VersusMessage | BaseMessage | MatchMessage;
+
+export type StateMessage = BaseMessage & {
+	type: "state",
+	ball: {
+		x: number,
+		y: number,
+		speed: game.Vector2D,
+	},
+	paddles: {
+		p1_Y: number,
+		p1_input: { up: boolean, down: boolean },
+		p2_Y: number,
+		p2_input: { up: boolean, down: boolean },
+	},
+	score: { p1: number, p2: number },
+	status: game.PongStatus,
+};
+
+export type InputMessage = BaseMessage & {
+	type: "input",
+	up: boolean,
+	down: boolean,
+};
+
+export type ScoreMessage = BaseMessage & {
+	type: "score",
+	p1_score: number,
+	p2_score: number,
+};
+
+export type LocalMessage = BaseMessage & {
+	type: "input",
+	p1_up: boolean,
+	p1_down: boolean,
+	p2_up: boolean,
+	p2_down: boolean,
+};
+
+export type PongMessage = InputMessage | ScoreMessage | LocalMessage | StateMessage;
+export type Message = VersusMessage | BaseMessage | MatchMessage | PongMessage;
 
 let socket: WebSocket | null = null;
 const hooks = new Map<string, ((m: Message) => void)[]>();
@@ -39,8 +80,6 @@ async function connect(): Promise<boolean> {
 			setTimeout(connect, 500);
 		}
 	};
-
-// HOOK MAINTENANT LIER AU TYPE PLUTOT QUE A LA SOURCE 
 	socket.onmessage = (event) => {
 		try {
 			const message = JSON.parse(event.data) as Message;
@@ -85,7 +124,6 @@ function removeListener(topic: string) {
 		hooks.delete(topic);
 	}
 }
-
 
 export default {
 	connect,
