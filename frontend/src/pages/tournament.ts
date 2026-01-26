@@ -192,9 +192,11 @@ export class Tournament implements AppPage {
 		api.post("/api/tournament/leave", { name }).then((res) => {
 			if (!res) return;
 			if (res.status != Status.success) {
-				return notify(res.payload.message, "error");
+				notify(res.payload.message, "error");
 			}
-			notify(res.payload.message, "success");
+			else {
+				notify(res.payload.message, "success");
+			}
 			gotoPage("tournaments");
 		});
 	}
