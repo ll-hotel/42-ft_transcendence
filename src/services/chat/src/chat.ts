@@ -129,13 +129,13 @@ namespace Chat {
 			if (!this.users.has(user))
 				{
 				this.users.add(user);
-				this.send({ source: user.id, target: this.id, content: "Joined", system: true });
+				this.send({ source: user.id, target: this.id, content: "Joined room", system: true });
 				user.rooms.add(this.id);
 			}
 		}
 
 		disconnect(userId: string) {
-			this.send({source: userId, target : this.id, content : "Disconnect", system: true});
+			this.send({source: userId, target : this.id, content : "Left Room", system: true});
 			for (const user of this.users)
 			{
 				if (user.id === userId)

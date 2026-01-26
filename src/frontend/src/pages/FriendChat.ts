@@ -1,4 +1,5 @@
 import { api, Status } from "../api.js";
+import { notify } from "../utils/notifs.js";
 
 type Message = {
 	source: string;
@@ -21,7 +22,7 @@ export class FriendChat {
 			return this.ws;
 		const me = await api.get("/api/user/me");
 		if (!me || !me.payload ||me.status!==Status.success)
-			return alert("Error API me");
+			return notify("Error API me", "error");
 		this.username = me.payload.username;
 		return new Promise<WebSocket>((resolve, reject) => {
 			this.ws = new WebSocket(url);
@@ -79,7 +80,7 @@ export class FriendChat {
 	{
 		const Roomres = await api.post(`/api/chat/private/${username}`);
 		if (!Roomres || Roomres.status !== Status.success) {
-			alert("Room didnt work");
+			notify("Room error", "error");
 			return;
 		}
 		this.currentRoomId = Roomres.payload.roomId;

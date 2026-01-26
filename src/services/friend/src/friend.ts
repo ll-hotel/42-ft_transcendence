@@ -27,6 +27,10 @@ class friend {
 		app.get("/api/friend/status", {preHandler: authGuard, schema: schema.query({displayName: "string"}, ["displayName"])}, this.getFriendStatus);
 		app.delete("/api/friend/remove", {preHandler: authGuard, schema: schema.body({displayName: "string"}, ["displayName"])}, this.removeFriend);
 
+		app.post("/api/friend/block", {preHandler: authGuard, schema: schema.body({ displayName:"string"}, ["displayName"]) }, this.blockUser);
+		app.post("/api/friend/unblock", {preHandler: authGuard, schema: schema.body({ displayName:"string"}, ["displayName"]) }, this.unBlockUser);
+		app.post("/api/friend/blockedme", {preHandler: authGuard, schema: schema.body({ displayName:"string"}, ["displayName"]) }, this.userBlockedMe);
+		app.post("/api/friend/isblocked", {preHandler: authGuard, schema: schema.body({ displayName:"string"}, ["displayName"]) }, this.isBlocked);
 	}
 
 	async sendRequest(req: FastifyRequest, rep: FastifyReply)
@@ -42,6 +46,16 @@ class friend {
 		const [targetUser] = await db.select().from(users).where(eq(users.displayName, displayName));
 		if (!targetUser)
 			return rep.code(STATUS.not_found).send({message : MESSAGE.user_notfound});
+
+		const [isBlocked] = await db.select().from(friends).where(and(
+			or(
+				and(eq(friends.senderId, usr.id), eq(friends.receiverId, targetUser.id)),
+				and(eq(friends.receiverId, usr.id), eq(friends.senderId, targetUser.id)),
+			),
+			eq(friends.status, "block"),
+		));
+		if (isBlocked)
+			return rep.code(STATUS.bad_request).send({message: "Friend request failed"});
 
 		const mutualRequest = await db.select().from(friends).where(
 			and(eq(friends.senderId, targetUser.id), eq(friends.receiverId, usr.id), eq(friends.status, "pending")));
@@ -181,6 +195,90 @@ class friend {
 		));
 
 		return rep.code(STATUS.success).send({message: "Friend removed"});
+	}
+	
+	async blockUser(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+
+		const { displayName } = req.body as { displayName: string };
+
+		const [targetUsr] = await db.select().from(users).where(eq(users.displayName, displayName));
+		if (!targetUsr)
+			return rep.code(STATUS.bad_request).send({ message: "User not found" });
+
+		await db.delete(friends)
+		.where(or(
+			and(eq(friends.senderId, usr.id), eq(friends.receiverId, targetUsr.id)),
+			and(eq(friends.senderId, targetUsr.id), eq(friends.receiverId, usr.id))
+		));
+
+		await db.insert(friends).values({
+			senderId: usr.id,
+			receiverId: targetUsr.id,
+			status: "block",
+		});
+
+		return rep.code(STATUS.success).send({ message: "User blocked" });
+	}
+
+	async unBlockUser(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+
+		const { displayName } = req.body as { displayName: string };
+
+		const [targetUsr] = await db.select().from(users).where(eq(users.displayName, displayName));
+		if (!targetUsr)
+			return rep.code(STATUS.bad_request).send({ message: "User not found" });
+
+		await db.delete(friends)
+		.where(or(
+			and(eq(friends.senderId, usr.id), eq(friends.receiverId, targetUsr.id)),
+			and(eq(friends.senderId, targetUsr.id), eq(friends.receiverId, usr.id))
+		));
+
+		return rep.code(STATUS.success).send({ message: "User unblocked" });
+	}
+
+	async isBlocked(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+		let blocked = false;
+
+		const { displayName } = req.body as { displayName: string };
+
+		const [targetUsr] = await db.select().from(users).where(eq(users.displayName, displayName));
+		if (!targetUsr)
+			return rep.code(STATUS.bad_request).send({ message: "User not found" });
+
+		const [isBlocked] = await db.select().from(friends).where(and(
+			and(eq(friends.senderId, usr.id), eq(friends.receiverId, targetUsr.id)),
+			eq(friends.status, "block")
+		));
+
+		if (!isBlocked)
+			return rep.code(STATUS.success).send({ blocked });
+		blocked = true;
+		return rep.code(STATUS.success).send({ blocked });
+	}
+
+	async userBlockedMe(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+		let blocked = false;
+
+		const { displayName } = req.body as { displayName: string };
+
+		const [targetUsr] = await db.select().from(users).where(eq(users.displayName, displayName));
+		if (!targetUsr)
+			return rep.code(STATUS.bad_request).send({ message: "User not found" });
+
+		const [isBlocked] = await db.select().from(friends).where(and(
+			and(eq(friends.receiverId, usr.id), eq(friends.senderId, targetUsr.id)),
+			eq(friends.status, "block")
+		));
+
+		if (!isBlocked)
+			return rep.code(STATUS.success).send({ blocked });
+		blocked = true;
+		return rep.code(STATUS.success).send({ blocked });
 	}
 
 	async getFriendStatus(req: FastifyRequest, rep: FastifyReply) {

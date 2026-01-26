@@ -43,7 +43,7 @@ type Message = BaseMessage | MatchMessage | VersusMessage;
 
 export const clients: Map<ClientId, Client> = new Map();
 
-export function isOnline(id: ClientId) {
+export function isOnline(id: ClientId): boolean {
 	const client = clients.get(id);
 	if (!client) return false;
 	for (const socket of client.sockets) {
@@ -52,6 +52,7 @@ export function isOnline(id: ClientId) {
 			return true;
 		}
 	}
+	return false;
 }
 
 export async function connect(uuid: ClientId, socket: WebSocket) {
@@ -74,6 +75,7 @@ export async function connect(uuid: ClientId, socket: WebSocket) {
 function updateOnlineTime(client: Client) {
 	client.lastOnlineTime = Date.now();
 }
+
 function onMessage(client: Client, clientId : ClientId, event: MessageEvent) {
 	updateOnlineTime(client);
 	try {
@@ -133,7 +135,7 @@ export function disconnect(target: ClientId, socket?: WebSocket) {
 		}
 		socket.close(4001);
 	} else {
-		client.sockets.forEach(e => e.close(4001));
+		client.sockets.forEach(socket => socket.close(4001));
 		client.sockets = [];
 	}
 	if (!isOnline(target)) {

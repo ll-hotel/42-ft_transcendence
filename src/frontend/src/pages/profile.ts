@@ -2,6 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js"
 import { MatchInfo } from "./profile/matches.js";
+import { notify } from "../utils/notifs.js";
 
 export class ProfilePage implements AppPage {
 	content: HTMLElement;
@@ -52,7 +53,7 @@ export class ProfilePage implements AppPage {
 		
 		const resMatch = await api.get("/api/user/me/history");
 		if (!resMatch || resMatch.status != Status.success) {
-			alert("Can't load matchs info");
+			notify("Can't load matchs info", "error");
 			return;
 		}
 		const MatchList = resMatch.payload;
@@ -81,12 +82,12 @@ export class ProfilePage implements AppPage {
 		const infoTourPlacement = this.content.querySelector("#tournament-best");
 
 		if (!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed || !infoTourPlacement)
-			return alert("Missing info in Profile.html");
+			return notify("Missing info in Profile.html", "error");
 
 		const resStat = await api.get("/api/user/me/stats");
 
 		if (!resStat || resStat.status != Status.success)
-			return alert("Can't load my stats");
+			return notify("Can't load my stats", "error");
 
 		const Stat = resStat.payload;
 
@@ -103,6 +104,7 @@ export class ProfilePage implements AppPage {
 		if (!reply || reply.status == Status.unauthorized) {
 			// Unauthorized = not logged in or wrong user.
 		}
+		notify("Logged out", "info");
 		await gotoPage("login");
 	}
 

@@ -1,3 +1,27 @@
+import { and, eq, or } from "drizzle-orm";
+import { db } from "./db/database";
+import { friends, matches, users } from "./db/tables";
+
+export async function tcheckFriends(user_1: number, user_2: number): Promise<boolean> {
+	const res = await db.select({ id: friends.id }).from(friends).where(and(
+		eq(friends.status, "accepted"),
+		or(
+			and(
+				eq(friends.senderId, user_1),
+				eq(friends.receiverId, user_2),
+			),
+			and(
+				eq(friends.senderId, user_2),
+				eq(friends.receiverId, user_1),
+			),
+		),
+	)).limit(1);
+	return res.length > 0;
+}
+
+type Event = "message" | "disconnect";
+type Handler = (data?: any) => void;
+
 type ClientId = string;
 type Client = {
 	sockets: WebSocket[],
@@ -5,13 +29,24 @@ type Client = {
 	onDisconnect: (() => void)[],
 	lastOnlineTime: number,
 };
-type Message = {
+type BaseMessage = {
 	topic: string,
 };
+type MatchMessage = BaseMessage & {
+	source: string,
+	match: number,
+	opponent: string,
+};
+
+type VersusMessage = BaseMessage & {
+	source: string,
+	target: string,
+};
+type Message = BaseMessage | MatchMessage | VersusMessage;
 
 export const clients: Map<ClientId, Client> = new Map();
 
-export function isOnline(id: ClientId) {
+export function isOnline(id: ClientId): boolean {
 	const client = clients.get(id);
 	if (!client) return false;
 	for (const socket of client.sockets) {
@@ -36,20 +71,37 @@ export async function connect(uuid: ClientId, socket: WebSocket) {
 	client.sockets.push(socket);
 	client.lastOnlineTime = Date.now();
 
-	socket.addEventListener("message", (event) => onMessage(client, event));
+	socket.addEventListener("message", (event) => onMessage(client, uuid, event));
 	socket.addEventListener("close", () => disconnect(uuid, socket));
 }
 
 function updateOnlineTime(client: Client) {
 	client.lastOnlineTime = Date.now();
 }
-function onMessage(client: Client, event: MessageEvent) {
+
+function onMessage(client: Client, clientId: ClientId, event: MessageEvent) {
 	updateOnlineTime(client);
 	try {
-		const json = JSON.parse(event.data);
-		if (json.source === "ping") return;
-		client.onMessage.forEach((handler) => handler(json));
-	} catch (_) {}
+		const msg = JSON.parse(event.data);
+		if (msg.source === "ping") return;
+		client.onMessage.forEach((handler) => handler(msg));
+		switch (msg.topic) {
+			case ("vs:invite"):
+				if (!isOnline(msg.target)) {
+					return;
+				}
+				send(msg.target, { source: clientId, topic: "vs:invite", target: msg.target });
+				break;
+			case ("vs:accept"):
+				createMatchBetween(clientId, msg.target);
+				break;
+
+			case ("vs:decline"):
+				send(msg.target, { source: clientId, topic: "vs:decline", target: msg.target });
+				break;
+		}
+	} catch (_) {
+	}
 }
 
 export function send(target: ClientId, message: Message) {
@@ -65,8 +117,6 @@ export function sendRaw(target: ClientId, data: any) {
 	clients.get(target)!.sockets.forEach(socket => socket.send(data));
 }
 
-type Event = "message" | "disconnect";
-type Handler = (data?: any) => void;
 export function addListener(clientId: ClientId, event: Event, handler: Handler) {
 	const client = clients.get(clientId);
 	if (!client) return;
@@ -92,7 +142,7 @@ export function disconnect(target: ClientId, socket?: WebSocket) {
 		}
 		socket.close(4001);
 	} else {
-		client.sockets.forEach(e => e.close(4001));
+		client.sockets.forEach(socket => socket.close(4001));
 		client.sockets = [];
 	}
 	if (!isOnline(target)) {
@@ -100,6 +150,44 @@ export function disconnect(target: ClientId, socket?: WebSocket) {
 		client.onDisconnect = [];
 		client.onMessage = [];
 	}
+}
+
+async function createMatchBetween(uuid1: string, uuid2: string) {
+	const [p1] = await db.select().from(users).where(eq(users.uuid, uuid1));
+	const [p2] = await db.select().from(users).where(eq(users.uuid, uuid2));
+
+	if (!p1 || !p2) {
+		return;
+	}
+
+	if (!await tcheckFriends(p1.id, p2.id)) {
+		console.log("They aren't friend anymore, so we can't create a game, sorry :(");
+		return;
+	}
+
+	const matchAlreadyGoing = await db.select().from(matches).where(and(
+		or(
+			eq(matches.player1Id, p1.id),
+			eq(matches.player1Id, p2.id),
+			eq(matches.player2Id, p1.id),
+			eq(matches.player2Id, p2.id),
+		),
+		eq(matches.status, "ongoing"),
+	));
+
+	if (matchAlreadyGoing.length > 0) {
+		console.log("Someone is already on a match, sorry :(");
+		return;
+	}
+
+	const [match] = await db.insert(matches).values({
+		player1Id: p1.id,
+		player2Id: p2.id,
+		status: "ongoing",
+	}).returning();
+
+	send(uuid1, { source: "server", topic: "vs:start", match: match.id, opponent: p2.username });
+	send(uuid2, { source: "server", topic: "vs:start", match: match.id, opponent: p1.username });
 }
 
 export default {

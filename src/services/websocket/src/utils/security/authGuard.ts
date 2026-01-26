@@ -3,7 +3,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import fs from "fs";
 import jwt from "jsonwebtoken";
 import { db } from "../db/database";
-import { User, users } from "../db/tables";
+import { OAuth, User, users } from "../db/tables";
 import { MESSAGE, STATUS } from "../http-reply";
 
 declare module "fastify" {
@@ -32,8 +32,11 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 		rep.clearCookie("accessToken", { path: "/api" });
 		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
 	}
-	const user = dbUsers[0];
-	req.user = user;
+	const dbUser = dbUsers[0];
+	req.user = {
+		...dbUser,
+		oauth: dbUser.oauth as OAuth | null,
+	};
 }
 
 function parseCookies(req: FastifyRequest): Map<string, string> {
