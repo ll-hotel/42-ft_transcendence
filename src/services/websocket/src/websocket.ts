@@ -1,10 +1,10 @@
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { db } from "../db/database";
-import * as dbM from "../db/methods";
-import * as tables from "../db/tables";
-import { authGuard } from "../security/authGuard";
-import socket from "../socket";
+import { db } from "./utils/db/database";
+import * as dbM from "./utils/db/methods";
+import * as tables from "./utils/db/tables";
+import { authGuard } from "./utils/security/authGuard";
+import socket from "./utils/socket";
 import { table } from "console";
 
 export default function(fastify: FastifyInstance) {
