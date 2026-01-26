@@ -41,6 +41,7 @@ services:
       - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
       - secrets:/run/secrets:ro
+    env_file: .env
 
   chat-service:
     container_name: chat-service

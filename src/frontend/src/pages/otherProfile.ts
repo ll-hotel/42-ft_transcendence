@@ -3,6 +3,7 @@ import { gotoPage } from "../PageLoader.js";
 import { FriendButton } from "../friendButton.js";
 import AppPage from "./AppPage.js"
 import { MatchInfo } from "./profile/matches.js";
+import { notify } from "../utils/notifs.js";
 
 export class OtherProfilePage implements AppPage {
 	content: HTMLElement;
@@ -40,7 +41,12 @@ export class OtherProfilePage implements AppPage {
 			const res = await api.get(`/api/user?displayName=${displayName}`);
 			if (!res || !res.payload) return;
 			if (res.status != Status.success) {
-				return alert("Error: " + res.payload.message);
+				return notify("Error: " + res.payload.message, "error");
+			}
+			const blocked = await api.post("/api/friend/blockedme", { displayName });
+			if (blocked?.payload.blocked === true) {
+				notify("User not found", "error");
+				return gotoPage("profile");
 			}
 			let userinfo;
 		try {
@@ -71,13 +77,13 @@ export class OtherProfilePage implements AppPage {
 		
 		const resMatch = await api.get(`/api/user/history?displayName=${displayName}`);
 		if (!resMatch || resMatch.status != Status.success) {
-			alert("Can't load matchs info");
+			notify("Can't load matchs info", "error");
 			return;
 		}
 
 		const resMe = await api.get(`/api/user/me`);
 		if (!resMe || resMe.status != Status.success) {
-			alert("Can't load my info");
+			notify("Can't load my info", "error");
 			return;
 		}
 
@@ -107,12 +113,12 @@ export class OtherProfilePage implements AppPage {
 		const infoTourPlacement = this.content.querySelector("#tournament-best");
 
 		if (!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed || !infoTourPlacement)
-			return alert("Missing info in Profile.html");
+			return notify("Missing info in Profile.html", "error");
 
 		const resStat = await api.get(`/api/user/stats?displayName=${displayName}`);
 
 		if (!resStat || resStat.status != Status.success)
-			return alert("Can't load my stats");
+			return notify("Can't load my stats", "error");
 
 		const Stat = resStat.payload;
 

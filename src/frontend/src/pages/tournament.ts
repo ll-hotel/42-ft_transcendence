@@ -1,6 +1,7 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
+import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
 
 type TournamentMessage = {
@@ -23,7 +24,7 @@ export class Tournament implements AppPage {
 		}
 		const result = await this.retrieveTournamentInfo(tournamentName);
 		if (!result) {
-			alert("No such tournament");
+			notify("No such tournament", "error");
 			return gotoPage("tournaments");
 		}
 		socket.addListener("tournament", (data) => {
@@ -54,7 +55,7 @@ export class Tournament implements AppPage {
 
 	displayTournament(info: TournamentInfo) {
 		const nameElement = this.html.querySelector("#tournament-name") as HTMLElement | null;
-		if (nameElement) nameElement.innerText = "Tournament: " + info.name;
+		if (nameElement) nameElement.innerText = "Tournament [" + info.name + "]";
 		if (info.rounds.length > 0) {
 			this.displayRounds(info);
 		} else {
@@ -79,10 +80,10 @@ export class Tournament implements AppPage {
 		const res = await api.post("/api/tournament/start", { name });
 		if (!res) return;
 		if (res.status != Status.success) {
-			alert("Can not start tournament: " + res.payload.message);
+			notify("Can not start tournament: " + res.payload.message, "error");
 			return;
 		}
-		alert("Tournament started");
+		notify("Tournament started", "success");
 	}
 	displayWaitingList(info: TournamentInfo) {
 		this.html.querySelector("#round-0")?.setAttribute("hidden", "");
@@ -145,8 +146,8 @@ export class Tournament implements AppPage {
 		const playerCard1 = matchDiv!.querySelector(`[name="@${match.p1.name}"]`)!;
 		const playerCard2 = matchDiv!.querySelector(`[name="@${match.p2.name}"]`)!;
 		if (match.winner === null) {
-			playerCard1.classList.add("bg-[#04809f]", "text-white");
-			playerCard2.classList.add("bg-[#04809f]", "text-white");
+			playerCard1.classList.add("bg-neutral-500", "text-white", "font-bold");
+			playerCard2.classList.add("bg-neutral-500", "text-white", "font-bold");
 		} else if (match.winner == 1) {
 			playerCard1.classList.add("bg-green-200");
 			playerCard2.classList.add("bg-red-200");
@@ -166,7 +167,7 @@ export class Tournament implements AppPage {
 		if (!playerList) return;
 		const avatar: string = await getUserAvatar(name);
 		const playerCard = createElement(
-			`<div name="@${name}" class="tournament-player-card bg-[#04809f] text-white">
+			`<div name="@${name}" class="tournament-player-card bg-neutral-500 text-white font-bold">
 				<img src="${avatar}" class="tournament-player-pic" />
 				<p class="tournament-player-username">${name}</p>
 			</div>`,

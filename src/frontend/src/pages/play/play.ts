@@ -1,6 +1,7 @@
 import { api, Status } from "../../api.js";
 import { gotoPage } from "../../PageLoader.js";
 import socket from "../../socket.js";
+import { notify } from "../../utils/notifs.js";
 import AppPage from "./../AppPage.js";
 
 export default class Play implements AppPage {
@@ -38,15 +39,15 @@ export default class Play implements AppPage {
 			this.inQueue = false;
 
 			const matchMsg = message as { match: number, opponent: string };
-			alert("Match found! Playing against " + matchMsg.opponent);
+			notify("Match found! Playing against " + matchMsg.opponent, "success");
 			gotoPage("play/match", `?id=${matchMsg.match}`);
 		})
 		const join = await api.post("/api/matchmaking/join");
 		if (!join || join.status != Status.success) {
-			alert(join ? join.payload.message : "Can not join queue.");
+			notify(join ? join.payload.message : "Can not join queue.", "error");
 		} else {
 			this.inQueue = true;
-			alert(join.payload.message);
+			notify(join.payload.message, "success");
 		}
 	}
 	playFriend() { }
