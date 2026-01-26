@@ -595,6 +595,9 @@
   .mt-16 {
     margin-top: calc(var(--spacing) * 16);
   }
+  .mr-4 {
+    margin-right: calc(var(--spacing) * 4);
+  }
   .mr-32 {
     margin-right: calc(var(--spacing) * 32);
   }
@@ -930,9 +933,6 @@
   .bg-\[\#04809F\] {
     background-color: #04809F;
   }
-  .bg-\[\#04809f\] {
-    background-color: #04809f;
-  }
   .bg-black {
     background-color: var(--color-black);
   }
@@ -965,6 +965,9 @@
   }
   .bg-neutral-200 {
     background-color: var(--color-neutral-200);
+  }
+  .bg-neutral-400 {
+    background-color: var(--color-neutral-400);
   }
   .bg-neutral-500 {
     background-color: var(--color-neutral-500);

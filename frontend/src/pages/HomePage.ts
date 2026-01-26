@@ -1,7 +1,7 @@
 import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
+import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
-import { notify } from "./utils/notifs.js";
 
 export class HomePage implements AppPage {
 	html: HTMLElement;
@@ -34,14 +34,13 @@ export class HomePage implements AppPage {
 		const buttonFindTournament = this.html.querySelector<HTMLDivElement>("#find");
 		const buttonCreateTournament = this.html.querySelector<HTMLDivElement>("#create");
 
-		if (!buttonLocalVs || !buttonLocalIa || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament) {
+		if (!buttonLocalVs || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament) {
 			notify("Missing buttons", "error");
 			return;
 		}
 
 		const gotoMatch = () => gotoPage("match");
 		buttonLocalVs.onclick = gotoMatch;
-		buttonLocalIa.onclick = gotoMatch;
 		buttonOnlineVs.onclick = gotoMatch;
 
 		const gotoTournaments = () => gotoPage("tournaments");
