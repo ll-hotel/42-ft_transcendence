@@ -1,3 +1,5 @@
+import { notify } from "./pages/utils/notifs.js";
+
 export enum Status {
 	success = 200,
 	created = 201,
@@ -5,7 +7,7 @@ export enum Status {
 	unauthorized = 401,
 	not_found = 404,
 	internal_server_error = 500,
-};
+}
 
 export type ApiResponse = { status: Status, payload?: any };
 
@@ -41,24 +43,19 @@ export class api {
 			headers,
 			body: jsonBody,
 			credentials: "include",
-		}
-		).then(async function(response) {
+		}).then(async (response) => {
 			try {
 				const json = (await response.json()) as any;
 				return {
 					status: response.status,
 					payload: json,
 				};
-			} catch {
-				console.log("[api] JSON error while parsing response:", "");
+			} catch (err) {
+				notify("Invalid API response", "error");
 				return null;
 			}
-		}).catch(function(reason) {
-			if (reason) {
-				console.log("[api]: Request rejected with:", reason);
-			} else {
-				console.log("[api]: Request rejected");
-			}
+		}).catch(() => {
+			notify("Request rejected", "error");
 			return null;
 		});
 	}

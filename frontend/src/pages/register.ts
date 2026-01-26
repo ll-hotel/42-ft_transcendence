@@ -1,6 +1,7 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js";
+import { notify } from "./utils/notifs.js";
 
 export class RegisterPage implements AppPage {
 	content: HTMLElement;
@@ -15,7 +16,7 @@ export class RegisterPage implements AppPage {
 			return false;
 		});
 	}
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement): Promise<AppPage | null> {
 		if (!content.querySelector("form")) {
 			return null;
 		}
@@ -30,8 +31,10 @@ export class RegisterPage implements AppPage {
 			return;
 		}
 		container.appendChild(this.content);
+		document.querySelector("#navbar")?.setAttribute("hidden", "");
 	}
 	unload(): void {
+		document.querySelector("#navbar")?.removeAttribute("hidden");
 		this.content.remove();
 		(this.form.querySelector("[name=username]")! as HTMLInputElement).value = "";
 		(this.form.querySelector("[name=password]")! as HTMLInputElement).value = "";
@@ -40,17 +43,16 @@ export class RegisterPage implements AppPage {
 		const data = new FormData(this.form);
 		const username = data.get("username")?.toString() || "";
 		const password = data.get("password")?.toString() || "";
-		const twofa = data.get("twofa")?.valueOf() || false;
 
-		const res = await api.post("/api/auth/register", { username, password, displayName: username, twofa })
+		const res = await api.post("/api/auth/register", { username, password, displayName: username });
 		if (!res) {
-			return alert("Invalid API response.");
+			return notify("Invalid API response.", "error");
 		}
 		if (res.status != Status.created) {
-			return alert("Error: " + res.payload.message);
+			return notify(res.payload.message, "error");
 		}
-		if (res.payload.qrCode) {
-			window.open(res.payload.qrCode);
+		if (res.status == Status.created) {
+			notify("User successfuly created", "success");
 		}
 		await gotoPage("login");
 	}

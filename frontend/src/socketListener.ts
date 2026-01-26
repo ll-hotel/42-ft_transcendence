@@ -25,7 +25,7 @@ export async function initSocket() {
 
 	socket.addListener("vs:decline", (m:Message) => {
 		const mess = m as  unknown as {source: string};
-		notify(`${mess.source} didn't what to play with you :(`, "error");
+		notify(`${mess.source} didn't want to play with you :(`, "error");
 	});
 
 	socket.addListener("match", (m) => {

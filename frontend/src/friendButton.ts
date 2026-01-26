@@ -1,4 +1,5 @@
 import { api, Status } from "./api.js";
+import { notify } from "./pages/utils/notifs.js";
 import socket from "./socket.js"
 
 export type FriendStatus = "add" | "sent" | "friend" | "accept";
@@ -88,24 +89,24 @@ export class FriendButton {
 				this.render();
 			}
 			else
-				 alert( res?.payload?.message || "Error Friend sent");
+				 notify( res?.payload?.message || "Error Friend sent", "error");
 		}
 		else if (this.status == "sent")
 		{
-			alert("Already send");
+			notify("Already sent", "info");
 		}
 		else if (this.status == "friend")
 		{
 			const res = await api.delete("/api/friend/remove", {displayName : this.displayName});
 			if (res && res.status === Status.success)
 			{
-				alert(`${this.displayName} est supprimé de la liste d'amis !`);
+				notify(`${this.displayName} Has been deleted from friend list`, "info");
 				this.status = "add";
 				this.render();
 			}
 			else
 			{
-				alert(`Failed to ban friend ${this.displayName}`);
+				notify(`Failed to block ${this.displayName}`, "error");
 			}
 		}
 		else if (this.status == "accept")
@@ -121,16 +122,16 @@ export class FriendButton {
 
 	private async handle1vs1()
 	{
-		const confirmVs = confirm(`Do you want to play within ${this.displayName} ?`)
+		const confirmVs = confirm(`Do you want to play with ${this.displayName} ?`)
 		if (!confirmVs)
 			return;
 		
 		const me = await api.get("/api/me");
 		const friend = await api.get(`/api/user?displayName=${this.displayName}`);
 		if (!me || ! friend || !me.payload || !friend.payload)
-			return alert("Error when getting user ou friend info");
+			return notify("Error when getting user or friend info", "error");
 		if (me.status !== Status.success || friend.status !== Status.success)
-			return alert("Error when getting user ou friend info: " + me.payload.message);
+			return notify("Error when getting user or friend info: " + me.payload.message, "error");
 		console.log(me.payload.uuid, friend.payload.user.uuid);
 		socket.send({
 			source: me.payload.uuid,

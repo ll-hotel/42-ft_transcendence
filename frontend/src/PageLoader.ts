@@ -5,15 +5,17 @@ import { Login } from "./pages/login.js";
 import Play from "./pages/play.js";
 import PlayLocal from "./pages/play/play_local.js";
 import PlayMatch from "./pages/play/match.js";
+import { PongPage } from "./pages/PongPage.js";
 import { OtherProfilePage } from "./pages/otherProfile.js";
 import { ProfilePage } from "./pages/profile.js";
 import { RegisterPage } from "./pages/register.js";
 import { editProfile } from "./pages/editProfile.js";
 import { Tournament } from "./pages/tournament.js";
 import { Tournaments } from "./pages/tournaments.js";
+import { notify } from "./pages/utils/notifs.js";
 import socket from "./socket.js";
 
-const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
+const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[] = [
 	{ name: "home", new: HomePage.new },
 	{ name: "register", new: RegisterPage.new },
 	{ name: "login", new: Login.new },
@@ -24,6 +26,7 @@ const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "play", new: Play.new },
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
+	{ name: "pong", new: PongPage.new },
 	{ name: "tournament", new: Tournament.new },
 	{ name: "tournaments", new: Tournaments.new },
 ];
@@ -69,9 +72,9 @@ class PageLoader {
 			return;
 		}
 		const html = await downloadHtmlBody(pageName);
-		const page = pages.find(p => p.name == pageName)!.new(html);
+		const page = await pages.find(p => p.name == pageName)!.new(html);
 		if (page === null) {
-			return alert("Could not load " + pageName);
+			return notify("Could not load " + pageName, "error");
 		}
 		this.list.set(name, page);
 	}
@@ -88,7 +91,7 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 	if (!element)
 		throw new Error(`No elements fond at ${path}`);
 	return element as HTMLElement;
-	
+
 }
 
 export async function gotoUserPage( displayName : string)
@@ -96,7 +99,7 @@ export async function gotoUserPage( displayName : string)
 	await gotoPage("profile/other", "?displayName=" + displayName);
 }
 
-const loader = new PageLoader(document.body.querySelector("#content")!);
+const loader = new PageLoader(document.getElementById("content")!);
 
 export async function gotoPage(name: string, search: string = "") {
 	let pageName = strToPageName(name);

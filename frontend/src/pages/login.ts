@@ -2,6 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import AppPage from "./AppPage.js";
+import { notify } from "./utils/notifs.js";
 
 export class Login implements AppPage {
 	content: HTMLElement;
@@ -34,7 +35,7 @@ export class Login implements AppPage {
 			location.assign(res.payload.redirect);
 		};
 	}
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement): Promise<AppPage | null> {
 		if (
 			!content.querySelector("form")
 			|| !content.querySelector("button#button-intra")
@@ -46,6 +47,9 @@ export class Login implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement) {
+		this.hideTwofa();
+		container.appendChild(this.content);
+
 		const params = new URLSearchParams(location.search);
 		const provider = params.get("provider");
 		const code = params.get("code");
@@ -55,12 +59,6 @@ export class Login implements AppPage {
 		if (await socket.connect()) {
 			return gotoPage("profile");
 		}
-//		if (localStorage.getItem("accessToken")) {
-			// Already connected. Redirecting to user profile page.
-//			gotoPage("profile");
-//			return;
-//		}
-		container.appendChild(this.content);
 	}
 	unload(): void {
 		this.content.remove();
@@ -76,41 +74,41 @@ export class Login implements AppPage {
 
 		const res = await api.post("/api/auth/login", { username, password, twoFACode });
 		if (!res) {
-			return alert("Invalid API response.");
-		}
-		if (!this.twoFAHidden) {
-			this.toggleTwoFA();
+			return this.hideTwofa();
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
 			socket.connect();
+			notify(res.payload.message, "success");
 			return gotoPage("profile");
 		}
 		if (res.payload.twoFAEnabled) {
-			this.toggleTwoFA();
-			return;
+			return this.showTwofa();
 		}
-		alert("Error: " + res.payload.message);
+		notify(res.payload.message, "error");
+	}
+	hideTwofa() {
+		this.form.querySelector("#form-username")?.removeAttribute("hidden");
+		this.form.querySelector("#form-password")?.removeAttribute("hidden");
+		this.content.querySelector("#button-intra")?.removeAttribute("hidden");
+		this.content.querySelector("#button-google")?.removeAttribute("hidden");
+		this.content.querySelector("#button-register")?.removeAttribute("hidden");
+		this.form.reset();
+		this.twoFAHidden = true;
+	}
+	showTwofa() {
+		this.form.querySelector("#form-username")?.setAttribute("hidden", "");
+		this.form.querySelector("#form-password")?.setAttribute("hidden", "");
+		this.content.querySelector("#button-intra")?.setAttribute("hidden", "");
+		this.content.querySelector("#button-google")?.setAttribute("hidden", "");
+		this.content.querySelector("#button-register")?.setAttribute("hidden", "");
+		this.form.querySelector("#form-twoFACode")?.removeAttribute("hidden");
+		this.twoFAHidden = false;
 	}
 	toggleTwoFA() {
 		if (this.twoFAHidden) {
-			this.form.querySelector("#form-username")?.setAttribute("hidden", "");
-			this.form.querySelector("#form-password")?.setAttribute("hidden", "");
-			this.content.querySelector("#button-intra")?.setAttribute("hidden", "");
-			this.content.querySelector("#button-register")?.setAttribute("hidden", "");
-			this.form.querySelector("#form-twoFACode")?.removeAttribute("hidden");
-			this.twoFAHidden = false;
+			this.showTwofa();
 		} else {
-			this.form.querySelector("#form-username")?.removeAttribute("hidden");
-			this.form.querySelector("#form-password")?.removeAttribute("hidden");
-			this.content.querySelector("#button-intra")?.removeAttribute("hidden");
-			this.content.querySelector("#button-register")?.removeAttribute("hidden");
-			const twoFACodeForm = this.form.querySelector("#form-twoFACode");
-			if (twoFACodeForm) {
-				twoFACodeForm.setAttribute("hidden", "");
-				const twoFACodeInput = twoFACodeForm.querySelector("input");
-				if (twoFACodeInput) twoFACodeInput.value = "";
-			}
-			this.twoFAHidden = true;
+			this.hideTwofa();
 		}
 	}
 }
@@ -129,8 +127,10 @@ async function loginWithProvider(container: HTMLElement, provider: string, code:
 	const res = await api.get(path + code);
 	logging.remove();
 	if (!res || !res.payload.loggedIn) {
+		notify(res?.payload.message, "error");
 		return gotoPage("login");
 	}
+	notify(res.payload.message, "success");
 	await socket.connect();
 	return gotoPage("profile");
 }

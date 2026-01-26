@@ -20,7 +20,7 @@ export default class Play implements AppPage {
 		const createTournament = html.querySelector("#create-tournament")! as HTMLButtonElement;
 		createTournament?.addEventListener("click", () => this.createTournament());*/
 	}
-	static new(html: HTMLElement): AppPage | null {
+	static async new(html: HTMLElement): Promise<AppPage> {
 		return new Play(html);
 	}
 	loadInto(container: HTMLElement): void {
@@ -48,7 +48,7 @@ export default class Play implements AppPage {
 			notify(join ? join.payload.message : "Can not join queue.", "error");
 		} else {
 			this.inQueue = true;
-			notify(join.payload.message, "info");
+			notify(join.payload.message, "success");
 		}
 	}
 	playTournament() {

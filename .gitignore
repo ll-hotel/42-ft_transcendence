@@ -4,3 +4,5 @@ node_modules/
 secrets/
 *.lock
 *.sqlite
+uploads/
+.idea/

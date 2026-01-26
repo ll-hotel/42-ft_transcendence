@@ -5,7 +5,7 @@ export default class PlayLocal implements AppPage {
     constructor(html: HTMLElement) {
         this.html = html;
     }
-    static new(html: HTMLElement): AppPage | null {
+    static async new(html: HTMLElement): Promise<AppPage> {
         return new PlayLocal(html);
     }
     loadInto(container: HTMLElement): void {

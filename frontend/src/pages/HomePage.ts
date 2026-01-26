@@ -4,7 +4,6 @@ import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import { notify } from "./utils/notifs.js";
 
-
 export class HomePage implements AppPage {
 	html: HTMLElement;
 	listContainer : HTMLElement;
@@ -16,11 +15,8 @@ export class HomePage implements AppPage {
 		this.listContainer = html.querySelector("#friend-list-content")!;
 	}
 
-	static new(content:HTMLElement)
-	{
-		if (!content)
-			return null;
-		return new HomePage(content);
+	static async new(html: HTMLElement): Promise<AppPage> {
+		return new HomePage(html);
 	}
 
 	loadInto(container: HTMLElement): void {
@@ -36,18 +32,17 @@ export class HomePage implements AppPage {
 	async loadHome()
 	{
 		const buttonLocalVs = this.html.querySelector<HTMLDivElement>("#local-vs");
-		const buttonLocalIa = this.html.querySelector<HTMLDivElement>("#local-ia");
 		const buttonOnlineVs = this.html.querySelector<HTMLDivElement>("#online-vs");
 		const buttonFindTournament = this.html.querySelector<HTMLDivElement>("#find");
 		const buttonCreateTournament = this.html.querySelector<HTMLDivElement>("#create");
 
-		if (!buttonLocalVs || !buttonLocalIa || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament)
+		if (!buttonLocalVs  || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament)
 		{
-			console.log("Missing somme buttons in html");
+			console.log("Missing some buttons in html");
 			return;
 		}
 
-		buttonLocalVs.onclick = buttonLocalIa.onclick = () => {
+		buttonLocalVs.onclick = () => {
 			gotoPage("play/local");
 		}
 
@@ -101,7 +96,7 @@ export class HomePage implements AppPage {
 			this.listContainer.innerHTML = `<div class="no-friend" >Go get some friends dude :)</div>`;
 			return;
 		}
-		
+
 		requests.forEach((request: any) => {
 			const card:HTMLElement = this.createRequestCard(request)
 			this.listContainer.appendChild(card);
@@ -114,7 +109,7 @@ export class HomePage implements AppPage {
 			this.listContainer.appendChild(card);
 		});
 	}
-	
+
 	createFriendCard(friend: any): HTMLElement
 	{
 		const card = document.createElement("div");

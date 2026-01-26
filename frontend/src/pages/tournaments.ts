@@ -1,5 +1,6 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
+import { notify } from "./utils/notifs.js";
 import AppPage from "./AppPage.js";
 
 export class Tournaments implements AppPage {
@@ -7,7 +8,7 @@ export class Tournaments implements AppPage {
 	private constructor(html: HTMLElement) {
 		this.html = html;
 	}
-	static new(html: HTMLElement): AppPage | null {
+	static async new(html: HTMLElement) {
 		const page = new Tournaments(html);
 
 		const createForm = html.querySelector("form") as HTMLFormElement | null;
@@ -43,9 +44,10 @@ export class Tournaments implements AppPage {
 
 		const rep = await api.post("/api/tournament/create", { name, size });
 		if (!rep || rep.status != Status.created) {
-			alert("Can not create tournament: " + rep?.payload.message);
+			notify("Can not create tournament : " + rep?.payload.message, "error");
 			return;
 		}
+		notify("Tournament [" + name + "] created", "success");
 		await this.loadTournamentList();
 		await this.joinTournament(name);
 	}
@@ -94,7 +96,7 @@ export class Tournaments implements AppPage {
 		if (joinRep.status == Status.success) {
 			return gotoPage("tournament", "?name=" + name);
 		}
-		alert("Can not join tournament: " + joinRep.payload.message);
+		notify("Can not join tournament : " + joinRep.payload.message, "error");
 	}
 }
 
