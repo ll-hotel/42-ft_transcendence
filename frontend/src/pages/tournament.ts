@@ -82,7 +82,6 @@ export class Tournament implements AppPage {
 			alert("Can not start tournament: " + res.payload.message);
 			return;
 		}
-		alert("Tournament started");
 	}
 	displayWaitingList(info: TournamentInfo) {
 		this.html.querySelector("#round-0")?.setAttribute("hidden", "");

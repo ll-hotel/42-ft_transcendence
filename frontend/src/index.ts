@@ -17,9 +17,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 	// JAI ENLEVER LES HISTORIQUE ICI
 
 	const name = strToPageName(uri.substring(1)) || "login";
-	if (name == "login" || (await socket.connect()) == false) {
+	if (name === "login" || (await socket.connect()) === false) {
 		await gotoPage("login", location.search);
-	} else if (name == "profile/other" || name == "tournament") {
+	} else if (name === "profile/other" || name === "tournament" || name === "play/match") {
 		await gotoPage(name, location.search);
 	} else {
 		await gotoPage(name);

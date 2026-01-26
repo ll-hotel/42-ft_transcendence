@@ -1,14 +1,18 @@
 import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
+import socket from "../socket.js";
+import { notify } from "./utils/notifs.js";
 
 
 export class HomePage implements AppPage {
 	html: HTMLElement;
 	listContainer : HTMLElement;
+	inQueue : boolean;
 
 	constructor(html: HTMLElement) {
 		this.html = html;
+		this.inQueue = false;
 		this.listContainer = html.querySelector("#friend-list-content")!;
 	}
 
@@ -43,8 +47,12 @@ export class HomePage implements AppPage {
 			return;
 		}
 
-		buttonLocalVs.onclick = buttonLocalIa.onclick = buttonOnlineVs.onclick = () => {
-			gotoPage("match");
+		buttonLocalVs.onclick = buttonLocalIa.onclick = () => {
+			gotoPage("play/local");
+		}
+
+		buttonOnlineVs.onclick =  () => {
+			this.playRandom();
 		}
 
 		buttonFindTournament.onclick = buttonCreateTournament.onclick = () => {
@@ -52,6 +60,26 @@ export class HomePage implements AppPage {
 		}
 
 		await this.loadFriends();
+	}
+
+	async playRandom() {
+		socket.addListener("matchmaking:found", (message) => {
+					socket.removeListener("matchmaking:found");
+					this.inQueue = false;
+		
+					const matchMsg = message as { match: number, opponent: string };
+					notify("Match found! Playing against " + matchMsg.opponent, "success");
+					setTimeout( () => {
+						gotoPage("play/match", `?id=${matchMsg.match}`);
+					}, 3000);
+				})
+				const join = await api.post("/api/matchmaking/join");
+				if (!join || join.status != Status.success) {
+					notify(join ? join.payload.message : "Can not join queue.", "error");
+				} else {
+					this.inQueue = true;
+					notify(join.payload.message, "info");
+				}
 	}
 
 	async loadFriends() {

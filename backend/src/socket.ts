@@ -1,13 +1,7 @@
-import { SingleStoreColumnWithAutoIncrement } from "drizzle-orm/singlestore-core";
-import { appendFile } from "fs";
 import { matches, users } from './db/tables';
 import { db } from './db/database';
 import { and, eq, or } from 'drizzle-orm';
-import { matchesGlob } from "path";
-import user from "./user/user";
-import { ucs2 } from "punycode";
 import { tcheckFriends } from "./user/friend";
-import { TableAliasProxyHandler } from "drizzle-orm";
 
 type Event = "message" | "disconnect";
 type Handler = (data?: any) => void;
@@ -30,8 +24,9 @@ type MatchMessage = BaseMessage & {
 
 type VersusMessage = BaseMessage & {
 	source: string;
-	target: string;
+	content: string;
 }
+
 type Message = BaseMessage | MatchMessage | VersusMessage;
 
 export const clients: Map<ClientId, Client> = new Map();
@@ -67,7 +62,7 @@ export async function connect(uuid: ClientId, socket: WebSocket) {
 function updateOnlineTime(client: Client) {
 	client.lastOnlineTime = Date.now();
 }
-function onMessage(client: Client, clientId : ClientId, event: MessageEvent) {
+async function onMessage(client: Client, clientId : ClientId, event: MessageEvent) {
 	updateOnlineTime(client);
 	try {
 		const msg = JSON.parse(event.data);
@@ -76,16 +71,19 @@ function onMessage(client: Client, clientId : ClientId, event: MessageEvent) {
 		switch (msg.topic)
 		{
 			case("vs:invite") :
-				if (!isOnline(msg.target))
+				if (!isOnline(msg.content))
 					return; 
-				send(msg.target, {source: clientId, topic : "vs:invite", target: msg.target})
+				const [displaySender] = await db.select({displayName : users.displayName}).from(users).where(eq(users.uuid, clientId ));
+				if (!displaySender)
+					return;
+				send(msg.content, {source: clientId, topic : "vs:invite", content: displaySender.displayName})
 				break;
 			case ("vs:accept") :
-				createMatchBetween(clientId, msg.target);
+				createMatchBetween(clientId, msg.content);
 				break;
 			
 			case("vs:decline") :
-				send(msg.target, {source: clientId, topic : "vs:decline", target:msg.target})
+				send(msg.content, {source: clientId, topic : "vs:decline", content:""})
 				break;
 		}
 	} catch (_) {
@@ -138,12 +136,18 @@ async function createMatchBetween(uuid1: string, uuid2 : string) {
 	const [p1] = await db.select().from(users).where(eq(users.uuid, uuid1));
 	const [p2] = await db.select().from(users).where(eq(users.uuid, uuid2));
 
+
 	if (!p1 || !p2)
+	{
+		send(uuid1,{source : "server", topic: "vs:error", content : "User not find ! "});
+		send(uuid2,{source : "server", topic: "vs:error", content : "User not find !"});
 		return;
+	}
 
 	if (await !tcheckFriends(p1.id, p2.id))
 	{
-		console.log("They aren't friend anymore, so we can't create a game, sorry :(");
+		send(uuid1,{source : "server", topic: "vs:error", content : "Users aren't friends anymore !"});
+		send(uuid2,{source : "server", topic: "vs:error", content : "Users aren't friends anymore !"});
 		return;
 	}
 
@@ -153,12 +157,13 @@ async function createMatchBetween(uuid1: string, uuid2 : string) {
 		eq(matches.player2Id, p1.id),
 		eq(matches.player2Id, p2.id),
 	),
-	eq(matches.status, "ongoing"),
+	or(eq(matches.status, "ongoing"), eq(matches.status, "pending"))
 	));
 
 	if (matchAlreadyGoing.length > 0)
 	{
-		console.log("Someone is already on a match, sorry :(");
+		send(uuid1,{source : "server", topic: "vs:error", content : "Someone is already on a match, sorry :("});
+		send(uuid2,{source : "server", topic: "vs:error", content : "Someone is already on a match, sorry :("});
 		return;
 	}
 
@@ -166,11 +171,11 @@ async function createMatchBetween(uuid1: string, uuid2 : string) {
 	const [match] = await db.insert(matches).values({
 		player1Id : p1.id,
 		player2Id : p2.id,
-		status: "ongoing",
+		status: "pending",
 	}).returning();
 
-	send(uuid1, {source: "server", topic : "vs:start", match:match.id, opponent : p2.username,});
-	send(uuid2, {source: "server", topic : "vs:start", match:match.id, opponent : p1.username,});
+	send(uuid1, {source: "server", topic : "vs:start", match:match.id, opponent : p2.username});
+	send(uuid2, {source: "server", topic : "vs:start", match:match.id, opponent : p1.username});
 
 }
 

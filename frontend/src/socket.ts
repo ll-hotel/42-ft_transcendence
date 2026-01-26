@@ -11,7 +11,7 @@ type MatchMessage = BaseMessage & {
 
 type VersusMessage = BaseMessage & {
 	source: string,
-	target: string;
+	content: string;
 };
 export type Message = VersusMessage | BaseMessage | MatchMessage;
 

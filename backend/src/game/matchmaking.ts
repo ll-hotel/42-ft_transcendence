@@ -21,7 +21,8 @@ class Matchmaking {
 
 		const [isPlaying] = await db.select().from(matches).where(and(
 			or(eq(matches.player1Id, usr.id), eq(matches.player2Id, usr.id)),
-			eq(matches.status, "ongoing"),
+			or (eq(matches.status, "ongoing"),
+			eq(matches.status, "pending"))
 		));
 		if (isPlaying) {
 			return rep.code(STATUS.bad_request).send({ message: "Already in game" });
@@ -40,7 +41,7 @@ class Matchmaking {
 		const [match] = await db.insert(matches).values({
 			player1Id: p1.userId,
 			player2Id: p2.userId,
-			status: "ongoing",
+			status: "pending",
 		})
 			.returning();
 

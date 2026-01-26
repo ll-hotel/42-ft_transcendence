@@ -303,7 +303,7 @@ export class FriendPage implements AppPage
 			socket.send({
 				source: me.payload.uuid,
 				topic: "vs:invite",
-				target : targetUuid,
+				content : targetUuid,
 			});
 		}
 	}

@@ -16,9 +16,8 @@ export class OtherProfilePage implements AppPage {
 	}
 	static new(content: HTMLElement) {
 		const displayname = content.querySelector("#profile-displayname");
-		// const username = content.querySelector("#profile-username")!;
-		// if (!content || !logout || !displayname || !username) {
-		if (!content || !displayname) {
+		 const username = content.querySelector("#profile-username")!;
+		if (!content || !displayname || !username) {
 			return null;
 		}
 		return new OtherProfilePage(content! as HTMLElement);
@@ -45,7 +44,8 @@ export class OtherProfilePage implements AppPage {
 			let userinfo;
 		try {
 			userinfo = res.payload.user;
-			this.displayname.innerHTML = userinfo.displayName;
+			this.displayname.innerText = userinfo.displayName;
+			this.username.innerText = userinfo.username;
 			const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
 			if (avatarImg)
 				avatarImg.src = userinfo.avatar.startsWith("/") ? userinfo.avatar : `/${userinfo.avatar}`;
@@ -58,7 +58,6 @@ export class OtherProfilePage implements AppPage {
 		
 		if (!contMatchList || !statusDot || !statusText || !cntFriendButton)
 		{
-			console.log("Missing HTML info")
 			return;
 		}
 		
@@ -107,7 +106,7 @@ export class OtherProfilePage implements AppPage {
 		const infoTourPlacement = this.content.querySelector("#tournament-best");
 
 		if (!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed || !infoTourPlacement)
-			return alert("Missing info in Profile.html");
+			return;
 
 		const resStat = await api.get(`/api/user/stats?displayName=${displayName}`);
 

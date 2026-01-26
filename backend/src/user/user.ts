@@ -81,6 +81,7 @@ class User {
 
 		const [user] = await db.select({
 			uuid: users.uuid,
+			username : users.username,
 			displayName: users.displayName,
 			avatar: users.avatar,
 			isOnline: users.isOnline,
