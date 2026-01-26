@@ -1,15 +1,13 @@
 import AppPage from "./pages/AppPage.js";
-import {HomePage} from "./pages/HomePage.js";
+import { editProfile } from "./pages/editProfile.js";
 import { FriendPage } from "./pages/FriendPage.js";
+import { HomePage } from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
-import Play from "./pages/play/play.js";
+import { OtherProfilePage } from "./pages/otherProfile.js";
 import PlayLocal from "./pages/play/play_local.js";
 import PlayMatch from "./pages/play/play_match.js";
-import PlayTournament from "./pages/play/play_tournament.js";
-import { OtherProfilePage } from "./pages/otherProfile.js";
 import { ProfilePage } from "./pages/profile.js";
 import { RegisterPage } from "./pages/register.js";
-import { editProfile } from "./pages/editProfile.js";
 import { Tournament } from "./pages/tournament.js";
 import { Tournaments } from "./pages/tournaments.js";
 import { notify } from "./utils/notifs.js";
@@ -20,10 +18,9 @@ const pages: { name: string, new: (e: HTMLElement) => AppPage | null }[] = [
 	{ name: "register", new: RegisterPage.new },
 	{ name: "login", new: Login.new },
 	{ name: "profile", new: ProfilePage.new },
-	{ name: "profile/other", new: OtherProfilePage.new},
-	{ name: "profile/edit", new: editProfile.new},
-	{ name: "friends", new: FriendPage.new},
-//	{ name: "play", new: Play.new },
+	{ name: "profile/other", new: OtherProfilePage.new },
+	{ name: "profile/edit", new: editProfile.new },
+	{ name: "friends", new: FriendPage.new },
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
 	{ name: "tournament", new: Tournament.new },
@@ -85,16 +82,17 @@ async function downloadHtmlBody(path: string, cache: RequestCache = "default"): 
 		headers: { "Accept": "text/html" },
 		credentials: "include",
 		cache,
-	}).then(res => res.text().then(text => (new DOMParser).parseFromString(text, "text/html").body.firstElementChild));
+	}).then(res =>
+		res.text().then(text => (new DOMParser()).parseFromString(text, "text/html").body.firstElementChild)
+	);
 
-	if (!element)
+	if (!element) {
 		throw new Error(`No elements fond at ${path}`);
+	}
 	return element as HTMLElement;
-	
 }
 
-export async function gotoUserPage( displayName : string)
-{
+export async function gotoUserPage(displayName: string) {
 	await gotoPage("profile/other", "?displayName=" + displayName);
 }
 
@@ -109,15 +107,15 @@ export async function gotoPage(name: string, search: string = "") {
 	await loadPage(true);
 }
 
-async function loadPage(isState: boolean) {
+async function loadPage(replaceState: boolean) {
 	const path = location.pathname.substring(1);
 	let pageName = strToPageName(path) || "login";
 
-	if (!await socket.connect() && !(pageName === "register" || pageName === "login"))
-	{
+	if (!await socket.connect() && !(pageName === "register" || pageName === "login")) {
 		pageName = "login";
-		if (isState)
+		if (replaceState) {
 			history.replaceState(null, "", "/login");
+		}
 	}
 
 	await loader.downloadPages();
@@ -126,6 +124,6 @@ async function loadPage(isState: boolean) {
 
 (window as any).gotoPage = gotoPage;
 
-window.onpopstate = function() {
+window.onpopstate = function () {
 	loadPage(false);
 };
