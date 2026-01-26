@@ -43,6 +43,11 @@ export class OtherProfilePage implements AppPage {
 			if (res.status != Status.success) {
 				return notify("Error: " + res.payload.message, "error");
 			}
+			const blocked = await api.post("/api/friend/blockedme", { displayName });
+			if (blocked?.payload.blocked === true) {
+				notify("User not found", "error");
+				return gotoPage("profile");
+			}
 			let userinfo;
 		try {
 			userinfo = res.payload.user;
