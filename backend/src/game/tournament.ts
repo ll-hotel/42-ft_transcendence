@@ -120,8 +120,8 @@ export class Tournament {
 		}
 
 		const user = req.user!;
-		const players = db.select({ id: tables.tournamentPlayers.id }).from(tables.tournamentPlayers).where(
-			orm.eq(tables.tournamentPlayers.userId, user.id),
+		const players = db.select({ id: tables.tournamentPlayers.userId }).from(tables.tournamentPlayers).where(
+			orm.eq(tables.tournamentPlayers.tournamentId, tournament.id),
 		).prepare().all();
 		if (players.find((player) => player.id == user.id) == undefined) {
 			rep.code(STATUS.bad_request).send({ message: "You are not in this tournament" });
