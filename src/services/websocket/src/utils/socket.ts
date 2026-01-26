@@ -56,9 +56,13 @@ export function send(target: ClientId, message: Message) {
 	if (isOnline(target)) {
 		try {
 			const data = JSON.stringify(message);
-			clients.get(target)!.sockets.forEach(socket => socket.send(data));
+			sendRaw(target, data);
 		} catch (err) {}
 	}
+}
+
+export function sendRaw(target: ClientId, data: any) {
+	clients.get(target)!.sockets.forEach(socket => socket.send(data));
 }
 
 type Event = "message" | "disconnect";
@@ -93,6 +97,8 @@ export function disconnect(target: ClientId, socket?: WebSocket) {
 	}
 	if (!isOnline(target)) {
 		client.onDisconnect.forEach((handler) => handler());
+		client.onDisconnect = [];
+		client.onMessage = [];
 	}
 }
 
@@ -100,6 +106,7 @@ export default {
 	clients,
 	isOnline,
 	send,
+	sendRaw,
 	connect,
 	disconnect,
 	addListener,

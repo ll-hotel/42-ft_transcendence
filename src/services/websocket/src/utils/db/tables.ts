@@ -1,5 +1,15 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+export type User = {
+	id: number,
+	uuid: string,
+	username: string,
+	displayName: string,
+	avatar: string,
+	twofaKey: string | null,
+	twofaEnabled: number,
+	isOnline: number,
+};
 export const users = sqliteTable("users", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
 	uuid: text("uuid").notNull().unique(),
