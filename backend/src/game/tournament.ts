@@ -120,6 +120,13 @@ export class Tournament {
 		}
 
 		const user = req.user!;
+		const players = db.select({ id: tables.tournamentPlayers.id }).from(tables.tournamentPlayers).where(
+			orm.eq(tables.tournamentPlayers.userId, user.id),
+		).prepare().all();
+		if (players.find((player) => player.id == user.id) == undefined) {
+			rep.code(STATUS.bad_request).send({ message: "You are not in this tournament" });
+			return;
+		}
 		dbM.removeUserFromTournaments(user.uuid);
 
 		rep.code(STATUS.success).send({ message: "Left tournament" });
