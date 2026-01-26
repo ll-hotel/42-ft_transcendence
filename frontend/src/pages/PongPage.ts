@@ -36,10 +36,10 @@ export class PongPage implements AppPage {
 		canvas.width = 1920;
 		canvas.height = canvas.width * table_ratio;
 		// canvas.getContext("2d")!.imageSmoothingEnabled = false;
-		console.log(canvas.width, canvas.height);
 		// TODO changer le Mode ("local")
 		// TODO: Change game mode dynamically.
-		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote);
+
+		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote, 42);
 		this.game.init();
 		// if (Mode.local == Mode.remote) {
 		// 	html.querySelector("#game-clickbox")?.addEventListener("click", () => this.onclick());
@@ -66,16 +66,6 @@ export class PongPage implements AppPage {
 		this.html.querySelector("#panel-game")?.removeAttribute("hidden");
 		// this.game.start();
 		// setTimeout(() => this.showScore(), 5000);
-	}
-	showPause() {
-		this.onclick = () => this.hidePause();
-		this.html.querySelector("#panel-game")?.setAttribute("hidden", "");
-		this.html.querySelector("#panel-pause")?.removeAttribute("hidden");
-	}
-	hidePause() {
-		this.onclick = () => this.showPause();
-		this.html.querySelector("#panel-pause")?.setAttribute("hidden", "");
-		this.html.querySelector("#panel-game")?.removeAttribute("hidden");
 	}
 	showScore() {
 		if (!this.game) return;

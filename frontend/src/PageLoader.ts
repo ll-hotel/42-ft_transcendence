@@ -10,6 +10,7 @@ import { editProfile } from "./pages/editProfile.js";
 import { Tournament } from "./pages/tournament.js";
 import { Tournaments } from "./pages/tournaments.js";
 import { notify } from "./pages/utils/notifs.js";
+import {MatchMaking} from "./pages/matchmaking.js";
 import socket from "./socket.js";
 
 const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[] = [
@@ -23,6 +24,7 @@ const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[
 	{ name: "pong", new: PongPage.new },
 	{ name: "tournament", new: Tournament.new },
 	{ name: "tournaments", new: Tournaments.new },
+	{ name: "matchmaking", new: MatchMaking.new}
 ];
 
 export function strToPageName(str: string): string | null {

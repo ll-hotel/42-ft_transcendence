@@ -1,6 +1,8 @@
 import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
+import {notify} from "./utils/notifs.js";
+import {Mode} from "../pong_client_side";
 
 export class HomePage implements AppPage {
 	html: HTMLElement;
@@ -39,12 +41,27 @@ export class HomePage implements AppPage {
 		}
 
 		buttonOnlineVs.onclick = () => {
-			gotoPage("pong");
-			api.post("/api/matchmaking/join");
+				api.get("/api/match/current").then((res) => {
+					if (!res)
+						return;
+					if (res.status == Status.not_found)
+					{
+						api.post("/api/matchmaking/join").then((res) => {
+							if (!res || !res.payload)
+								return
+							notify("Queue joined !", "success");
+							gotoPage("matchmaking");
+						}).catch((err) => {notify(err, "error");})
+					}
+					else if (res.status == Status.success)
+						gotoPage("pong", "?matchId=" + res.payload.id);
+					else
+						notify("Error " + res.status, "error");
+				});
 		}
 
 		buttonLocalVs.onclick = () => {
-			gotoPage("pong");
+			// gotoPage("pong",`?${Mode.local}`);
 		}
 
 		buttonFindTournament.onclick = buttonCreateTournament.onclick = () => {

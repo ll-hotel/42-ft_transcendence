@@ -12,7 +12,7 @@ type Size = { w: number, h: number };
 //  - check de la position de la balle et la replacer si jamais
 
 
-const width_server = 500;
+const width_server = 540;
 const height_server = width_server * (9/16);
 
 export enum Mode {

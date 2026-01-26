@@ -30,7 +30,7 @@ export type StateMessage = BaseMessage & {
 		p2_input: { up: boolean, down: boolean },
 	},
 	score: { p1: number, p2: number },
-	status: game.Status,
+	status: game.PongStatus,
 };
 
 export type InputMessage = BaseMessage & {
