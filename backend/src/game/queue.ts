@@ -37,6 +37,17 @@ class Queue {
 			return rep.code(STATUS.bad_request).send({ message: "Already in game" });
 		}
 
+		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(orm.and(
+			orm.eq(tables.tournamentPlayers.userId, usr.id),
+			orm.eq(tables.tournamentPlayers.eliminated, 0),
+		));
+		if (alreadyInTournament) {
+			return rep.code(STATUS.bad_request).send({
+				message: "Already in tournament",
+				tournamentId: alreadyInTournament.tournamentId,
+			});
+		}
+
 		await db.insert(tables.matchmakingQueue).values({ userId: usr.id });
 
 		rep.code(STATUS.success).send({ message: "Joined queue" });

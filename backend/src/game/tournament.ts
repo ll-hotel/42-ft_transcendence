@@ -7,6 +7,7 @@ import { authGuard } from "../security/authGuard";
 import { schema, STATUS } from "../shared";
 import socket from "../socket";
 
+
 export class Tournament {
 	static setup(app: FastifyInstance) {
 		app.post("/api/tournament/create", {
@@ -59,7 +60,15 @@ export class Tournament {
 		));
 
 		if (alreadyInMatch) {
-			return rep.code(STATUS.bad_request).send({ message: "You are already in a match", playing: true });
+			return rep.code(STATUS.bad_request).send({ message: "You are already in a match"});
+		}
+
+		const alreadyInQueue = db.select().from(tables.matchmakingQueue).where(
+			orm.eq(tables.matchmakingQueue.userId, user.id)
+		).prepare();
+
+		if (alreadyInQueue.all().length) {
+			return rep.code(STATUS.bad_request).send({ message: "You are in a Queue"});
 		}
 
 		const [tournament] = await db.insert(tables.tournaments).values({
@@ -105,6 +114,15 @@ export class Tournament {
 		if (alreadyInMatch) {
 			return rep.code(STATUS.bad_request).send({ message: "You are already in a match", playing: true });
 		}
+
+		const alreadyInQueue = db.select().from(tables.matchmakingQueue).where(
+			orm.eq(tables.matchmakingQueue.userId, user.id)
+		).prepare();
+
+		if (alreadyInQueue.all().length) {
+			return rep.code(STATUS.bad_request).send({ message: "You are in a Queue"});
+		}
+		
 		const players = await db.select().from(tables.tournamentPlayers).where(
 			orm.eq(tables.tournamentPlayers.tournamentId, tournament.id),
 		);

@@ -48,8 +48,8 @@ export class ProfilePage implements AppPage {
 		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
 		if (avatarImg)
 			avatarImg.src = userInfo.avatar == "DEFAULT_AVATAR" ? "default_pp.png" : userInfo.avatar;
-		this.displayname.innerHTML = userInfo.displayName;
-		this.username.innerHTML = userInfo.username;
+		this.displayname.innerText = userInfo.displayName;
+		this.username.innerText = userInfo.username;
 		
 		const resMatch = await api.get("/api/me/history");
 		if (!resMatch || resMatch.status != Status.success) {
@@ -65,7 +65,7 @@ export class ProfilePage implements AppPage {
 				contMatchList.append(MatchInfo.new(
 					date.toLocaleDateString("fr-FR"),
 					date.toLocaleTimeString("fr-FR"),
-					{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
+					{ name: this.displayname.innerText, score: matchInfo.match.scoreP1 },
 					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
 					userInfo.displayName || "Display name"
 				).toHTML());

@@ -159,7 +159,7 @@ export class HomePage implements AppPage {
 
 			if (acceptRes && acceptRes.status == Status.success)
 			{
-				console.log(`Tu es ami avec ${request.requestFrom}`);
+				notify(`You are friend with ${request.requestFrom}`, "success");
 				card.remove();
 				this.loadFriends();
 			}
@@ -176,7 +176,7 @@ export class HomePage implements AppPage {
 
 			if (declineRes && declineRes.status == Status.success)
 			{
-				console.log(`YOu're not friend with ${request.requestFrom}`);
+				notify(`You are not friend with ${request.requestFrom}`, "error");
 				card.remove();
 			}
 			else

@@ -36,7 +36,6 @@ export class PongPage implements AppPage {
 		canvas.width = 1920;
 		canvas.height = canvas.width * table_ratio;
 		// canvas.getContext("2d")!.imageSmoothingEnabled = false;
-		console.log(canvas.width, canvas.height);
 		// TODO changer le Mode ("local")
 		// TODO: Change game mode dynamically.
 		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote);
@@ -80,7 +79,7 @@ export class PongPage implements AppPage {
 	showScore() {
 		if (!this.game) return;
 		this.onclick = () => this.showStart();
-		const scorePanel = this.html.querySelector("#panel-score");
+		const scorePanel = this.html.querySelector<HTMLDivElement>("#panel-score");
 		if (scorePanel) {
 			const score = this.game.score;
 			if (score.p1 > score.p2) {

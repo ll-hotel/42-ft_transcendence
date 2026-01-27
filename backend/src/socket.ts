@@ -1,6 +1,6 @@
 import * as orm from "drizzle-orm";
 import { db } from "./db/database";
-import { matches, users } from "./db/tables";
+import * as tables from "./db/tables";
 import { tcheckFriends } from "./user/friend";
 
 type HandlerFn = (data?: any) => void;
@@ -54,23 +54,22 @@ export async function connect(uuid: UUID, socket: WebSocket) {
 	const client = clients.get(uuid)!;
 	client.sockets.push(socket);
 	client.lastOnlineTime = Date.now();
-
+	
 	socket.addEventListener("message", (event) => onMessage(client, event));
 	socket.addEventListener("close", () => disconnect(uuid, socket));
 
 	if (client.handlers.filter((h) => h.topic == "vs:invite").length === 0) {
 		addListener(uuid, "vs:invite", async (json) => {
 
-			console.log(json.content);
 			if (isOnline(json.content)) {
-				const [displaySender] = await db.select({displayName : users.displayName}).from(users).where(orm.eq(users.uuid, uuid ));
+				const [displaySender] = await db.select({displayName : tables.users.displayName}).from(tables.users).where(orm.eq(tables.users.uuid, uuid ));
 				if (!displaySender)
 					return;
 				send(json.content, { source: uuid, topic: "vs:invite", content: displaySender.displayName });
 			}
 		});
 		addListener(uuid, "vs:accept", (json) => {
-			createMatchBetween(uuid, json.content);
+			createMatch1vs1(uuid, json.content);
 		});
 		addListener(uuid, "vs:decline", (json) => {
 			send(json.content, { source: uuid, topic: "vs:decline", content: json.content });
@@ -86,7 +85,6 @@ async function onMessage(client: Client, event: MessageEvent) {
 	try {
 		const msg = JSON.parse(event.data);
 		if (msg.source === "ping") return;
-		console.log(msg.topic);
 		client.onMessage.forEach((handler) => handler(msg));
 		client.handlers.filter(handler => handler.topic == msg.topic).forEach((handler) => handler.fn(msg))
 	} catch (_) {}
@@ -145,9 +143,9 @@ export function removeListener(uuid: UUID, topic: string) {
 	}
 }
 
-async function createMatchBetween(uuid1: string, uuid2: string) {
-	const [p1] = await db.select().from(users).where(orm.eq(users.uuid, uuid1));
-	const [p2] = await db.select().from(users).where(orm.eq(users.uuid, uuid2));
+async function createMatch1vs1(uuid1: string, uuid2: string) {
+	const [p1] = await db.select().from(tables.users).where(orm.eq(tables.users.uuid, uuid1));
+	const [p2] = await db.select().from(tables.users).where(orm.eq(tables.users.uuid, uuid2));
 
 	if (!p1 || !p2)
 	{
@@ -163,13 +161,13 @@ async function createMatchBetween(uuid1: string, uuid2: string) {
 		return;
 	}
 
-	const matchAlreadyGoing = await db.select().from(matches).where(orm.and(orm.or(
-		orm.eq(matches.player1Id, p1.id),
-		orm.eq(matches.player1Id, p2.id),
-		orm.eq(matches.player2Id, p1.id),
-		orm.eq(matches.player2Id, p2.id),
+	const matchAlreadyGoing = await db.select().from(tables.matches).where(orm.and(orm.or(
+		orm.eq(tables.matches.player1Id, p1.id),
+		orm.eq(tables.matches.player1Id, p2.id),
+		orm.eq(tables.matches.player2Id, p1.id),
+		orm.eq(tables.matches.player2Id, p2.id),
 	),
-	orm.or(orm.eq(matches.status, "ongoing"), orm.eq(matches.status, "pending"))
+	orm.or(orm.eq(tables.matches.status, "ongoing"), orm.eq(tables.matches.status, "pending"))
 	));
 
 	if (matchAlreadyGoing.length > 0)
@@ -179,7 +177,18 @@ async function createMatchBetween(uuid1: string, uuid2: string) {
 		return;
 	}
 
-	const [match] = await db.insert(matches).values({
+	const alreadyInQueue = db.select().from(tables.matchmakingQueue).where(orm.or(
+		orm.eq(tables.matchmakingQueue.userId, p1.id),
+		orm.eq(tables.matchmakingQueue.userId, p2.id))
+	).prepare();
+	
+	if (alreadyInQueue.all().length) {
+		send(uuid1,{source : "server", topic: "vs:error", content : "Someone is already on a queue, sorry :("});
+		send(uuid2,{source : "server", topic: "vs:error", content : "Someone is already on a queue, sorry :("});
+		return;
+	}
+
+	const [match] = await db.insert(tables.matches).values({
 		player1Id : p1.id,
 		player2Id : p2.id,
 		status: "pending",
