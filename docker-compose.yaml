@@ -32,7 +32,7 @@ services:
     volumes:
       - chat-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - game-service-cert:/run/secrets:ro
+      - chat-service-cert:/run/secrets:ro
     env_file: .env
 
   friend-service:

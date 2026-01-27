@@ -66,7 +66,7 @@ function onMessage(client: Client, data: WebSocket.RawData) {
 		const msg = JSON.parse(data.toString());
 		if (msg.source === "ping") return;
 		client.onMessage.forEach((handler) => handler(msg));
-	} catch {}
+	} catch { }
 }
 
 export function send(target: ClientId, message: Message) {
@@ -74,7 +74,7 @@ export function send(target: ClientId, message: Message) {
 		try {
 			const data = JSON.stringify(message);
 			clients.get(target)!.sockets.forEach(socket => socket.send(data));
-		} catch (err) {}
+		} catch (err) { }
 	}
 }
 export function sendRaw(uuid: ClientId, data: WebSocket.Data) {

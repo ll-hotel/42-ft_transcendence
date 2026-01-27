@@ -1,18 +1,13 @@
-import { SingleStoreColumnWithAutoIncrement } from "drizzle-orm/singlestore-core";
-import { appendFile } from "fs";
-import { matches, users, friends} from './db/tables';
+
+import { matches, users, friends } from './db/tables';
 import { db } from './db/database';
 import { and, eq, or } from 'drizzle-orm';
-import { matchesGlob } from "path";
-import { ucs2 } from "punycode";
-import { TableAliasProxyHandler } from "drizzle-orm";
 
-export async function tcheckFriends(user_1 : number, user_2: number) :Promise<boolean>
-	{
-	const res = await db.select({id:friends.id }).from(friends).where(and(
-		eq(friends.status, "accepted"), or( and(
+export async function tcheckFriends(user_1: number, user_2: number): Promise<boolean> {
+	const res = await db.select({ id: friends.id }).from(friends).where(and(
+		eq(friends.status, "accepted"), or(and(
 			eq(friends.senderId, user_1), eq(friends.receiverId, user_2)), and(
-				eq(friends.senderId,user_2), eq(friends.receiverId, user_1))))).limit(1);
+				eq(friends.senderId, user_2), eq(friends.receiverId, user_1))))).limit(1);
 	return res.length > 0;
 }
 
@@ -106,7 +101,7 @@ export function send(target: ClientId, message: Message) {
 		try {
 			const data = JSON.stringify(message);
 			clients.get(target)!.sockets.forEach(socket => socket.send(data));
-		} catch (err) {}
+		} catch (err) { }
 	}
 }
 
@@ -189,51 +184,3 @@ export default {
 	disconnect,
 	addListener,
 };
-
-/*
-
-//MY CONNECT AND DISCONNECT FUNCTION
-
-export async function connect(clientId: ClientId, socket: WebSocket) {
-	console.log("[socket]", "connect", clientId);
-	socket.addEventListener("close", () => disconnect(clientId, socket));
-	if (!clients.has(clientId)) {
-		clients.set(clientId, { sockets: [], nbConnections : 0 });
-	}
-	clients.get(clientId)!.sockets.push(socket);
-	clients.get(clientId)!.nbConnections++;
-
-	try {
-		if (clients.get(clientId)!.nbConnections === 1)
-			await db.update(users).set({ isOnline: 1 }).where(eq(users.uuid, clientId));
-	}
-	catch {
-		console.log("Error while setting isOnline to 1");
-	}
-	socket.addEventListener("message", (ev) => onMessage(clientId, ev));
-}
-	*/
-
-/*export function disconnect(target: ClientId, socket?: WebSocket) {
-	const client = clients.get(target);
-	if (!client) return;
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		client.sockets = client.sockets.filter(e => e != socket);
-		client.nbConnections--;
-		socket.close(4001);
-	} else {
-		client.nbConnections = 0;
-		client.sockets.forEach(e => e.close(4001));
-		clients.delete(target);
-	}
-
-	try {
-		if (client.nbConnections <= 0) {
-			client.nbConnections = 0;
-			await db.update(users).set({ isOnline: 0 }).where(eq(users.uuid, target));
-		}
-	}
-	catch {
-		console.log("Error while setting isOnline to 0");
-	}
-}*/

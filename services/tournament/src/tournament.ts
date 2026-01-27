@@ -310,7 +310,7 @@ async function notifyTournamentStart(tournamentId: number) {
 	}
 }
 
-export default async function(fastify: FastifyInstance) {
+export default async function (fastify: FastifyInstance) {
 	Tournament.setup(fastify);
 	const tournaments = await db.select({ id: tables.tournaments.id }).from(tables.tournaments).where(
 		orm.eq(tables.tournaments.status, "pending"),

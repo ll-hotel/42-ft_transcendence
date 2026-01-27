@@ -1,8 +1,7 @@
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import jwt from 'jsonwebtoken';
+import { eq } from 'drizzle-orm';
 import { randomBytes } from "crypto";
-import { eq } from "drizzle-orm";
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import fs from "fs";
-import jwt from "jsonwebtoken";
 import sharp from "sharp";
 import { v4 as uiidv4 } from "uuid";
 import { db } from "./utils/db/database";
@@ -117,7 +116,7 @@ class AuthService {
 					loggedIn: true,
 					accessToken: tokenCookie,
 				});
-			} catch {}
+			} catch { }
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: "1h" });
 		rep.setCookie("accessToken", accessToken, {
@@ -146,9 +145,8 @@ class AuthService {
 	}
 
 	async auth42Redirect(_req: FastifyRequest, rep: FastifyReply) {
-		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${oauthKeys.s42.clientId}&redirect_uri=${
-			encodeURI(redirect42)
-		}&response_type=code`;
+		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${oauthKeys.s42.clientId}&redirect_uri=${encodeURI(redirect42)
+			}&response_type=code`;
 		rep.send({ redirect: redirectURL });
 	}
 
@@ -220,8 +218,7 @@ class AuthService {
 
 	async googleRedirect(_req: FastifyRequest, rep: FastifyReply) {
 		const redirectURL =
-			`https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthKeys.google.clientId}&redirect_uri=${
-				encodeURIComponent(redirectGoogle)
+			`https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthKeys.google.clientId}&redirect_uri=${encodeURIComponent(redirectGoogle)
 			}&response_type=code&scope=openid email profile`;
 		rep.send({ redirect: redirectURL });
 	}
@@ -301,6 +298,6 @@ class AuthService {
 
 const service = new AuthService();
 
-export default function(fastify: FastifyInstance) {
+export default function (fastify: FastifyInstance) {
 	service.setup(fastify);
 }
