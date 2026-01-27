@@ -5,7 +5,6 @@ import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import { createTables } from "./db/database";
-import gameQueue from "./game/queue";
 import path from "path";
 import pingRoute from "./routes/ping";
 
@@ -28,7 +27,6 @@ async function main() {
 	app.register(fastifyCookie);
 	app.register(fastifyWebsocket);
 	app.register(fastifyMultipart);
-	app.register(gameQueue);
 	app.register(pingRoute);
 
 	app.listen({ port: 8080, host: "0.0.0.0" }, (err) => {

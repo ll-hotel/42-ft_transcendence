@@ -1,16 +1,16 @@
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { db } from "../db/database";
-import * as dbM from "../db/methods";
-import * as tables from "../db/tables";
-import { authGuard } from "../security/authGuard";
-import { STATUS } from "../shared";
-import socket from "../socket";
+import { db } from "./utils/db/database";
+import * as dbM from "./utils/db/methods";
+import * as tables from "./utils/db/tables";
+import { authGuard } from "./utils/security/authGuard";
+import { STATUS } from "./utils/http-reply";
+import socket from "./utils/socket";
 
 class Queue {
 	static setup(app: FastifyInstance) {
-		app.post("/api/matchmaking/join", { preHandler: authGuard }, Queue.joinQueue);
-		app.post("/api/matchmaking/leave", { preHandler: authGuard }, Queue.leaveQueue);
+		app.post("/api/queue/join", { preHandler: authGuard }, Queue.joinQueue);
+		app.post("/api/queue/leave", { preHandler: authGuard }, Queue.leaveQueue);
 
 		setInterval(async () => {
 			while (await Queue.createMatch()) {}
