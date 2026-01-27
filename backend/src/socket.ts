@@ -39,6 +39,7 @@ export function isOnline(id: UUID) {
 			return true;
 		}
 	}
+	return false;
 }
 
 export async function connect(uuid: UUID, socket: WebSocket) {
@@ -128,7 +129,7 @@ export function disconnect(uuid: UUID, socket?: WebSocket) {
 		}
 		socket.close(4001);
 	} else {
-		client.sockets.forEach(e => e.close(4001));
+		client.sockets.forEach(socket => socket.close(4001));
 		client.sockets = [];
 	}
 	if (!isOnline(uuid)) {

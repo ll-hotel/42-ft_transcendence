@@ -1,8 +1,8 @@
 import { api, Status } from "../../api.js";
-import { notify } from "../utils/notifs.js";
+import { notify } from "../../utils/notifs.js";
 import AppPage from "../AppPage.js";
 import { Game, Mode } from "../../pong_client_side.js";
-import { gotoPage } from "../../PageLoader.js";
+import { gotoPage, gotoUserPage} from "../../PageLoader.js";
 
 export default class PlayLocal implements AppPage {
 	html: HTMLElement;
@@ -244,3 +244,4 @@ function initSearchBar() {
 		}
 		)
 	}
+}

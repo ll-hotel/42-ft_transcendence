@@ -3,7 +3,7 @@ import { gotoPage } from "../PageLoader.js";
 import { FriendButton } from "../friendButton.js";
 import AppPage from "./AppPage.js"
 import { MatchInfo } from "./profile/matches.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class OtherProfilePage implements AppPage {
 	content: HTMLElement;
@@ -41,6 +41,11 @@ export class OtherProfilePage implements AppPage {
 			if (!res || !res.payload) return;
 			if (res.status != Status.success) {
 				return notify("Error: " + res.payload.message, "error");
+			}
+			const blocked = await api.post("/api/friend/blockedme", { displayName });
+			if (blocked?.payload.blocked === true) {
+				notify("User not found", "error");
+				return gotoPage("profile");
 			}
 			let userinfo;
 		try {

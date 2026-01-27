@@ -3,11 +3,11 @@
 }
 
 .friend-card-home {
-	@apply hover:cursor-pointer hover:bg-[#04809F] hover:text-white;
+	@apply hover:cursor-pointer bg-white border-white text-black hover:bg-[#04809F] hover:cursor-pointer hover:scale-101 transition;
 }
 
 .request-card {
-	@apply w-full h-20 text-white bg-[#04809F] flex justify-between items-center px-4 ;
+	@apply w-full h-20 text-white bg-neutral-500 border-white flex justify-between items-center px-4 hover:bg-neutral-400 hover:cursor-pointer hover:scale-101 transition;
 }
 
 .request-buttons {
@@ -15,15 +15,15 @@
 }
 
 .request-decline {
-	@apply px-2 py-1 bg-red-500 border-white rounded
+	@apply px-2 py-1 bg-red-700 hover:bg-red-600 border-white rounded hover:cursor-pointer hover:scale-105 transition;
 }
 
 .request-accept {
-	@apply px-2 py-1 bg-green-500 border-white rounded
+	@apply px-2 py-1 bg-green-700 hover:bg-green-600 border-white rounded hover:cursor-pointer hover:scale-105 transition;
 }
 
 .friend-card-select {
-	@apply bg-[#04809F];
+	@apply bg-[#04809F] scale-105 transition;
 }
 
 .friend-card-unselect 

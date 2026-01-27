@@ -1,8 +1,8 @@
 import { api, Status } from "./api.js";
-import { notify } from "./pages/utils/notifs.js";
+import { notify } from "./utils/notifs.js";
 import socket from "./socket.js"
 
-export type FriendStatus = "add" | "sent" | "friend" | "accept";
+export type FriendStatus = "add" | "sent" | "friend" | "accept" | "blocked";
 
 export class FriendButton {
 	container: HTMLElement;
@@ -10,6 +10,8 @@ export class FriendButton {
 	displayName: string;
 	button: HTMLButtonElement;
 	extraButton?: HTMLButtonElement;
+	blockButton?: HTMLButtonElement;
+
 
 	constructor (displayName :string, initialStatus:FriendStatus ="add")
 	{
@@ -17,9 +19,17 @@ export class FriendButton {
 		this.status = initialStatus;
 		this.container = document.createElement("div");
 		this.button = document.createElement("button");
-		this.button.className = "px-4 py-2 rounded border border-white bg-[#04809F] text-white";
+		if (this)
+		this.button.className = "px-4 py-2 mr-4 rounded bg-black hover:cursor-pointer hover:bg-neutral-900  hover:scale-105 text-white sm:rounded-xl transition";
 		this.button.addEventListener("click", () => this.handleClick());
 		this.container.appendChild(this.button);
+
+
+		this.blockButton = document.createElement("button");
+		this.blockButton.className = "px-4 py-2 mr-4 rounded bg-red-600 hover:bg-red-700 hover:scale-105 hover:cursor-pointer text-white sm:rounded-xl transition";
+		this.blockButton.textContent = "Block";
+		this.blockButton.addEventListener("click", () => this.handleBlock());
+		this.container.appendChild(this.blockButton);
 
 		this.initStatus();
 
@@ -38,6 +48,8 @@ export class FriendButton {
 					this.status="accept";
 				else if (statusRequest === "accepted")
 					this.status="friend";
+				else if (statusRequest === "block")
+					this.status="blocked";
 				else
 					this.status="sent";
 			}
@@ -55,17 +67,26 @@ export class FriendButton {
 			this.extraButton.remove();
 			this.extraButton = undefined;
 		}
+		if (this.blockButton)
+		{
+			if (this.status === "blocked")
+				this.blockButton.style.display = "none";
+			else
+				this.blockButton.style.display = "inline-block";
+		}
+
 		switch(this.status)
 		{
 			case "add": this.button.textContent = "Add"; break;
-			case "sent": this.button.textContent = "Sent"; break;
-			case "accept": this.button.textContent = "Accept"; break;
+			case "sent": this.button.textContent = "Request Sent"; break;
+			case "accept": this.button.textContent = "Accept Request"; break;
+			case "blocked": this.button.textContent = "Unblock"; break;
 			case "friend":
-				this.button.textContent = "Remove";
+				this.button.textContent = "Remove Friend";
 				if (!this.extraButton)
 				{
 					this.extraButton = document.createElement("button");
-					this.extraButton.className = "px-4 py-2 rounded border border-white bg-[#04809F]  text-white";
+					this.extraButton.className = "px-4 py-2 rounded bg-black hover:bg-neutral-900 hover:cursor-pointer hover:scale-105 text-white sm:rounded-xl transition";
 					this.extraButton.textContent = "1VS1";
 					this.extraButton.addEventListener("click", () => this.handle1vs1());
 					this.container.appendChild(this.extraButton);
@@ -97,6 +118,10 @@ export class FriendButton {
 		}
 		else if (this.status == "friend")
 		{
+			const confirmBlock = confirm(`Do you want to Remove ${this.displayName} from friends list?`);
+			if (!confirmBlock)
+				return;
+
 			const res = await api.delete("/api/friend/remove", {displayName : this.displayName});
 			if (res && res.status === Status.success)
 			{
@@ -118,7 +143,36 @@ export class FriendButton {
 				this.render();
 			}
 		}
+		else if (this.status == "blocked")
+		{
+			const res = await api.post("/api/friend/unblock", {displayName : this.displayName});
+			if (res && res.status == Status.success)
+			{
+				notify(`${this.displayName} Has been unblocked`, "info");
+				this.status = "add";
+				this.render();
+			}
+		}
 	}
+
+	private async handleBlock()
+	{
+		const confirmBlock = confirm(`Do you want to block ${this.displayName}?`);
+		if (!confirmBlock)
+			return;
+
+		const res = await api.post("/api/friend/block", { displayName: this.displayName  });
+
+		if (res && res.status === Status.success) {
+			notify(`${this.displayName} has been blocked`, "info");
+			this.status = "blocked";
+			this.render();
+		}
+		else {
+			notify("Failed to block user", "error");
+		}
+	}
+
 
 	private async handle1vs1()
 	{

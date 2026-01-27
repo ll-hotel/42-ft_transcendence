@@ -3,7 +3,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import fs from "fs";
 import jwt from "jsonwebtoken";
 import { db } from "../db/database";
-import { users } from "../db/tables";
+import { users, OAuth } from "../db/tables";
 import { MESSAGE, STATUS } from "../shared";
 
 declare module "fastify" {
@@ -17,12 +17,15 @@ declare module "fastify" {
 			twofaEnabled: number,
 			isOnline: number,
 			avatar: string,
-			// needed data for routes
+			oauth: OAuth | null;
 		};
 	}
 }
 
-const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
+if (!process.env.JWT_SECRET) {
+	throw new Error("Missing Environment value");
+}
+const jwtSecret = process.env.JWT_SECRET!;
 
 export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 	const token = req.cookies ? req.cookies.accessToken : parseCookies(req).get("accessToken");
@@ -42,7 +45,11 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 		rep.clearCookie("accessToken", { path: "/api" });
 		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
 	}
-	req.user = dbUsers[0];
+	const dbUser = dbUsers[0];
+	req.user = {
+		...dbUser,
+		oauth: dbUser.oauth as OAuth | null,
+	};
 }
 
 function parseCookies(req: FastifyRequest): Map<string, string> {

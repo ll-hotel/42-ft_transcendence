@@ -15,7 +15,7 @@ import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { FriendChat } from "./FriendChat.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 import socket from "../socket.js";
 
 type Message = {
@@ -75,6 +75,7 @@ export class FriendPage implements AppPage
 		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content");
 		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name");
 		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block");
+		const removeBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-remove-friend");
 		const vsBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-1vs1");
 		if (!chatList || !chatName || !blockBtn || !vsBtn)
 			return;
@@ -245,6 +246,7 @@ export class FriendPage implements AppPage
 		chatName.onclick = async () => {
 			await gotoUserPage(targetDisplayname);
 		}
+		await this.setRemoveFriendButton(chatName, chatList, targetDisplayname);
 		await this.setBlockButton(chatName, chatList, targetDisplayname);
 		await this.setVsButton(targetDisplayname, targetUuid);
 		this.renderMessages(chatList);
@@ -267,6 +269,36 @@ export class FriendPage implements AppPage
 			if (!confirmBlock)
 				return;
 
+			const res = await api.post("/api/friend/block", { displayName: targetDisplayname });
+			if (res && res.status === Status.success) {
+				notify(`${targetDisplayname} is now blocked (Go to his profile to unblock)`, "info");
+
+				await this.loadFriends();
+
+				chatList.innerHTML = "";
+				chatName.textContent = chatName.dataset.default!;
+				chatName.classList.remove("hover:text-[#04809F]");
+				chatName.classList.remove("cursor-pointer");
+				chatName.onclick = null;
+				this.selectedCard = null;
+				this.chat.cleanRoomState();
+				blockBtn.disabled = true;
+			}
+			else {
+				notify(res?.payload.message, "error");
+			}
+		};
+	}
+
+	async setRemoveFriendButton(chatName : HTMLSpanElement, chatList : HTMLDivElement, targetDisplayname : string) {
+		const removeBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-remove-friend")!;
+
+		removeBtn.disabled = !this.selectedCard;
+		removeBtn.onclick = async () => {
+			const confirmBlock = confirm(`Do you want to remove ${targetDisplayname} from friend's list ?`);
+			if (!confirmBlock)
+				return;
+
 			const res = await api.delete("/api/friend/remove", { displayName: targetDisplayname });
 			if (res && res.status === Status.success) {
 				notify(`${targetDisplayname} isn't your friend anymore.`, "info");
@@ -280,7 +312,7 @@ export class FriendPage implements AppPage
 				chatName.onclick = null;
 				this.selectedCard = null;
 				this.chat.cleanRoomState();
-				blockBtn.disabled = true;
+				removeBtn.disabled = true;
 			}
 			else {
 				notify("Error while deleting this friend.", "error");

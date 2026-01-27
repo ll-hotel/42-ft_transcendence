@@ -1,10 +1,17 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+/** Do not change this values as they are used inside the database. */
 export enum TwofaState {
 	disabled = 0,
 	enabled = 1,
 	pending = 2,
 }
+/** Do not change this values as they are used inside the database. */
+export enum OAuth {
+	auth42 = "auth42",
+	google = "google",
+}
+
 export const users = sqliteTable("users", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
 	uuid: text("uuid").notNull().unique(),
@@ -13,9 +20,11 @@ export const users = sqliteTable("users", {
 	password: text("password").notNull(),
 	avatar: text('avatar').default('uploads/default_pp.png').notNull(),
 	twofaKey: text("twofaKey"),
-	twofaEnabled: integer("twofaEnabled").notNull().default(0),
+	/** An number with values of the `TwofaState` enum. */
+	twofaEnabled: integer("twofaEnabled").notNull().default(TwofaState.disabled),
 	isOnline: integer("isOnline").notNull().default(0),
-	// 	email: text("email").notNull().unique(),
+	/** Optional oauth provider. If not null, user was created with 'auth42' or 'google' */
+	oauth: text(),
 });
 
 export const friends = sqliteTable("friends", {

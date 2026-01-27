@@ -1,8 +1,12 @@
 import { api, Status } from "./api.js";
 import { gotoPage, gotoUserPage, strToPageName } from "./PageLoader.js";
 import socket from "./socket.js";
-import { notify } from "./pages/utils/notifs.js";
+import { notify } from "./utils/notifs.js";
 import { initSocket } from "./socketListener.js";
+import { initStarfield } from "./utils/background.js";
+
+
+initStarfield();
 
 document.addEventListener("DOMContentLoaded", async function() {
 	const content = document.getElementById("content");
@@ -91,7 +95,12 @@ function displayResultSearch(selectedUsers: any) {
 
 	results.innerHTML = "";
 
-	selectedUsers.forEach((user: any) => {
+	selectedUsers.forEach(async (user: any) => {
+		const displayName = user.displayName;
+		const blocked = await api.post("/api/friend/blockedme", { displayName });
+		if (blocked?.payload.blocked === true)
+			return;
+
 		const card = document.createElement("div");
 		card.className = "user-result";
 

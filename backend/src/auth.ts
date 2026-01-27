@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { eq } from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import fs from "fs";
@@ -5,32 +6,24 @@ import jwt from "jsonwebtoken";
 import sharp from "sharp";
 import { v4 as uiidv4 } from "uuid";
 import { db } from "./db/database";
-import { TwofaState, users } from "./db/tables";
+import { TwofaState, OAuth, users } from "./db/tables";
 import { verify2FAToken } from "./security/2fa";
 import { authGuard } from "./security/authGuard";
 import { comparePassword, hashPassword } from "./security/hash";
-import { MESSAGE, STATUS } from "./shared";
+import { MESSAGE, schema, STATUS } from "./shared";
 import socket from "./socket";
 
-const SCHEMA_REGISTER = {
-	body: {
-		type: "object",
-		required: ["username", "password"],
-		properties: {
-			username: { type: "string" },
-			password: { type: "string", format: "password" },
-		},
-	},
-};
-const SCHEMA_LOGIN = SCHEMA_REGISTER;
+const registerSchema = schema.body({ username: "string", password: "string" }, ["username", "password"]);
+const loginSchema = schema.body({ username: "string", password: "string" }, ["username", "password"]);
 
-const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
-const oauthKeys = JSON.parse(fs.readFileSync("/run/secrets/oauthKeys", "utf-8").trim());
 
-// process.env.HOSTURL = "localhost"; // dev
-if (!process.env.HOSTURL) {
-	throw new Error("Missing server hostname");
+if (!process.env.OAUTH_KEYS || !process.env.JWT_SECRET || !process.env.HOSTURL) {
+	throw new Error("Missing Environement value");
 }
+
+const jwtSecret = process.env.JWT_SECRET!;
+const oauthKeys = JSON.parse(process.env.OAUTH_KEYS!);
+
 const redirect42 = `https://${process.env.HOSTURL}:8443/login?provider=42`;
 const redirectGoogle = `https://${process.env.HOSTURL}:8443/login?provider=google`;
 
@@ -41,8 +34,8 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class AuthService {
 	setup(app: FastifyInstance) {
-		app.post("/api/auth/register", { schema: SCHEMA_REGISTER }, this.register);
-		app.post("/api/auth/login", { schema: SCHEMA_LOGIN }, this.login);
+		app.post("/api/auth/register", { schema: registerSchema }, this.register);
+		app.post("/api/auth/login", { schema: loginSchema }, this.login);
 		app.post("/api/auth/logout", { preHandler: authGuard }, this.logout);
 		app.get("/api/auth42", this.auth42Redirect);
 		app.get("/api/auth42/callback", this.auth42Callback);
@@ -51,8 +44,8 @@ class AuthService {
 	}
 
 	async register(req: FastifyRequest, rep: FastifyReply) {
-		const body = req.body as { username: string, password: string, displayName: string };
-		const { username, password, displayName } = body;
+		const body = req.body as { username: string, password: string };
+		const { username, password } = body;
 
 		if (REGEX_USERNAME.test(username) === false) {
 			return rep.code(STATUS.bad_request).send({
@@ -62,34 +55,21 @@ class AuthService {
 
 		if (REGEX_PASSWORD.test(password) === false) {
 			return rep.code(STATUS.bad_request).send({
-				message: MESSAGE.invalid_password
-					+ ": Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum",
+				message: MESSAGE.invalid_password +
+					": Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum",
 			});
 		}
 
-		if (REGEX_USERNAME.test(displayName) === false) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName });
-		}
-		let user_exists = await db.select().from(users).where(eq(users.username, username));
-		if (user_exists.length > 0) {
+		let user_exists = (await db.select().from(users).where(eq(users.username, username))).length > 0;
+		if (user_exists) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.username_taken });
 		}
-		user_exists = await db.select().from(users).where(eq(users.displayName, displayName));
-		if (user_exists.length > 0) {
+		user_exists = (await db.select().from(users).where(eq(users.displayName, username))).length > 0;
+		if (user_exists) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.displayName_taken });
 		}
 
 		const hashedPass = await hashPassword(password);
-
-		// if (twofa) {
-		// 	const secret = generate2FASecret(username);
-		// 	if (!secret.otpauth_url) {
-		// 		return rep.code(STATUS.bad_request).send({ message: MESSAGE.fail_gen2FAurl });
-		// 	}
-		// 	qrCode = await generateQRCode(secret.otpauth_url);
-		// 	twofaKey = secret.base32;
-		// 	twofaEnabled = 1;
-		// }
 
 		await db.insert(users).values({
 			uuid: uiidv4(),
@@ -110,9 +90,15 @@ class AuthService {
 		if (!user) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_username });
 		}
+
 		if (await comparePassword(password, user.password) == false) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_password });
 		}
+
+		if (user.isOnline) {
+			return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
+		}
+
 		if (user.twofaEnabled == TwofaState.enabled) {
 			if (!twoFACode) {
 				return rep.code(STATUS.bad_request)
@@ -122,6 +108,7 @@ class AuthService {
 				return rep.code(STATUS.unauthorized).send({ message: MESSAGE.invalid_2FA });
 			}
 		}
+
 		const tokenCookie = req.cookies["accessToken"];
 		if (tokenCookie) {
 			try {
@@ -185,7 +172,7 @@ class AuthService {
 		});
 		const token = await tokenResponse.json();
 		if (!token.access_token) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_token });
+			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
 		}
 		const response = await fetch("https://api.intra.42.fr/v2/me", {
 			headers: { Authorization: "Bearer " + token.access_token },
@@ -196,10 +183,13 @@ class AuthService {
 		let user;
 		if (userExists) {
 			user = userExists;
+			if (user.isOnline)
+				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
-			const pass = await hashPassword("42AuthUser____" + uuid);
+			const randomKey = randomBytes(32).toString("hex");
+			const pass = await hashPassword(randomKey);
 			const res = await fetch(userData.image.versions.medium);
 			const buffer = Buffer.from(await res.arrayBuffer());
 			const filename = `avatar___${uuid}.png`;
@@ -216,6 +206,7 @@ class AuthService {
 				displayName: userData.login,
 				password: pass,
 				avatar: avatarPath,
+				oauth: OAuth.auth42,
 			});
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: "1h" });
@@ -254,7 +245,7 @@ class AuthService {
 
 		const token = await tokenResponse.json();
 		if (!token.access_token) {
-			return rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_token });
+			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
 		}
 		const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
 			headers: { Authorization: `Bearer ${token.access_token}` },
@@ -264,10 +255,13 @@ class AuthService {
 		let user;
 		if (userExists) {
 			user = userExists;
+			if (user.isOnline)
+				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
-			const pass = await hashPassword("GoogleUser___" + uuid);
+			const randomKey = randomBytes(32).toString("hex");
+			const pass = await hashPassword(randomKey);
 			const res = await fetch(userData.picture);
 			const buffer = Buffer.from(await res.arrayBuffer());
 			const filename = `avatar___${uuid}.png`;
@@ -278,12 +272,19 @@ class AuthService {
 			} catch {
 				avatarPath = "uploads/default_pp.png";
 			}
+			let displayName;
+			const displayNameExists = await db.select().from(users).where(eq(users.displayName, userData.given_name));
+			if (displayNameExists.length > 0)
+				displayName = userData.email;
+			else
+				displayName = userData.given_name;
 			await db.insert(users).values({
 				uuid,
 				username: userData.email,
-				displayName: userData.given_name,
+				displayName: displayName,
 				password: pass,
 				avatar: avatarPath,
+				oauth: OAuth.google,
 			});
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: "1h" });

@@ -15,19 +15,19 @@
 	<noscript>Please enable Javascript.</noscript>
 	<header class="bg-white w-full h-24 sm:h-16 fixed z-40">
 		<div id="wrapper" class="max-w-7xl mx-auto p-4 grid grid-cols-2 sm:grid-cols-3 items-center">
-			<button id="logo" data-page="home" class="flex justify-start">
-				<h1 class="text-xl sm:text-2xl font-bold">Transcendence</h1>
+			<button id="logo" data-page="home" class="flex justify-start hover:text-blue-600 hover:cursor-pointer">
+				<h1 class="text-xl sm:text-2xl font-bold transparent hover:scale-105 bg-clip-text transition">Transcendence</h1>
 			</button>
 			<div id="menu" class="inline-flex justify-end sm:justify-center space-x-3">
-				<button data-page="play" class="text-sm sm:text-base text-gray-700 hover:text-blue-600">Play</button>
-				<button data-page="tournaments" class="text-sm sm:text-base text-gray-700 hover:text-blue-600">Tournaments</button>
-				<button data-page="friends" class="text-sm sm:text-base text-gray-700 hover:text-blue-600">Friends</button>
+				<button data-page="match" class="text-sm sm:text-base text-black hover:text-blue-600 hover:scale-120 hover:font-bold hover:cursor-pointer transition">Match</button>
+				<button data-page="tournaments" class="text-sm sm:text-base text-black hover:text-blue-600 hover:scale-120 hover:font-bold hover:cursor-pointer transition">Tournoi</button>
+				<button data-page="friends" class="text-sm sm:text-base text-black hover:text-blue-600 hover:scale-120 hover:font-bold hover:cursor-pointer transition">Amis</button>
 			</div>
 			<div id ="user-action" class="flex justify-end items-center col-span-2 sm:col-span-1 space-x-3 relative mt-1 sm:mt-0">
-				<input id="user-search" class="w-full px-2 py-1 border rounded " type="text" placeholder="Find a user..." />
+				<input id="user-search" class="w-full px-2 py-1 border rounded hover:bg-neutral-200 " type="text" placeholder="Find a user..." />
 				<div id="user-results" class="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-y-auto bg-white rounded shadow z-50" ></div>
 				<button data-page="profile" class="">
-					<i class="fas fa-user"></i>
+					<i class="fas fa-user hover:scale-120 hover:cursor-pointer transition hover:color-blue-600"></i>
 				</button>
 			</div>
 		</div>

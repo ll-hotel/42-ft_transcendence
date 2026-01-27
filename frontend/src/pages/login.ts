@@ -2,7 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import AppPage from "./AppPage.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class Login implements AppPage {
 	content: HTMLElement;
@@ -53,6 +53,11 @@ export class Login implements AppPage {
 		const params = new URLSearchParams(location.search);
 		const provider = params.get("provider");
 		const code = params.get("code");
+		const error = params.get("error");
+		
+		if (error && provider) {
+			notify("Oauth failed", "error");
+		}
 		if (code && provider) {
 			return loginWithProvider(container, provider, code);
 		}
@@ -114,18 +119,16 @@ export class Login implements AppPage {
 }
 
 async function loginWithProvider(container: HTMLElement, provider: string, code: string) {
+	container.innerHTML = "";
+	notify("Logging in...", "info");
+
 	let path: string;
 	if (provider === "42") {
 		path = "/api/auth42/callback?code=";
 	} else {
 		path = "/api/authGoogle/callback?code=";
 	}
-	const logging = document.createElement("p");
-	logging.className = "font-bold text-xl";
-	logging.innerText = "Logging in...";
-	container.appendChild(logging);
 	const res = await api.get(path + code);
-	logging.remove();
 	if (!res || !res.payload.loggedIn) {
 		notify(res?.payload.message, "error");
 		return gotoPage("login");

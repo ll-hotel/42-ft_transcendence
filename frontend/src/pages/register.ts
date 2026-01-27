@@ -1,7 +1,7 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js";
-import { notify } from "./utils/notifs.js";
+import { notify } from "../utils/notifs.js";
 
 export class RegisterPage implements AppPage {
 	content: HTMLElement;
@@ -44,7 +44,7 @@ export class RegisterPage implements AppPage {
 		const username = data.get("username")?.toString() || "";
 		const password = data.get("password")?.toString() || "";
 
-		const res = await api.post("/api/auth/register", { username, password, displayName: username });
+		const res = await api.post("/api/auth/register", { username, password });
 		if (!res) {
 			return notify("Invalid API response.", "error");
 		}

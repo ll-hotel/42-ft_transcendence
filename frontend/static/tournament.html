@@ -1,19 +1,25 @@
 <div class="flex w-full h-screen items-center place-content-center">
 	<div class="flex flex-col gap-8 h-4/5 w-full xl:w-4/5 sm:pt-4 pt-12">
 		<div class="flex flex-row">
-			<h1 id="tournament-name" class="text-[#04809f] text-xl text-center font-bold">Tournament name</h1>
-			<button id="tournament-start" class="flex size-fit p-2 gap-2 bg-[#04809f] text-white rounded-md items-center ml-auto">
+			<h1 id="tournament-name" class="text-white text-xl text-center font-bold mr-auto">Tournament name</h1>
+			<button id="tournament-start"
+				class="flex size-fit p-2 gap-2 hover:cursor-pointer bg-green-700 hover:bg-green-600 hover:scale-105 transition text-white rounded-md items-center">
 				<p>Start</p>
 			</button>
+			<button id="tournament-leave"
+				class="flex size-fit p-2 gap-2 hover:cursor-pointer bg-red-500 hover:bg-red-400 hover:scale-105 transition text-white rounded-md items-center ml-4">
+				<p>Leave</p>
+			</button>
 		</div>
-		<section class="flex flex-row bg-gray-300 size-full rounded-2xl p-4 overflow-scroll place-content-center">
+		<section
+			class="flex flex-col lg:flex-row bg-gray-300 size-full rounded-2xl p-4 gap-8 border-1 items-center justify-center overflow-y-scroll">
 			<ul id="waiting-players" class="grid xl:grid-cols-2 min-size-fit h-full place-content-center">
 			</ul>
-			<ul id="round-0" class="flex flex-col size-full place-content-center items-center gap-8">
+			<ul id="round-0" class="tournament-carousel">
 			</ul>
-			<ul id="round-1" class="flex size-full items-center">
+			<ul id="round-1" class="tournament-carousel">
 			</ul>
-			<ul id="round-2" class="flex size-full items-center">
+			<ul id="round-2" class="tournament-carousel">
 			</ul>
 		</section>
 	</div>

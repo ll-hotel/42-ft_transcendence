@@ -8,6 +8,7 @@ import { generate2FASecret, generateQRCode, verify2FAToken } from "../security/2
 import { authGuard as preHandler } from "../security/authGuard";
 import { comparePassword, hashPassword } from "../security/hash";
 import { MESSAGE, schema, STATUS } from "../shared";
+import { randomBytes } from "crypto";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
@@ -18,13 +19,13 @@ class User {
 		app.get("/api/me/history", { preHandler }, User.getMyHistory);
 		app.get("/api/me/stats", { preHandler }, User.getMyStat);
 
-		app.get("/api/user", { preHandler, schema: schema.query({ displayName: "string" }) }, User.getUser);
-		app.get("/api/user/history", { preHandler }, User.getUserHistory);
-		app.get("/api/user/stats", { preHandler }, User.getUserStat);
+		app.get("/api/user", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUser);
+		app.get("/api/user/history", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUserHistory);
+		app.get("/api/user/stats", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUserStat);
 		app.get("/api/users/all", { preHandler }, User.getallUsers);
 
-		app.patch("/api/user/profile", { preHandler }, User.updateProfile);
-		app.patch("/api/user/password", { preHandler }, User.updatePassword);
+		app.patch("/api/user/profile", { preHandler, schema: schema.body({ displayName: "string" }, ["displayName"]) },User.updateProfile);
+		app.patch("/api/user/password", { preHandler, schema: schema.body({ currentPassword: "string", newPassword: "string" }, ["currentPassword", "newPassword"]) }, User.updatePassword);
 		app.patch(
 			"/api/user/twofa",
 			{ preHandler, schema: schema.body({ enable: "boolean" }, ["enable"]) },
@@ -39,27 +40,38 @@ class User {
 		app.post("/api/user/updateAvatar", { preHandler }, User.updateAvatar);
 	}
 
-	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {
+	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {	
 		const usr = req.user!;
-		if (!req.isMultipart()) {
-			return rep.send({ message: " ERROR " });
-		}
-		const data = await req.file();
-		if (!data) {
-			return;
-		}
-		// dimensions / size check
-		const buffer = await data.toBuffer();
-		await sharp(buffer).resize(751, 751, { fit: "cover" }).png().toFile(`./uploads/${data.filename}`);
+		
+		if (!req.isMultipart())
+			return rep.code(STATUS.bad_request).send({ message : "Request is not multipart" });
 
-		// rm old pp from upload
-		if (usr.avatar !== `uploads/default_pp.png` && usr.avatar !== `uploads/${data.filename}`) {
-			fs.unlink(usr.avatar, (err) => {});
+		const uploadedFile = await req.file();
+		if (!uploadedFile)
+			return rep.code(STATUS.bad_request).send({ message : "No file uploaded" });
+
+		const randomKey = randomBytes(32).toString("hex");
+		
+		const buffer = await uploadedFile.toBuffer();
+		try {
+			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile("./uploads/" + randomKey + ".png");
+		} catch {
+			return rep.code(STATUS.bad_request).send({ message: "Invalid image file" });
 		}
-		const newAvatar = `uploads/${data.filename}`;
+		
+		const imgTypes = ["image/png", "image/jpeg", "image/webp"];
+		if (!imgTypes.includes(uploadedFile.mimetype))
+			return rep.code(STATUS.bad_request).send({ message: "Invalid image file "});
+		
+		const otherUserAvatar = await db.select().from(tables.users).where(orm.eq(tables.users.avatar, usr.avatar));
+		if (usr.avatar !== `uploads/default_pp.png` && otherUserAvatar.length < 2)
+			fs.unlink(usr.avatar, () => {});
+
+		const newAvatar = "uploads/" + randomKey + ".png";
+
 		await db.update(tables.users).set({ avatar: newAvatar }).where(orm.eq(tables.users.id, usr.id));
 
-		return rep.code(STATUS.success).send({ message: `avatar updated`, file: data.filename });
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: randomKey + ".png"});		
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
@@ -116,10 +128,10 @@ class User {
 
 	static async updateProfile(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user;
-		const { displayName, avatar } = req.body as { displayName?: string, avatar?: string };
+		const { displayName } = req.body as { displayName: string};
 		const data: any = {};
 
-		if (!displayName && !avatar) {
+		if (!displayName) {
 			return rep.code(STATUS.bad_request).send({ message: MESSAGE.missing_fields });
 		}
 
@@ -135,13 +147,10 @@ class User {
 			}
 			data.displayName = displayName;
 		}
-		if (avatar) {
-			data.avatar = avatar;
-		}
-
+	
 		await db.update(tables.users).set(data).where(orm.eq(tables.users.id, usr!.id));
 
-		return rep.code(STATUS.success).send({ message: "Profile updated" });
+		return rep.code(STATUS.success).send({ message: "Display name updated" });
 	}
 
 	static async updatePassword(req: FastifyRequest, rep: FastifyReply) {
@@ -176,6 +185,9 @@ class User {
 		const twofa = req.body as { enable: boolean, code?: string };
 		const TwofaState = tables.TwofaState;
 
+		if (user.oauth !== null) {
+			return rep.code(STATUS.bad_request).send({ message: "Cannot activate TwoFA with an OAuth account" });
+		}
 		if (twofa.enable == false) {
 			if (user.twofaEnabled != TwofaState.disabled) {
 				await db.update(tables.users).set({ twofaEnabled: TwofaState.disabled, twofaKey: null })

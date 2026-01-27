@@ -1,5 +1,5 @@
 import { api, Status } from "../../api.js";
-import { notify } from "../utils/notifs.js";
+import { notify } from "../../utils/notifs.js";
 import AppPage from "../AppPage.js";
 import { Game, Mode } from "../../pong_client_side.js";
 import { gotoPage } from "../../PageLoader.js";
