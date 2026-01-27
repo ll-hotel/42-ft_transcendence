@@ -28,13 +28,7 @@ export default function(user: tables.User, ws: WebSocket.WebSocket) {
 	services.set(user.uuid, new ClientServices(user.uuid));
 }
 
-const tournamentCert = fs.readFileSync("/run/cert/tournament/certificate.pem");
-const tournamentAgent = new https.Agent({
-	ca: tournamentCert,
-	// rejectUnauthorized: true,
-});
-
-const serviceList = ["tournament"].map(name => {
+const serviceList = ["tournament", "game", "queue", "chat"].map(name => {
 	return { name: name, agent: new https.Agent({ ca: fs.readFileSync(`/run/cert/${name}/certificate.pem`) }) };
 });
 
