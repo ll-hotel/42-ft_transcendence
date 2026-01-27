@@ -20,6 +20,7 @@ services:
     volumes:
       - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
+      - uploads:/srv/app/uploads
       - cert:/run/secrets:ro
     env_file: .env
 
