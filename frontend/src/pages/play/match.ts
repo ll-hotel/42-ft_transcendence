@@ -50,15 +50,16 @@ export default class PlayMatch implements AppPage {
 	async loadInto(container: HTMLElement): Promise<void> {
 		if (this.game)
 		{
-			this.game.deinit;
+			this.game.deinit();
 			this.game = null;
 		}
-		const prevMess = this.matchWindow!.querySelector(".ended-match-mess")
-		if (prevMess)
-		{
-			prevMess.remove();
-			this.matchCanvas!.hidden = false;
-		}
+
+		container.innerHTML = "";
+		container.appendChild(this.html);
+
+		this.html.querySelectorAll(".ended-match-mess").forEach(el => el.remove());
+		this.matchCanvas!.hidden = false;
+
 		const query = new URLSearchParams(location.search);
 		this.matchId = query.get("id");
 		const matchResponse = await api.get("/api/match/" + this.matchId);
@@ -67,8 +68,8 @@ export default class PlayMatch implements AppPage {
 		}
 		const match = matchResponse.payload;
 
-		this.p1_DisplayName!.innerHTML = match.p1.name;
-		this.p2_DisplayName!.innerHTML = match.p2.name;
+		this.p1_DisplayName!.innerText = match.p1.name;
+		this.p2_DisplayName!.innerText = match.p2.name;
 		this.p1_Avatar!.src = match.p1.avatar.startsWith("/") ? match.p1.avatar : `/${match.p1.avatar}`;
 		this.p2_Avatar!.src = match.p2.avatar.startsWith("/") ? match.p2.avatar : `/${match.p2.avatar}`;
 		this.p1_Score!.innerText = match.p1.score;
@@ -93,6 +94,7 @@ export default class PlayMatch implements AppPage {
 	}
 
 	unload(): void {
+		this.html.querySelectorAll(".ended-match-mess").forEach(el => el.remove());
 		this.game?.deinit();
 		this.game = null;
 		this.html.remove();

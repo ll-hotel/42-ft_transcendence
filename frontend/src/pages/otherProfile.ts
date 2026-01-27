@@ -7,17 +7,17 @@ import { notify } from "../utils/notifs.js";
 
 export class OtherProfilePage implements AppPage {
 	content: HTMLElement;
-	displayname: HTMLElement;
-	username: HTMLElement;
+	displayname: HTMLDivElement;
+	username: HTMLDivElement;
 
 	private constructor(content: HTMLElement) {
 		this.content = content;
-		this.displayname = content.querySelector("#profile-displayname")!;
-		this.username = content.querySelector("#profile-username")!;
+		this.displayname = content.querySelector<HTMLDivElement>("#profile-displayname")!;
+		this.username = content.querySelector<HTMLDivElement>("#profile-username")!;
 	}
 	static async new(content: HTMLElement) {
-		const displayname = content.querySelector("#profile-displayname");
-		 const username = content.querySelector("#profile-username")!;
+		const displayname = content.querySelector<HTMLDivElement>("#profile-displayname");
+		 const username = content.querySelector<HTMLDivElement>("#profile-username")!;
 		if (!content || !displayname || !username) {
 			return null;
 		}
@@ -58,7 +58,7 @@ export class OtherProfilePage implements AppPage {
 		} catch {
 		}
 		const statusDot = this.content.querySelector("#status-dot");
-		const statusText = this.content.querySelector("#status-text");
+		const statusText = this.content.querySelector<HTMLSpanElement>("#status-text");
 		const contMatchList = this.content.querySelector("#match-list");
 		const cntFriendButton = this.content.querySelector(".friend-buttons");
 
@@ -67,7 +67,7 @@ export class OtherProfilePage implements AppPage {
 			return;
 		}
 
-		statusText.innerHTML = "";
+		statusText.innerText = "";
 		contMatchList.innerHTML = "";
 		const isOnline = userinfo.isOnline;
 		statusDot.className = isOnline ? "friend-round-online" : "friend-round-offline";
@@ -95,7 +95,7 @@ export class OtherProfilePage implements AppPage {
 				contMatchList.append(MatchInfo.new(
 					date.toLocaleDateString("fr-FR"),
 					date.toLocaleTimeString("fr-FR"),
-					{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
+					{ name: this.displayname.innerText, score: matchInfo.match.scoreP1 },
 					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
 					resMe.payload.displayName
 				).toHTML());

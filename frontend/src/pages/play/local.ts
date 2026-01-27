@@ -4,10 +4,18 @@ import AppPage from "../AppPage.js";
 import { Game, Mode } from "../../pong_client_side.js";
 import { gotoPage, gotoUserPage} from "../../PageLoader.js";
 
+type User = {
+	displayName:string,
+	username: string,
+	avatar: string,
+}
+
+
 export default class PlayLocal implements AppPage {
 	html: HTMLElement;
 	game: Game | null = null;
-	me : User | null;
+	player1 : User | null;
+	player2 : User | null;
 
 	ballSprite: HTMLImageElement;
 	paddleSprite: HTMLImageElement;
@@ -20,11 +28,16 @@ export default class PlayLocal implements AppPage {
 	matchId: string | null;
 	matchWindow : HTMLElement | null;
 	matchCanvas : HTMLElement | null;
+	matchElement : HTMLElement | null;
+	p2Element : HTMLElement | null;
 	
 	constructor(html: HTMLElement,ball: HTMLImageElement, paddle: HTMLImageElement) {
 		this.html = html;
 		this.matchId = null;
-		this.me = null;
+		this.player1 = null;
+		this.player2 = null;
+		this.matchElement = this.html.querySelector<HTMLElement>("#match-part");
+		this.p2Element = this.html.querySelector<HTMLElement>("#p2-part");
 		this.p1_DisplayName = this.html.querySelector<HTMLElement>("#player1-name");
 		this.p2_DisplayName = this.html.querySelector<HTMLElement>("#player2-name");
 		this.p1_Avatar = this.html.querySelector<HTMLImageElement>("#player1-picture");
@@ -36,7 +49,7 @@ export default class PlayLocal implements AppPage {
 		this.ballSprite = ball;
 		this.paddleSprite = paddle;
 
-		if (!this.p1_DisplayName || !this.p2_DisplayName || !this.p1_Avatar ||!this.p2_Avatar || !this.p1_Score || !this.p2_Score || !this.matchWindow || !this.matchCanvas)
+		if (!this.p1_DisplayName || !this.p2_DisplayName || !this.p1_Avatar ||!this.p2_Avatar || !this.p1_Score || !this.p2_Score || !this.matchWindow || !this.matchCanvas || !this.p2Element)
 			return;
 	}
 	static async new(html: HTMLElement): Promise<AppPage | null> {
@@ -51,9 +64,11 @@ export default class PlayLocal implements AppPage {
 		return new PlayLocal(html, ball, paddle);
 	}
 	async loadInto(container: HTMLElement): Promise<void> {
+		container.innerHTML = "";
+		container.appendChild(this.html);
 		if (this.game)
 		{
-			this.game.deinit;
+			this.game.deinit();
 			this.game = null;
 		}
 		const prevMess = this.matchWindow!.querySelector(".ended-match-mess")
@@ -63,30 +78,29 @@ export default class PlayLocal implements AppPage {
 			this.matchCanvas!.hidden = false;
 		}
 
-		initSearchBar()
-
-
-
-
-
-
-
-
-
-
-
-		const resMe = await api.get("api/me");
+				const resMe = await api.get("api/me");
 		if (!resMe || resMe.status != Status.success) {
 			return history.back();
 		}
-		const me = resMe.payload;
+		this.player1 = resMe.payload;
+		if (!this.player1)
+			return notify("Error wen charging player1", "error");
 
-		this.p1_DisplayName!.innerHTML = me.displayName;
-//		this.p2_DisplayName!.innerHTML = match.p2.name;
-		this.p1_Avatar!.src = me.avatar.startsWith("/") ? me.avatar : `/${me.avatar}`;
-//		this.p2_Avatar!.src = match.p2.avatar.startsWith("/") ? match.p2.avatar : `/${match.p2.avatar}`;
+		if (!this.player2)
+		{
+			this.matchElement!.hidden = true;
+			this.p2Element!.hidden = false;
+			this.initSearchBar(container);
+		}
+		else
+			this.setMatchInfo(container);
+	}
 
-//		this.p2_Score!.innerText = match.p2.score;
+	setMatchInfo(container : HTMLElement){
+		this.p1_DisplayName!.innerText = this.player1!.displayName;
+		this.p2_DisplayName!.innerText = this.player2!.displayName;
+		this.p1_Avatar!.src = this.player1!.avatar.startsWith("/") ? this.player1!.avatar : `/${this.player1!.avatar}`;
+		this.p2_Avatar!.src = this.player2!.avatar.startsWith("/") ? this.player2!.avatar : `/${this.player2!.avatar}`;
 
 		const canvas = this.html.querySelector("canvas")!;
 		const table_ratio = 9 / 16;
@@ -104,10 +118,12 @@ export default class PlayLocal implements AppPage {
 
 		container.innerHTML = "";
 		container.appendChild(this.html);
-	}
+	};
 
 	unload(): void {
 		this.game?.deinit();
+		this.player1 = null;
+		this.player2 = null;
 		this.game = null;
 		this.html.remove();
 	}
@@ -160,26 +176,16 @@ export default class PlayLocal implements AppPage {
 			gotoPage("home");
 		}, 4000);
 	}
-};
-async function fetchImage(url: string): Promise<HTMLImageElement | null> {
-	return new Promise((resolve, reject) => {
-		const img = new Image();
-		img.onload = () => resolve(img);
-		img.onerror = reject;
-		img.src = url;
-	}).catch(function(reason) {
-		console.log(reason);
-		return null;
-	}) as Promise<HTMLImageElement | null>;
-}
 
-function initSearchBar() {
+ initSearchBar(container: HTMLElement) {
 	const search = document.getElementById("input-p2") as HTMLInputElement | null;
 	const result = document.getElementById("results-p2") as HTMLDivElement | null;
 
 	if (!search || !result) {
 		return;
 	}
+	search!.value = "";
+	result!.innerHTML = "";
 
 	search.addEventListener("input", async () => {
 		const searchName = search.value.trim().toLowerCase();
@@ -200,19 +206,18 @@ function initSearchBar() {
 			return user.displayName.toLowerCase().includes(searchName);
 		});
 
-		displayResultSearch(selectedUsers);
+		this.displayResultSearch(selectedUsers, container);
 	});
+}
 
-	function displayResultSearch(selectedUsers: any) {
+	displayResultSearch(selectedUsers: any, container: HTMLElement)
+	{
+		const search = document.getElementById("input-p2") as HTMLInputElement | null;
 		const results = document.getElementById("results-p2");
-		if (!results) {
-			return;
-		}
-	
+		if (!results || !search) return;
 		results.innerHTML = "";
 		selectedUsers.forEach((user: any) => {
-			if (user.displayName === this.me.displayName)
-				return;
+			if (user.displayName === this.player1?.displayName) return;
 			const card = document.createElement("div");
 			card.className = "user-result";
 	
@@ -228,20 +233,27 @@ function initSearchBar() {
 			card.appendChild(name);
 	
 			card.onclick = async () => {
-				const me = await api.get("/api/me");
-				if (!me || !me.payload)
-					return;
-				if (me.status != Status.success)
-					return notify("Error: " + me.payload.message, "error");
-				if (me.payload.displayName == user.displayName)
-					await gotoPage("profile");
-				else
-					await gotoUserPage(user.displayName);
+				this.player2 = user;
+				this.p2Element!.hidden = true;
+				this.matchElement!.hidden = false;
+				this.setMatchInfo(container);
 			}
-	
 			results.appendChild(card);
-	
 		}
 		)
 	}
+
+};
+
+async function fetchImage(url: string): Promise<HTMLImageElement | null> {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => resolve(img);
+		img.onerror = reject;
+		img.src = url;
+	}).catch(function(reason) {
+		console.log(reason);
+		return null;
+	}) as Promise<HTMLImageElement | null>;
 }
+
