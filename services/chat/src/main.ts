@@ -3,7 +3,7 @@ import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import { chatRoute } from "./routes";
-
+import websocketRoute from "./routes/websocket";
 
 const app: FastifyInstance = Fastify({
 	logger: true,
@@ -14,9 +14,11 @@ const app: FastifyInstance = Fastify({
 });
 
 app.register(fastifyCookie);
+app.register(fastifyWebsocket);
 app.register(chatRoute);
+app.register(websocketRoute);
 
-app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
+app.listen({ port: 8080, host: "0.0.0.0" }, function (err, _address) {
 	if (err) {
 		console.log("Could not start server:", err);
 		process.exit(1);

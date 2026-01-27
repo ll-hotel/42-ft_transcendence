@@ -20,6 +20,7 @@ services:
     volumes:
       - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
+      - uploads:/srv/app/uploads
       - cert:/run/secrets:ro
     env_file: .env
 
@@ -31,7 +32,7 @@ services:
     volumes:
       - chat-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - cert:/run/secrets:ro
+      - chat-service-cert:/run/secrets:ro
     env_file: .env
 
   friend-service:
@@ -53,7 +54,7 @@ services:
     volumes:
       - game-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - cert:/run/secrets:ro
+      - game-service-cert:/run/secrets:ro
     env_file: .env
 
   queue-service:
@@ -64,7 +65,7 @@ services:
     volumes:
       - queue-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - cert:/run/secrets:ro
+      - queue-service-cert:/run/secrets:ro
     env_file: .env
 
   tournament-service:
@@ -75,7 +76,7 @@ services:
     volumes:
       - tournament-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - cert:/run/secrets:ro
+      - tournament-service-cert:/run/secrets:ro
     env_file: .env
 
   user-service:
@@ -99,6 +100,10 @@ services:
       - websocket-service-src:/srv/app/src
       - backend-db:/srv/app/db
       - cert:/run/secrets:ro
+      - tournament-service-cert:/run/cert/tournament:ro
+      - queue-service-cert:/run/cert/queue:ro
+      - game-service-cert:/run/cert/game:ro
+      - chat-service-cert:/run/cert/chat:ro
     env_file: .env
 
   # grafana:
@@ -189,48 +194,86 @@ volumes:
       device: ./services/auth/src
       type: none
       o: bind
+
   chat-service-src:
     driver: local
     driver_opts:
       device: ./services/chat/src
       type: none
       o: bind
+  chat-service-cert:
+    driver: local
+    driver_opts:
+      device: ./services/chat/cert
+      type: none
+      o: bind
+
   friend-service-src:
     driver: local
     driver_opts:
       device: ./services/friend/src
       type: none
       o: bind
+
   game-service-src:
     driver: local
     driver_opts:
       device: ./services/game/src
       type: none
       o: bind
+  game-service-cert:
+    driver: local
+    driver_opts:
+      device: ./services/game/cert
+      type: none
+      o: bind
+
   queue-service-src:
     driver: local
     driver_opts:
       device: ./services/queue/src
       type: none
       o: bind
+  queue-service-cert:
+    driver: local
+    driver_opts:
+      device: ./services/queue/cert
+      type: none
+      o: bind
+
   tournament-service-src:
     driver: local
     driver_opts:
       device: ./services/tournament/src
       type: none
       o: bind
+  tournament-service-cert:
+    driver: local
+    driver_opts:
+      device: ./services/tournament/cert
+      type: none
+      o: bind
+
   user-service-src:
     driver: local
     driver_opts:
       device: ./services/user/src
       type: none
       o: bind
+
   websocket-service-src:
     driver: local
     driver_opts:
       device: ./services/websocket/src
       type: none
       o: bind
+  websocket-service-cert:
+    driver: local
+    driver_opts:
+      device: ./services/websocket/cert
+      type: none
+      o: bind
+
   backend-db:
     driver: local
     driver_opts:

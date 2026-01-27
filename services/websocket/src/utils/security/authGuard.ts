@@ -1,29 +1,18 @@
 import { eq } from "drizzle-orm";
 import { FastifyReply, FastifyRequest } from "fastify";
-import fs from "fs";
 import jwt from "jsonwebtoken";
 import { db } from "../db/database";
-import { users, OAuth } from "../db/tables";
+import { OAuth, User, users } from "../db/tables";
 import { MESSAGE, STATUS } from "../http-reply";
 
 declare module "fastify" {
 	interface FastifyRequest {
-		user?: {
-			id: number,
-			uuid: string,
-			username: string,
-			displayName: string,
-			twofaKey: string | null,
-			twofaEnabled: number,
-			isOnline: number,
-			avatar: string,
-			oauth: OAuth | null;
-		};
+		user?: User;
 	}
 }
 
 if (!process.env.JWT_SECRET) {
-      throw new Error("Missing Environment value");
+	throw new Error("Missing Environment value");
 }
 const jwtSecret = process.env.JWT_SECRET!;
 
@@ -48,6 +37,7 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 	const dbUser = dbUsers[0];
 	req.user = {
 		...dbUser,
+		isOnline: dbUser.isOnline != 0,
 		oauth: dbUser.oauth as OAuth | null,
 	};
 }

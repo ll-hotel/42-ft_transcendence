@@ -21,8 +21,36 @@ uploadsDir:
 
 cert/privatekey.pem cert/certificate.pem:
 	@mkdir -p $(dir $@)
-	@openssl req -newkey rsa:2048 -nodes -keyout cert/privatekey.pem -x509 -days 365 -out cert/certificate.pem -subj "/CN=internal" -addext "subjectAltName=DNS:localhost" 2>/dev/null
+	@openssl req -newkey rsa:2048 -nodes -keyout cert/privatekey.pem -x509 -days 365 -out cert/certificate.pem \
+		-subj "/CN=internal" -addext "subjectAltName=DNS:localhost" 2>/dev/null
 	@echo "=> New certs has been generated"
+
+.PHONY: services-cert
+services-cert: services/tournament/cert services/game/cert services/queue/cert services/chat/cert 
+
+.PHONY: services/tournament/cert
+services/tournament/cert:
+	@mkdir -p $@
+	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
+		-subj "/CN=internal" -addext "subjectAltName=DNS:tournament-service" 2>/dev/null
+
+.PHONY: services/game/cert
+services/game/cert:
+	@mkdir -p $@
+	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
+		-subj "/CN=internal" -addext "subjectAltName=DNS:game-service" 2>/dev/null
+
+.PHONY: services/queue/cert
+services/queue/cert:
+	@mkdir -p $@
+	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
+		-subj "/CN=internal" -addext "subjectAltName=DNS:queue-service" 2>/dev/null
+
+.PHONY: services/chat/cert
+services/chat/cert:
+	@mkdir -p $@
+	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
+		-subj "/CN=internal" -addext "subjectAltName=DNS:chat-service" 2>/dev/null
 
 .PHONY: build
 build:

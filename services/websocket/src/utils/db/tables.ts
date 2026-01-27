@@ -1,5 +1,19 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+export type User = {
+	id: number,
+	uuid: string,
+	username: string,
+	displayName: string,
+	password: string,
+	avatar: string,
+	twofaKey: string | null,
+	twofaEnabled: TwofaState,
+	isOnline: boolean,
+	/** Optional oauth provider. If not null, user was created with 'auth42' or 'google' */
+	oauth: string | null,
+};
+
 /** Do not change this values as they are used inside the database. */
 export enum TwofaState {
 	disabled = 0,
@@ -18,7 +32,7 @@ export const users = sqliteTable("users", {
 	username: text("username").notNull().unique(),
 	displayName: text("displayName").unique().notNull(),
 	password: text("password").notNull(),
-	avatar: text('avatar').default('uploads/default_pp.png').notNull(),
+	avatar: text("avatar").default("default_pp.png").notNull(),
 	twofaKey: text("twofaKey"),
 	/** An number with values of the `TwofaState` enum. */
 	twofaEnabled: integer("twofaEnabled").notNull().default(TwofaState.disabled),
