@@ -187,6 +187,7 @@ export class FriendButton {
 			return notify("Error when getting user or friend info: " + me.payload.message, "error");
 		socket.send({
 			source: me.payload.uuid,
+			service:"chat",
 			topic: "vs:invite",
 			content : friend.payload.user.uuid,
 		});

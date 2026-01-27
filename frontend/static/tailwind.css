@@ -31,7 +31,7 @@
   }
   &:hover {
     @media (hover: hover) {
-      background-color: #04809F;
+      background-color: var(--color-slate-600);
     }
   }
 }
@@ -42,7 +42,7 @@
   align-items: center;
   justify-content: space-between;
   border-color: var(--color-white);
-  background-color: var(--color-neutral-500);
+  background-color: var(--color-slate-600);
   padding-inline: calc(var(--spacing) * 4);
   color: var(--color-white);
   transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to, opacity, box-shadow, transform, translate, scale, rotate, filter, -webkit-backdrop-filter, backdrop-filter, display, content-visibility, overlay, pointer-events;
@@ -133,13 +133,15 @@
   --tw-scale-y: 105%;
   --tw-scale-z: 105%;
   scale: var(--tw-scale-x) var(--tw-scale-y);
-  background-color: #04809F;
+  background-color: var(--color-slate-600);
+  color: var(--color-white);
   transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to, opacity, box-shadow, transform, translate, scale, rotate, filter, -webkit-backdrop-filter, backdrop-filter, display, content-visibility, overlay, pointer-events;
   transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
   transition-duration: var(--tw-duration, var(--default-transition-duration));
 }
 .friend-card-unselect {
   background-color: var(--color-white);
+  color: var(--color-black);
 }
 .friend-avatar {
   display: block;
@@ -225,7 +227,7 @@
   max-width: var(--container-xs);
   align-self: flex-end;
   border-radius: var(--radius-lg);
-  background-color: #04809F;
+  background-color: var(--color-slate-600);
   padding-inline: calc(var(--spacing) * 3);
   padding-block: calc(var(--spacing) * 1);
   overflow-wrap: break-word;
@@ -253,7 +255,7 @@
   color: var(--color-white);
 }
 .win {
-  background-color: #04809F;
+  background-color: var(--color-slate-600);
 }
 .loose {
   background-color: var(--color-red-500);
@@ -330,11 +332,8 @@
     --color-green-500: oklch(72.3% 0.219 149.579);
     --color-green-600: oklch(62.7% 0.194 149.214);
     --color-green-700: oklch(52.7% 0.154 150.069);
-    --color-sky-200: oklch(90.1% 0.058 230.902);
-    --color-blue-200: oklch(88.2% 0.059 254.128);
-    --color-blue-300: oklch(80.9% 0.105 251.813);
     --color-blue-600: oklch(54.6% 0.245 262.881);
-    --color-blue-800: oklch(42.4% 0.199 265.638);
+    --color-slate-600: oklch(44.6% 0.043 257.281);
     --color-gray-50: oklch(98.5% 0.002 247.839);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --color-gray-300: oklch(87.2% 0.01 258.338);
@@ -697,6 +696,12 @@
     width: 100%;
     height: 100%;
   }
+  .h-1 {
+    height: calc(var(--spacing) * 1);
+  }
+  .h-1\/3 {
+    height: calc(1/3 * 100%);
+  }
   .h-4 {
     height: calc(var(--spacing) * 4);
   }
@@ -748,6 +753,15 @@
   .w-1\/2 {
     width: calc(1/2 * 100%);
   }
+  .w-1\/3 {
+    width: calc(1/3 * 100%);
+  }
+  .w-2 {
+    width: calc(var(--spacing) * 2);
+  }
+  .w-2\/3 {
+    width: calc(2/3 * 100%);
+  }
   .w-3 {
     width: calc(var(--spacing) * 3);
   }
@@ -792,6 +806,9 @@
   }
   .max-w-7xl {
     max-width: var(--container-7xl);
+  }
+  .max-w-fit {
+    max-width: fit-content;
   }
   .max-w-full {
     max-width: 100%;
@@ -1004,9 +1021,6 @@
   .border-black {
     border-color: var(--color-black);
   }
-  .border-blue-200 {
-    border-color: var(--color-blue-200);
-  }
   .border-gray-300 {
     border-color: var(--color-gray-300);
   }
@@ -1016,9 +1030,6 @@
   .border-red-600 {
     border-color: var(--color-red-600);
   }
-  .border-sky-200 {
-    border-color: var(--color-sky-200);
-  }
   .border-transparent {
     border-color: transparent;
   }
@@ -1027,12 +1038,6 @@
   }
   .border-b-black {
     border-bottom-color: var(--color-black);
-  }
-  .bg-\[\#04809F\] {
-    background-color: #04809F;
-  }
-  .bg-\[\#04809f\] {
-    background-color: #04809f;
   }
   .bg-black {
     background-color: var(--color-black);
@@ -1090,6 +1095,9 @@
   }
   .bg-red-600 {
     background-color: var(--color-red-600);
+  }
+  .bg-slate-600 {
+    background-color: var(--color-slate-600);
   }
   .bg-transparent {
     background-color: transparent;

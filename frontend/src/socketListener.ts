@@ -12,7 +12,7 @@ export async function initSocket() {
 	socket.addListener("vs:invite", (m:Message) => {
 		const mess = m as  unknown as {source:string, content: string, topic : string};
 		const isMatch = confirm(`New invitation to play with ${mess.content}, let's win ?`);
-		socket.send({source : "server", topic : isMatch ? "vs:accept" : "vs:decline", content: mess.source})
+		socket.send({source : "server", service:"chat", topic : isMatch ? "vs:accept" : "vs:decline", content: mess.source})
 	});
 
 	socket.addListener("vs:start", (m) => {
@@ -27,12 +27,6 @@ export async function initSocket() {
 		const mess = m as  unknown as {source: string, content:string};
 		notify(`${mess.content} didn't want to play with you :(`, "error");
 	});
-
-	socket.addListener("match", (m) => {
-		const match = m as unknown as { id?: number };
-		notify("Match found: id=" + match.id!, "info");
-		gotoPage("play/", "?id=" + match.id!);
-	})
 
 	socket.addListener("vs:error", (m:Message) => {
 		const mess = m as unknown as {content: string };

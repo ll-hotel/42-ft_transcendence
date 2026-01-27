@@ -19,8 +19,6 @@ document.addEventListener("DOMContentLoaded", async function() {
 	initSearchBar();
 	const uri = window.location.pathname;
 
-	// JAI ENLEVER LES HISTORIQUE ICI
-
 	const name = strToPageName(uri.substring(1)) || "login";
 	if (name === "login" || (await socket.connect()) === false) {
 		await gotoPage("login", location.search);

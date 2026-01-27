@@ -3,6 +3,7 @@ import * as game from "./pong_client_side.js";
 
 export type BaseMessage = {
 	topic: string,
+	service : string,
 };
 
 export type MatchMessage = BaseMessage & {
@@ -96,7 +97,7 @@ async function connect(): Promise<boolean> {
 }
 function pingLoop() {
 	setTimeout(() => {
-		send({ topic: "ping" }) && pingLoop();
+		send({  service:"ping", topic: "ping" }) && pingLoop();
 	}, 4000);
 }
 function isAlive() {
