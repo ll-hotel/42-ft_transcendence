@@ -1,34 +1,46 @@
 import * as orm from "drizzle-orm";
+import fs from "fs";
+import https from "https";
+import * as WebSocket from "ws";
 import { db } from "./utils/db/database";
 import * as dbM from "./utils/db/methods";
 import * as tables from "./utils/db/tables";
-import clientSocketPool from "./utils/socket";
+import socketPool from "./utils/socket";
 
-export default function(user: tables.User, websocket: WebSocket) {
-	const isNewClient = clientSocketPool.clients.get(user.uuid) === undefined;
+export default function(user: tables.User, ws: WebSocket.WebSocket) {
+	const isNewClient = socketPool.clients.get(user.uuid) === undefined;
 
-	clientSocketPool.connect(user.uuid, websocket);
+	socketPool.connect(user.uuid, ws);
 
 	db.update(tables.users).set({ isOnline: 1 }).where(orm.eq(tables.users.id, user.id)).prepare().execute();
 
 	if (isNewClient === false) {
 		return;
 	}
-	clientSocketPool.addListener(user.uuid, "disconnect", () => {
+	socketPool.addListener(user.uuid, "disconnect", () => {
 		setTimeout(() => {
-			if (clientSocketPool.isOnline(user.uuid)) {
+			if (socketPool.isOnline(user.uuid)) {
 				return;
 			}
-			dbM.removeUserFromTournaments(user.uuid);
 			dbM.setUserOffline(user.uuid);
-		}, 2000);
+		}, 1000);
 	});
 	services.set(user.uuid, new ClientServices(user.uuid));
 }
 
+const tournamentCert = fs.readFileSync("/run/cert/tournament/certificate.pem");
+const tournamentAgent = new https.Agent({
+	ca: tournamentCert,
+	// rejectUnauthorized: true,
+});
+
+const serviceList = ["tournament"].map(name => {
+	return { name: name, agent: new https.Agent({ ca: fs.readFileSync(`/run/cert/${name}/certificate.pem`) }) };
+});
+
 class ClientServices {
 	uuid: string;
-	services: { [key: string]: WebSocket | null } = {};
+	services: { [key: string]: WebSocket.WebSocket | null } = {};
 
 	constructor(uuid: string) {
 		this.uuid = uuid;
@@ -36,31 +48,36 @@ class ClientServices {
 	}
 
 	connectServices(): void {
-		clientSocketPool.addListener(this.uuid, "message", (json) => this.dispatchMessage(json));
-		clientSocketPool.addListener(this.uuid, "disconnect", () => {
+		socketPool.addListener(this.uuid, "message", (json) => this.dispatchMessage(json));
+		socketPool.addListener(this.uuid, "disconnect", () => {
 			for (const name in this.services) {
 				this.services[name]?.close();
 			}
+			services.delete(this.uuid);
 		});
-		// this.connect("chat");
-		this.connectService("tournament");
-		// this.connect("queue");
-		// this.connect("game");
-	}
-	connectService(name: string) {
-		try {
-			this.services[name] = new WebSocket(
-				`https://${name}-service:8080/api/${name}/websocket`,
-			);
-			const ws = this.services[name];
-			ws.addEventListener("close", () => {
-				this.services[name] = null;
-				this.connectService(name);
-			});
-			ws.addEventListener("message", (event) => clientSocketPool.sendRaw(this.uuid, event));
-		} catch (error) {
-			if (error) console.log(error);
+		for (const service of serviceList) {
+			this.connectService(service.name, service.agent);
 		}
+	}
+	connectService(name: string, agent: https.Agent) {
+		let sock: WebSocket.WebSocket;
+		try {
+			sock = new WebSocket.WebSocket(`wss://${name}-service:8080/websocket?uuid=${this.uuid}`, { agent });
+		} catch (error) {
+			return console.log(error);
+		}
+		sock.on("error", (error) => {
+			console.log(error);
+		});
+		sock.on("close", (code, reason) => {
+			console.log("Service " + name + " closed connection: code " + code + ": reason: " + reason);
+			this.services[name] = null;
+			this.connectService(name, agent);
+		});
+		sock.on("message", (data) => {
+			socketPool.sendRaw(this.uuid, data.toString());
+		});
+		this.services[name] = sock;
 	}
 	dispatchMessage(message: MessageEvent): void {
 		let json;
@@ -69,7 +86,7 @@ class ClientServices {
 		} catch {
 			return;
 		}
-		let service: WebSocket | null = null;
+		let service: WebSocket.WebSocket | null = null;
 		for (const serviceName in this.services) {
 			if (serviceName == json.topic) {
 				service = this.services[serviceName];
@@ -80,7 +97,7 @@ class ClientServices {
 			service.send(message.data);
 		} else {
 			const message = { topic: "unavailable", service: json.topic };
-			clientSocketPool.send(this.uuid, message);
+			socketPool.send(this.uuid, message);
 		}
 	}
 }

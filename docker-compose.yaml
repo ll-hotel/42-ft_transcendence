@@ -84,7 +84,7 @@ services:
     volumes:
       - tournament-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - cert:/run/secrets:ro
+      - tournament-service-cert:/run/secrets:ro
     env_file: .env
 
   user-service:
@@ -107,6 +107,7 @@ services:
       - websocket-service-src:/srv/app/src
       - backend-db:/srv/app/db
       - cert:/run/secrets:ro
+      - tournament-service-cert:/run/cert/tournament:ro
     env_file: .env
 
   # grafana:
@@ -227,6 +228,12 @@ volumes:
       device: ./src/services/tournament/src
       type: none
       o: bind
+  tournament-service-cert:
+    driver: local
+    driver_opts:
+      device: ./src/services/tournament/cert
+      type: none
+      o: bind
   user-service-src:
     driver: local
     driver_opts:
@@ -237,6 +244,12 @@ volumes:
     driver: local
     driver_opts:
       device: ./src/services/websocket/src
+      type: none
+      o: bind
+  websocket-service-cert:
+    driver: local
+    driver_opts:
+      device: ./src/services/websocket/cert
       type: none
       o: bind
   backend-db:

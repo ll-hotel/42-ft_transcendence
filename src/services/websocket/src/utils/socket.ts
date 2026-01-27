@@ -1,4 +1,4 @@
-import * as WebSocket from "ws";
+import WebSocket, { MessageEvent } from "ws";
 
 type Event = "message" | "disconnect";
 type Handler = (data?: any) => void;
@@ -60,7 +60,7 @@ function updateOnlineTime(client: Client) {
 	client.lastOnlineTime = Date.now();
 }
 
-function onMessage(client: Client, event: WebSocket.MessageEvent) {
+function onMessage(client: Client, event: MessageEvent) {
 	updateOnlineTime(client);
 	try {
 		const msg = JSON.parse(event.data.toString());
@@ -73,12 +73,12 @@ export function send(target: ClientId, message: Message) {
 	if (isOnline(target)) {
 		try {
 			const data = JSON.stringify(message);
-			sendRaw(target, data);
+			clients.get(target)!.sockets.forEach(socket => socket.send(data));
 		} catch (err) {}
 	}
 }
 
-export function sendRaw(target: ClientId, data: any) {
+export function sendRaw(target: ClientId, data: string) {
 	clients.get(target)!.sockets.forEach(socket => socket.send(data));
 }
 
