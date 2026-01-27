@@ -63,7 +63,7 @@ abstract class PhysicObject {
 }
 
 const table_width = 500;
-const table_ratio = 9 / 16;
+const table_ratio = 1/2;
 const table = {
 	width: table_width,
 	height: table_width * table_ratio,
@@ -314,9 +314,10 @@ export class PongBall extends PhysicObject {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
 		// TODO remettre l'angle aleatoire
-		let new_dir = Math.random() * 90;
+		let new_dir = 45 + Math.random() * 90;
 		this.speed.setX = Math.cos(new_dir) * 5;
 		this.speed.setY = Math.sin(new_dir) * 5;
+		this.speed.scale(4);
 	}
 
 	ball_scored(line_position: Position, normal: Vector2D) {

@@ -54,7 +54,7 @@ async function getState(request: FastifyRequest, reply: FastifyReply): Promise<v
 
 async function postInput(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 	const body = request.body as {
-		matchId: number,
+		gameId: number,
 		p1_up: boolean,
 		p1_down: boolean,
 		p2_up?: boolean,
@@ -64,12 +64,12 @@ async function postInput(request: FastifyRequest, reply: FastifyReply): Promise<
 	const matchById = db.select().from(tables.matches).where(orm.eq(tables.matches.id, orm.sql.placeholder("id")))
 		.prepare();
 
-	const match = matchById.get({ id: body.matchId });
+	const match = matchById.get({ id: body.gameId });
 	if (match == undefined) {
 		return reply.code(STATUS.not_found).send({ message: "Match not found" });
 	}
 
-	const game = serverGames.get(body.matchId);
+	const game = serverGames.get(body.gameId);
 	if (game == undefined) {
 		return reply.code(STATUS.bad_request).send({ message: "Match ended" });
 	}
@@ -99,5 +99,5 @@ async function postInput(request: FastifyRequest, reply: FastifyReply): Promise<
 		game.p2_event_listener(messageP2);
 	}
 
-	return reply.code(STATUS.success);
+	return reply.code(STATUS.success).send({message: "input received"});
 }

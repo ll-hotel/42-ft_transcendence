@@ -12,8 +12,8 @@ type Size = { w: number, h: number };
 //  - check de la position de la balle et la replacer si jamais
 
 
-const width_server = 540;
-const height_server = width_server * (9/16);
+const width_server = 500;
+const height_server = width_server * (1/2);
 
 export enum Mode {
 	local = "local",
@@ -117,6 +117,7 @@ export class Game {
 	private sendInputs: () => void;
 	running: boolean = false;
 	private matchId : number;
+	private last_input: {p1_up: boolean, p1_down: boolean, p2_up: boolean, p2_down: boolean};
 
 	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement, mode: Mode, matchId: number) {
 		this.matchId = matchId;
@@ -135,6 +136,7 @@ export class Game {
 		this.ball = new PongBall(this.canvas, this.context, ball_texture);
 		this.tick_rate = 60;
 		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
+		this.last_input =  {p1_up: false, p1_down: false, p2_up: false, p2_down: false};
 		this.speed_ratio = 10 / this.tick_rate;
 		this.mode = mode;
 		if (this.mode == Mode.local) {
@@ -200,15 +202,20 @@ export class Game {
 		socket.send(msg);
 	}
 
-	send_remote_input() {
-		let msg: InputMessage = {
-			topic: "pong",
-			type: "input",
-			up: this.input.get("p1_up")!,
-			down: this.input.get("p1_down")!,
-		};
-		debug_message("remote input", msg);
-		socket.send(msg);
+	async send_remote_input() {
+		await api.post("/api/game/input", {
+			gameId: this.matchId,
+			p1_up: this.input.get("p1_up"),
+			p1_down: this.input.get("p1_down")}
+			);
+		// let msg: InputMessage = {
+		// 	topic: "pong",
+		// 	type: "input",
+		// 	up: this.input.get("p1_up")!,
+		// 	down: this.input.get("p1_down")!,
+		// };
+		// debug_message("remote input", msg);
+		// socket.send(msg);
 	}
 
 	update_state(msg: StateMessage) {
@@ -234,7 +241,7 @@ export class Game {
 		this.paddle_p1.render(this.context!);
 		this.paddle_p2.render(this.context!);
 		this.ball.render(this.context!);
-		draw_hit_box(this.context!, this.ball as PhysicObject);
+		// draw_hit_box(this.context!, this.ball as PhysicObject);
 	}
 
 	deinit(): void {
@@ -313,19 +320,47 @@ export class Game {
 			return;
 		}
 		this.ball.tick();
-		this.render();
+		if (this.input.get("p1_down"))
+			this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
+		if (this.input.get("p1_up"))
+			this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
+		if (this.input.get("p2_down"))
+			this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
+		if (this.input.get("p2_up"))
+			this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
 		this.score_viewer.innerText = this.score.p1.toString() + " - " + this.score.p2.toString();
 		if (this.shouldSendInputs()) {
 			this.sendInputs();
 		}
+		this.render();
 	}
 
 	shouldSendInputs(): boolean {
-		for (const value of this.input.values()) {
-			if (value == true)
-				return true;
+
+		if (this.last_input.p1_down !== this.input.get("p1_down"))
+			return this.reset_last_input();
+		if (this.last_input.p1_up !== this.input.get("p1_up"))
+			return this.reset_last_input();
+		if (this.mode == Mode.local)
+		{
+			if (this.last_input.p2_down !== this.input.get("p2_down"))
+				return this.reset_last_input();
+			if (this.last_input.p2_up !== this.input.get("p2_up"))
+				return this.reset_last_input();
 		}
 		return false;
+	}
+
+	reset_last_input(): boolean {
+		this.last_input.p1_up = this.input.get("p1_up")!;
+		this.last_input.p1_down = this.input.get("p1_down")!;
+		if (this.mode == Mode.local)
+		{
+			this.last_input.p2_up = this.input.get("p2_up")!;
+			this.last_input.p2_down = this.input.get("p2_down")!;
+		}
+		return true;
+
 	}
 }
 
@@ -356,7 +391,7 @@ export class PongBall extends PhysicObject {
 	constructor(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, texture: HTMLImageElement) {
 		super(
 			{ x: canvas.width / 2, y: canvas.height / 2 },
-			{ w: canvas.height * 0.1, h: canvas.height * 0.1 },
+			{ w: canvas.height * 0.1 * 2.15, h: canvas.height * 0.1 },
 			new Vector2D(0, 0),
 		);
 		this.canvas = canvas;
@@ -368,9 +403,9 @@ export class PongBall extends PhysicObject {
 		context.drawImage(
 			this.texture,
 			this.pos.x - (this.size.w / 2),
-			this.pos.y - (this.size.w / 2),
+			this.pos.y - (this.size.h / 2),
 			this.size.w,
-			this.size.w,
+			this.size.h,
 		);
 	}
 }

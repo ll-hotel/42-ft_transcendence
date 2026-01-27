@@ -1,12 +1,14 @@
 import { Game, Mode } from "../pong_client_side.js";
 import AppPage from "./AppPage.js";
 import { notify } from "../utils/notifs.js";
+import {gotoPage} from "../PageLoader.js";
 
 export class PongPage implements AppPage {
 	html: HTMLElement;
 	game: Game | null = null;
 	ballSprite: HTMLImageElement;
 	paddleSprite: HTMLImageElement;
+	private matchId: number | null = null;
 	onclick: () => void;
 
 	private constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement) {
@@ -30,16 +32,22 @@ export class PongPage implements AppPage {
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.html);
+		const params = new URLSearchParams(location.search);
+		const matchId = params.get("matchId");
+		if (!matchId) {
+			return gotoPage("home");
+		}
+		this.matchId = Number(matchId);
 		this.showGame();
 		const canvas = this.html.querySelector("canvas")!;
-		const table_ratio = 9 / 16;
-		canvas.width = 1920;
-		canvas.height = 1080;
+		// const table_ratio = 9 / 16;
+		canvas.width = 1800;
+		canvas.height = 900;
 		// canvas.getContext("2d")!.imageSmoothingEnabled = false;
 		// TODO changer le Mode ("local")
 		// TODO: Change game mode dynamically.
 
-		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote, 42);
+		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote, this.matchId!);
 		this.game.init();
 		// if (Mode.local == Mode.remote) {
 		// 	html.querySelector("#game-clickbox")?.addEventListener("click", () => this.onclick());
