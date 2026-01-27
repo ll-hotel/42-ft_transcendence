@@ -65,6 +65,17 @@ services:
       - cert:/run/secrets:ro
     env_file: .env
 
+  game-service:
+    container_name: game-service
+    restart: on-failure
+    build:
+      context: src/services/game
+    volumes:
+      - game-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - cert:/run/secrets:ro
+    env_file: .env
+
   tournament-service:
     container_name: tournament-service
     restart: on-failure
@@ -202,6 +213,12 @@ volumes:
     driver: local
     driver_opts:
       device: ./src/services/friend/src
+      type: none
+      o: bind
+  game-service-src:
+    driver: local
+    driver_opts:
+      device: ./src/services/game/src
       type: none
       o: bind
   tournament-service-src:
