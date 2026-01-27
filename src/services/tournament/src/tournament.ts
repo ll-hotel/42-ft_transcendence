@@ -19,6 +19,11 @@ export class Tournament {
 			Tournament.joinTournament,
 		);
 		app.post(
+			"/api/tournament/leave",
+			{ preHandler: authGuard, schema: schema.body({ name: "string" }, ["name"]) },
+			Tournament.leaveTournament,
+		);
+		app.post(
 			"/api/tournament/start",
 			{ preHandler: authGuard, schema: schema.body({ name: "string" }, ["name"]) },
 			Tournament.startTournament,
@@ -103,6 +108,28 @@ export class Tournament {
 		}
 		await dbM.addTournamentPlayer(tournament.id, user);
 		return rep.code(STATUS.success).send({ message: "Joined tournament", tournamentId: tournament.id });
+	}
+
+	static leaveTournament(req: FastifyRequest, rep: FastifyReply): void {
+		const body = req.body as { name: string };
+		const tournament = db.select().from(tables.tournaments).where(orm.eq(tables.tournaments.name, body.name))
+			.prepare().get();
+		if (tournament == undefined) {
+			rep.code(STATUS.not_found).send({ message: "No such tournament" });
+			return;
+		}
+
+		const user = req.user!;
+		const players = db.select({ id: tables.tournamentPlayers.userId }).from(tables.tournamentPlayers).where(
+			orm.eq(tables.tournamentPlayers.tournamentId, tournament.id),
+		).prepare().all();
+		if (players.find((player) => player.id == user.id) == undefined) {
+			rep.code(STATUS.bad_request).send({ message: "You are not in this tournament" });
+			return;
+		}
+		dbM.removeUserFromTournaments(user.uuid);
+
+		rep.code(STATUS.success).send({ message: "Left tournament" });
 	}
 
 	static async startTournament(req: FastifyRequest, rep: FastifyReply) {
@@ -246,8 +273,7 @@ export class Tournament {
 		);
 		const info = await dbM.searchTournamentInfo(tournament.id);
 		if (!info) {
-			// Can not happen as the tournament exists.
-			return;
+			return rep.code(STATUS.not_found).send({ message: "No such tournament" });
 		}
 		rep.code(STATUS.success).send({ creator, ...info });
 	}

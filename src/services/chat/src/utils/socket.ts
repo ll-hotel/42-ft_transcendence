@@ -1,6 +1,6 @@
 import { SingleStoreColumnWithAutoIncrement } from "drizzle-orm/singlestore-core";
 import { appendFile } from "fs";
-import { matches, users, friends } from './db/tables';
+import { matches, users, friends} from './db/tables';
 import { db } from './db/database';
 import { and, eq, or } from 'drizzle-orm';
 import { matchesGlob } from "path";
@@ -27,18 +27,18 @@ type Client = {
 	lastOnlineTime: number,
 };
 type BaseMessage = {
-	topic: string;
+	topic: string,
 };
 type MatchMessage = BaseMessage & {
-	source: string;
-	match: number;
-	opponent: string;
+	source: string,
+	match: number,
+	opponent: string,
 };
 
 type VersusMessage = BaseMessage & {
-	source: string;
-	target: string;
-}
+	source: string,
+	target: string,
+};
 type Message = BaseMessage | MatchMessage | VersusMessage;
 
 export const clients: Map<ClientId, Client> = new Map();
@@ -68,7 +68,7 @@ export async function connect(uuid: ClientId, socket: WebSocket) {
 	client.sockets.push(socket);
 	client.lastOnlineTime = Date.now();
 
-	socket.addEventListener("message", (event) => onMessage(client, uuid , event));
+	socket.addEventListener("message", (event) => onMessage(client, uuid, event));
 	socket.addEventListener("close", () => disconnect(uuid, socket));
 }
 
@@ -76,25 +76,25 @@ function updateOnlineTime(client: Client) {
 	client.lastOnlineTime = Date.now();
 }
 
-function onMessage(client: Client, clientId : ClientId, event: MessageEvent) {
+function onMessage(client: Client, clientId: ClientId, event: MessageEvent) {
 	updateOnlineTime(client);
 	try {
 		const msg = JSON.parse(event.data);
 		if (msg.source === "ping") return;
 		client.onMessage.forEach((handler) => handler(msg));
-		switch (msg.topic)
-		{
-			case("vs:invite") :
-				if (!isOnline(msg.target))
-					return; 
-				send(msg.target, {source: clientId, topic : "vs:invite", target: msg.target})
+		switch (msg.topic) {
+			case ("vs:invite"):
+				if (!isOnline(msg.target)) {
+					return;
+				}
+				send(msg.target, { source: clientId, topic: "vs:invite", target: msg.target });
 				break;
-			case ("vs:accept") :
+			case ("vs:accept"):
 				createMatchBetween(clientId, msg.target);
 				break;
-			
-			case("vs:decline") :
-				send(msg.target, {source: clientId, topic : "vs:decline", target:msg.target})
+
+			case ("vs:decline"):
+				send(msg.target, { source: clientId, topic: "vs:decline", target: msg.target });
 				break;
 		}
 	} catch (_) {
@@ -143,44 +143,42 @@ export function disconnect(target: ClientId, socket?: WebSocket) {
 	}
 }
 
-async function createMatchBetween(uuid1: string, uuid2 : string) {
+async function createMatchBetween(uuid1: string, uuid2: string) {
 	const [p1] = await db.select().from(users).where(eq(users.uuid, uuid1));
 	const [p2] = await db.select().from(users).where(eq(users.uuid, uuid2));
 
-	if (!p1 || !p2)
+	if (!p1 || !p2) {
 		return;
+	}
 
-	if (await !tcheckFriends(p1.id, p2.id))
-	{
+	if (await !tcheckFriends(p1.id, p2.id)) {
 		console.log("They aren't friend anymore, so we can't create a game, sorry :(");
 		return;
 	}
 
-	const matchAlreadyGoing = await db.select().from(matches).where(and(or(
-		eq(matches.player1Id, p1.id),
-		eq(matches.player1Id, p2.id),
-		eq(matches.player2Id, p1.id),
-		eq(matches.player2Id, p2.id),
-	),
-	eq(matches.status, "ongoing"),
+	const matchAlreadyGoing = await db.select().from(matches).where(and(
+		or(
+			eq(matches.player1Id, p1.id),
+			eq(matches.player1Id, p2.id),
+			eq(matches.player2Id, p1.id),
+			eq(matches.player2Id, p2.id),
+		),
+		eq(matches.status, "ongoing"),
 	));
 
-	if (matchAlreadyGoing.length > 0)
-	{
+	if (matchAlreadyGoing.length > 0) {
 		console.log("Someone is already on a match, sorry :(");
 		return;
 	}
 
-
 	const [match] = await db.insert(matches).values({
-		player1Id : p1.id,
-		player2Id : p2.id,
+		player1Id: p1.id,
+		player2Id: p2.id,
 		status: "ongoing",
 	}).returning();
 
-	send(uuid1, {source: "server", topic : "vs:start", match:match.id, opponent : p2.username,});
-	send(uuid2, {source: "server", topic : "vs:start", match:match.id, opponent : p1.username,});
-
+	send(uuid1, { source: "server", topic: "vs:start", match: match.id, opponent: p2.username });
+	send(uuid2, { source: "server", topic: "vs:start", match: match.id, opponent: p1.username });
 }
 
 export default {
@@ -214,7 +212,7 @@ export async function connect(clientId: ClientId, socket: WebSocket) {
 	}
 	socket.addEventListener("message", (ev) => onMessage(clientId, ev));
 }
-	*/ 
+	*/
 
 /*export function disconnect(target: ClientId, socket?: WebSocket) {
 	const client = clients.get(target);

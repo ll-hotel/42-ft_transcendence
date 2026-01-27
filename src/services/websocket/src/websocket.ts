@@ -18,7 +18,7 @@ async function route(ws: WebSocket, req: FastifyRequest) {
 	socket.connect(uuid, ws);
 
 	await db.update(tables.users).set({ isOnline: 1 }).where(orm.eq(tables.users.uuid, uuid));
-	
+
 	if (isNewClient === false) {
 		return;
 	}
