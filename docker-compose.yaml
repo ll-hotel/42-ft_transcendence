@@ -10,7 +10,7 @@ services:
     volumes:
       - frontend-static:/srv/app/static
       - frontend-src:/srv/app/src:ro
-      - secrets:/run/secrets:ro
+      - cert:/run/secrets:ro
 
   backend:
     container_name: backend
@@ -28,7 +28,7 @@ services:
     volumes:
       - backend-src:/srv/app/src
       - backend-db:/srv/app/db
-      - secrets:/run/secrets:ro
+      - cert:/run/secrets:ro
       - uploads:/srv/app/uploads
     env_file: .env
 
@@ -40,7 +40,7 @@ services:
     volumes:
       - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - secrets:/run/secrets:ro
+      - cert:/run/secrets:ro
     env_file: .env
 
   chat-service:
@@ -51,7 +51,8 @@ services:
     volumes:
       - chat-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - secrets:/run/secrets:ro
+      - cert:/run/secrets:ro
+    env_file: .env
 
   friend-service:
     container_name: friend-service
@@ -61,7 +62,8 @@ services:
     volumes:
       - friend-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - secrets:/run/secrets:ro
+      - cert:/run/secrets:ro
+    env_file: .env
 
   tournament-service:
     container_name: tournament-service
@@ -71,7 +73,8 @@ services:
     volumes:
       - tournament-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - secrets:/run/secrets:ro
+      - cert:/run/secrets:ro
+    env_file: .env
 
   user-service:
     container_name: user-service
@@ -81,7 +84,8 @@ services:
     volumes:
       - user-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - secrets:/run/secrets:ro
+      - cert:/run/secrets:ro
+    env_file: .env
 
   websocket-service:
     container_name: websocket-service
@@ -91,7 +95,8 @@ services:
     volumes:
       - websocket-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - secrets:/run/secrets:ro
+      - cert:/run/secrets:ro
+    env_file: .env
 
   # grafana:
   #   image: grafana/grafana
@@ -223,10 +228,10 @@ volumes:
       device: ./database
       type: none
       o: bind
-  secrets:
+  cert:
     driver: local
     driver_opts:
-      device: ./secrets
+      device: ./cert
       type: none
       o: bind
   uploads:
