@@ -2,7 +2,7 @@ import { api, Status } from "../api.js";
 import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
-import {Mode} from "../pong_client_side";
+import {Mode} from "../pong_client_side.js";
 
 export class HomePage implements AppPage {
 	html: HTMLElement;

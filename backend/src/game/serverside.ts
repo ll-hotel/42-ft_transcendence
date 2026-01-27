@@ -1,6 +1,6 @@
 import { clearInterval, setInterval } from "node:timers";
-import * as dbM from "../db/methods";
-import socket from "../socket";
+import * as dbM from "../db/methods.js";
+import socket from "../socket.js";
 import {
 	InputMessage,
 	LocalMessage,
@@ -32,10 +32,17 @@ type MatchId = number;
 export const games: Map<MatchId, GameInstance> = new Map();
 
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, mode: Mode) {
+	// if (mode == Mode.local)
+	// {
+	// 	let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
+	// 	games.set(matchId, game);
+	// 	game.start();
+	// }
+	// else {
 	let discard = dbM.startMatch(matchId).then(() => {
 		let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
-	games.set(matchId, game);
-	game.start();
+		games.set(matchId, game);
+		game.start();
 	});
 }
 
@@ -117,30 +124,38 @@ export class GameInstance {
 		this.mode = mode;
 
 		if (mode == Mode.local) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
-				this.local_input_listener(msg);
-			});
+			// socket.addListener(this.p1_uuid, "pong", (msg) => {
+			// 	this.local_input_listener(msg);
+			// });
 		} else if (mode == Mode.remote) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
-				this.p1_event_listener(msg);
-			});
-			socket.addListener(this.p2_uuid, "pong", (msg) => {
-				this.p2_event_listener(msg);
-			});
-			socket.addListener(this.p1_uuid, "pong", console.log);
-			socket.addListener(this.p2_uuid, "pong", console.log);
+			// socket.addListener(this.p1_uuid, "pong", (msg) => {
+			// 	this.p1_event_listener(msg);
+			// });
+			// socket.addListener(this.p2_uuid, "pong", (msg) => {
+			// 	this.p2_event_listener(msg);
+			// });
+			// socket.addListener(this.p1_uuid, "pong", console.log);
+			// socket.addListener(this.p2_uuid, "pong", console.log);
 		}
 	}
 
-	p1_event_listener(msg: InputMessage) {
-		this.input.p1.up = msg.up;
-		this.input.p1.down = msg.down;
+	remote_input_listener(msg: InputMessage) {
+		if (msg.clientId == this.p1_uuid)
+		{
+			this.input.p1.up = msg.up;
+			this.input.p1.down = msg.down;
+		}
+		else if (msg.clientId == this.p2_uuid)
+		{
+			this.input.p2.down = msg.down;
+			this.input.p2.up = msg.up;
+		}
 	}
 
-	p2_event_listener(msg: InputMessage) {
-		this.input.p2.up = msg.up;
-		this.input.p2.down = msg.down;
-	}
+	// p2_event_listener(msg: InputMessage) {
+	// 	this.input.p2.up = msg.up;
+	// 	this.input.p2.down = msg.down;
+	// }
 
 	local_input_listener(msg: LocalMessage) {
 		if (msg.topic !== "pong" || msg.type !== "input") {

@@ -43,15 +43,12 @@ export class PongPage implements AppPage {
 		// const table_ratio = 9 / 16;
 		canvas.width = 1800;
 		canvas.height = 900;
-		// canvas.getContext("2d")!.imageSmoothingEnabled = false;
+
 		// TODO changer le Mode ("local")
 		// TODO: Change game mode dynamically.
 
 		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote, this.matchId!);
 		this.game.init();
-		// if (Mode.local == Mode.remote) {
-		// 	html.querySelector("#game-clickbox")?.addEventListener("click", () => this.onclick());
-		// }
 	}
 
 	unload() {

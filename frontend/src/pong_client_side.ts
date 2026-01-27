@@ -207,7 +207,7 @@ export class Game {
 			gameId: this.matchId,
 			p1_up: this.input.get("p1_up"),
 			p1_down: this.input.get("p1_down")}
-			);
+		);
 		// let msg: InputMessage = {
 		// 	topic: "pong",
 		// 	type: "input",
@@ -225,14 +225,18 @@ export class Game {
 		// 	if (test.status != Status.success)
 		// 		return notify("Error: " + test.payload.message, "error");
 		// 	msg = test.payload;
-			this.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
-			this.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
-			scale_vec(this.ball.speed, this.speed_ratio);
+		this.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
+		this.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
+		scale_vec(this.ball.speed, this.speed_ratio);
 
-			this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
-			this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
-			this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_ratio.h);
-			this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
+		this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
+		this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
+		this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_ratio.h);
+		this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
+		// this.input.set("p1_up", msg.paddles.p1_input.up);
+		// this.input.set("p1_down", msg.paddles.p1_input.down);
+		// this.input.set("p2_up", msg.paddles.p2_input.up);
+		// this.input.set("p2_down", msg.paddles.p2_input.down);
 		// });
 	}
 
@@ -409,3 +413,4 @@ export class PongBall extends PhysicObject {
 		);
 	}
 }
+

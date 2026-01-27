@@ -35,6 +35,7 @@ export type StateMessage = BaseMessage & {
 export type InputMessage = {
 	topic: string,
 	type: "input",
+	clientId: string,
 	up: boolean,
 	down: boolean,
 };
