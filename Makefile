@@ -21,8 +21,24 @@ uploadsDir:
 
 cert/privatekey.pem cert/certificate.pem:
 	@mkdir -p $(dir $@)
-	@openssl req -newkey rsa:2048 -nodes -keyout cert/privatekey.pem -x509 -days 365 -out cert/certificate.pem -subj "/CN=internal" -addext "subjectAltName=DNS:localhost" 2>/dev/null
+	@openssl req -newkey rsa:2048 -nodes -keyout cert/privatekey.pem -x509 -days 365 -out cert/certificate.pem \
+		-subj "/CN=internal" -addext "subjectAltName=DNS:localhost" 2>/dev/null
 	@echo "=> New certs has been generated"
+
+.PHONY: services-cert
+services-cert: src/services/websocket/cert src/services/tournament/cert
+
+.PHONY: src/services/websocket/cert
+src/services/websocket/cert:
+	# @mkdir -p $@
+	# @openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
+	# 	-subj "/CN=internal" -addext "subjectAltName=DNS:websocket-service" 2>/dev/null
+
+.PHONY: src/services/tournament/cert
+src/services/tournament/cert:
+	@mkdir -p $@
+	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
+		-subj "/CN=internal" -addext "subjectAltName=DNS:tournament-service" 2>/dev/null
 
 .PHONY: build
 build:

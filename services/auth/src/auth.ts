@@ -1,21 +1,20 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import jwt from 'jsonwebtoken';
-import { v4 as uiidv4 } from 'uuid';
-import { STATUS, schema, MESSAGE } from './utils/http-reply';
-import { db } from './utils/db/database';
-import { eq } from 'drizzle-orm';
-import { hashPassword, comparePassword } from './utils/security/hash';
-import { generate2FASecret, generateQRCode, verify2FAToken } from './utils/security/2fa';
-import fs from "fs";
-import { authGuard } from './utils/security/authGuard';
-import socket from './utils/socket';
 import { randomBytes } from "crypto";
+import { eq } from "drizzle-orm";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import fs from "fs";
+import jwt from "jsonwebtoken";
 import sharp from "sharp";
-import { TwofaState, OAuth, users } from "./utils/db/tables";
+import { v4 as uiidv4 } from "uuid";
+import { db } from "./utils/db/database";
+import { OAuth, TwofaState, users } from "./utils/db/tables";
+import { MESSAGE, schema, STATUS } from "./utils/http-reply";
+import { generate2FASecret, generateQRCode, verify2FAToken } from "./utils/security/2fa";
+import { authGuard } from "./utils/security/authGuard";
+import { comparePassword, hashPassword } from "./utils/security/hash";
+import socket from "./utils/socket";
 
 const registerSchema = schema.body({ username: "string", password: "string" }, ["username", "password"]);
 const loginSchema = schema.body({ username: "string", password: "string" }, ["username", "password"]);
-
 
 if (!process.env.OAUTH_KEYS || !process.env.JWT_SECRET || !process.env.HOSTURL) {
 	throw new Error("Missing environement value");
@@ -34,13 +33,13 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class AuthService {
 	setup(app: FastifyInstance) {
-		app.post('/api/auth/register', { schema: registerSchema }, this.register);
-		app.post('/api/auth/login', { schema: loginSchema }, this.login);
-		app.post('/api/auth/logout', { preHandler: authGuard }, this.logout);
-		app.get('/api/auth/42', this.auth42Redirect);
-		app.get('/api/auth/42/callback', this.auth42Callback);
-		app.get('/api/auth/google', this.googleRedirect);
-		app.get('/api/auth/google/callback', this.googleCallback);
+		app.post("/api/auth/register", { schema: registerSchema }, this.register);
+		app.post("/api/auth/login", { schema: loginSchema }, this.login);
+		app.post("/api/auth/logout", { preHandler: authGuard }, this.logout);
+		app.get("/api/auth/42", this.auth42Redirect);
+		app.get("/api/auth/42/callback", this.auth42Callback);
+		app.get("/api/auth/google", this.googleRedirect);
+		app.get("/api/auth/google/callback", this.googleCallback);
 	}
 
 	async register(req: FastifyRequest, rep: FastifyReply) {
@@ -55,8 +54,8 @@ class AuthService {
 
 		if (REGEX_PASSWORD.test(password) === false) {
 			return rep.code(STATUS.bad_request).send({
-				message: MESSAGE.invalid_password +
-					": Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum",
+				message: MESSAGE.invalid_password
+					+ ": Must contain at least 1 lowercase, 1 uppercase and 8 characters minimum",
 			});
 		}
 
@@ -183,8 +182,9 @@ class AuthService {
 		let user;
 		if (userExists) {
 			user = userExists;
-			if (user.isOnline)
+			if (user.isOnline) {
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
+			}
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
@@ -197,7 +197,8 @@ class AuthService {
 			try {
 				avatarPath = `./uploads/${filename}`;
 				await sharp(buffer).resize(751, 751, { fit: "cover" }).png().toFile(avatarPath);
-			} catch {
+			} catch (error) {
+				console.log(error);
 				avatarPath = "uploads/default_pp.png";
 			}
 			await db.insert(users).values({
@@ -255,8 +256,9 @@ class AuthService {
 		let user;
 		if (userExists) {
 			user = userExists;
-			if (user.isOnline)
+			if (user.isOnline) {
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
+			}
 		} else {
 			const uuid = uiidv4();
 			user = { uuid };
@@ -274,10 +276,11 @@ class AuthService {
 			}
 			let displayName;
 			const displayNameExists = await db.select().from(users).where(eq(users.displayName, userData.given_name));
-			if (displayNameExists.length > 0)
+			if (displayNameExists.length > 0) {
 				displayName = userData.email;
-			else
+			} else {
 				displayName = userData.given_name;
+			}
 			await db.insert(users).values({
 				uuid,
 				username: userData.email,
