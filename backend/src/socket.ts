@@ -55,49 +55,40 @@ export async function connect(uuid: UUID, socket: WebSocket) {
 	client.sockets.push(socket);
 	client.lastOnlineTime = Date.now();
 
-	socket.addEventListener("message", (event) => onMessage(client, uuid, event));
+	socket.addEventListener("message", (event) => onMessage(client, event));
 	socket.addEventListener("close", () => disconnect(uuid, socket));
 
-	addListener(uuid, "vs:invite", (json) => {
-		if (isOnline(json.content)) {
-			send(json.content, { source: uuid, topic: "vs:invite", content: json.content });
-		}
-	});
-	addListener(uuid, "vs:accept", (json) => {
-		createMatchBetween(uuid, json.content);
-	});
-	addListener(uuid, "vs:decline", (json) => {
-		send(json.content, { source: uuid, topic: "vs:decline", content: json.content });
-	});
-}
+	if (client.handlers.filter((h) => h.topic == "vs:invite").length === 0) {
+		addListener(uuid, "vs:invite", async (json) => {
 
+			console.log(json.content);
+			if (isOnline(json.content)) {
+				const [displaySender] = await db.select({displayName : users.displayName}).from(users).where(orm.eq(users.uuid, uuid ));
+				if (!displaySender)
+					return;
+				send(json.content, { source: uuid, topic: "vs:invite", content: displaySender.displayName });
+			}
+		});
+		addListener(uuid, "vs:accept", (json) => {
+			createMatchBetween(uuid, json.content);
+		});
+		addListener(uuid, "vs:decline", (json) => {
+			send(json.content, { source: uuid, topic: "vs:decline", content: json.content });
+		});
+	}
+}
+	
 function updateOnlineTime(client: Client) {
 	client.lastOnlineTime = Date.now();
 }
-async function onMessage(client: Client, clientId : UUID, event: MessageEvent) {
+async function onMessage(client: Client, event: MessageEvent) {
 	updateOnlineTime(client);
 	try {
 		const msg = JSON.parse(event.data);
 		if (msg.source === "ping") return;
+		console.log(msg.topic);
 		client.onMessage.forEach((handler) => handler(msg));
-		switch (msg.topic)
-		{
-			case("vs:invite") :
-				if (!isOnline(msg.content))
-					return; 
-				const [displaySender] = await db.select({displayName : users.displayName}).from(users).where(orm.eq(users.uuid, clientId ));
-				if (!displaySender)
-					return;
-				send(msg.content, {source: clientId, topic : "vs:invite", content: displaySender.displayName})
-				break;
-			case ("vs:accept") :
-				createMatchBetween(clientId, msg.content);
-				break;
-			
-			case("vs:decline") :
-				send(msg.content, {source: clientId, topic : "vs:decline", content:""})
-				break;
-		}
+		client.handlers.filter(handler => handler.topic == msg.topic).forEach((handler) => handler.fn(msg))
 	} catch (_) {}
 }
 

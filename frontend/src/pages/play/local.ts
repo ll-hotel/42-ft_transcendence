@@ -4,9 +4,11 @@ import AppPage from "../AppPage.js";
 import { Game, Mode } from "../../pong_client_side.js";
 import { gotoPage } from "../../PageLoader.js";
 
-export default class PlayMatch implements AppPage {
+export default class PlayLocal implements AppPage {
 	html: HTMLElement;
 	game: Game | null = null;
+	me : User | null;
+
 	ballSprite: HTMLImageElement;
 	paddleSprite: HTMLImageElement;
 	p1_DisplayName :HTMLElement | null;
@@ -22,6 +24,7 @@ export default class PlayMatch implements AppPage {
 	constructor(html: HTMLElement,ball: HTMLImageElement, paddle: HTMLImageElement) {
 		this.html = html;
 		this.matchId = null;
+		this.me = null;
 		this.p1_DisplayName = this.html.querySelector<HTMLElement>("#player1-name");
 		this.p2_DisplayName = this.html.querySelector<HTMLElement>("#player2-name");
 		this.p1_Avatar = this.html.querySelector<HTMLImageElement>("#player1-picture");
@@ -45,7 +48,7 @@ export default class PlayMatch implements AppPage {
 			notify("Could not fetch sprites.", "error");
 			return null;
 		}
-		return new PlayMatch(html, ball, paddle);
+		return new PlayLocal(html, ball, paddle);
 	}
 	async loadInto(container: HTMLElement): Promise<void> {
 		if (this.game)
@@ -59,27 +62,38 @@ export default class PlayMatch implements AppPage {
 			prevMess.remove();
 			this.matchCanvas!.hidden = false;
 		}
-		const query = new URLSearchParams(location.search);
-		this.matchId = query.get("id");
-		const matchResponse = await api.get("/api/match/" + this.matchId);
-		if (!matchResponse || matchResponse.status != 200) {
+
+		initSearchBar()
+
+
+
+
+
+
+
+
+
+
+
+		const resMe = await api.get("api/me");
+		if (!resMe || resMe.status != Status.success) {
 			return history.back();
 		}
-		const match = matchResponse.payload;
+		const me = resMe.payload;
 
-		this.p1_DisplayName!.innerHTML = match.p1.name;
-		this.p2_DisplayName!.innerHTML = match.p2.name;
-		this.p1_Avatar!.src = match.p1.avatar.startsWith("/") ? match.p1.avatar : `/${match.p1.avatar}`;
-		this.p2_Avatar!.src = match.p2.avatar.startsWith("/") ? match.p2.avatar : `/${match.p2.avatar}`;
-		this.p1_Score!.innerText = match.p1.score;
-		this.p2_Score!.innerText = match.p2.score;
+		this.p1_DisplayName!.innerHTML = me.displayName;
+//		this.p2_DisplayName!.innerHTML = match.p2.name;
+		this.p1_Avatar!.src = me.avatar.startsWith("/") ? me.avatar : `/${me.avatar}`;
+//		this.p2_Avatar!.src = match.p2.avatar.startsWith("/") ? match.p2.avatar : `/${match.p2.avatar}`;
+
+//		this.p2_Score!.innerText = match.p2.score;
 
 		const canvas = this.html.querySelector("canvas")!;
 		const table_ratio = 9 / 16;
 		canvas.width = 1920;
 		canvas.height = canvas.width * table_ratio;
 
-		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote);
+		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.local);
 		this.game.onScore = () => {
 			this.onScore();
 		};
@@ -158,3 +172,75 @@ async function fetchImage(url: string): Promise<HTMLImageElement | null> {
 		return null;
 	}) as Promise<HTMLImageElement | null>;
 }
+
+function initSearchBar() {
+	const search = document.getElementById("input-p2") as HTMLInputElement | null;
+	const result = document.getElementById("results-p2") as HTMLDivElement | null;
+
+	if (!search || !result) {
+		return;
+	}
+
+	search.addEventListener("input", async () => {
+		const searchName = search.value.trim().toLowerCase();
+
+		if (searchName.length == 0) {
+			result.innerHTML = "";
+			return;
+		}
+
+		const allUsers = await api.get("/api/users/all");
+
+		if (!allUsers || !allUsers.payload || !allUsers.payload.users) {
+			result.innerHTML = "<div>Pas d'utilisateurs chargés</div>";
+			return;
+		}
+
+		const selectedUsers = allUsers.payload.users.filter((user: any) => {
+			return user.displayName.toLowerCase().includes(searchName);
+		});
+
+		displayResultSearch(selectedUsers);
+	});
+
+	function displayResultSearch(selectedUsers: any) {
+		const results = document.getElementById("results-p2");
+		if (!results) {
+			return;
+		}
+	
+		results.innerHTML = "";
+		selectedUsers.forEach((user: any) => {
+			if (user.displayName === this.me.displayName)
+				return;
+			const card = document.createElement("div");
+			card.className = "user-result";
+	
+			const avatar = document.createElement("img");
+			avatar.src =  user.avatar.startsWith("/") ? user.avatar : `/${user.avatar}`;
+			avatar.className = "result-avatar";
+	
+			const name = document.createElement("span");
+			name.textContent = user.displayName;
+			name.className = "result-name";
+	
+			card.appendChild(avatar);
+			card.appendChild(name);
+	
+			card.onclick = async () => {
+				const me = await api.get("/api/me");
+				if (!me || !me.payload)
+					return;
+				if (me.status != Status.success)
+					return notify("Error: " + me.payload.message, "error");
+				if (me.payload.displayName == user.displayName)
+					await gotoPage("profile");
+				else
+					await gotoUserPage(user.displayName);
+			}
+	
+			results.appendChild(card);
+	
+		}
+		)
+	}

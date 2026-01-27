@@ -3,7 +3,7 @@ import {HomePage} from "./pages/HomePage.js";
 import { FriendPage } from "./pages/FriendPage.js";
 import { Login } from "./pages/login.js";
 import Play from "./pages/play.js";
-import PlayLocal from "./pages/play/play_local.js";
+import PlayLocal from "./pages/play/local.js";
 import PlayMatch from "./pages/play/match.js";
 import { PongPage } from "./pages/PongPage.js";
 import { OtherProfilePage } from "./pages/otherProfile.js";

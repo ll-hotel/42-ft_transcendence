@@ -125,7 +125,6 @@ export class FriendButton {
 		const confirmVs = confirm(`Do you want to play with ${this.displayName} ?`)
 		if (!confirmVs)
 			return;
-		
 		const me = await api.get("/api/me");
 		const friend = await api.get(`/api/user?displayName=${this.displayName}`);
 		if (!me || ! friend || !me.payload || !friend.payload)

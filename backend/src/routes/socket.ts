@@ -1,11 +1,12 @@
 import * as orm from "drizzle-orm";
-import { FastifyInstance, FastifyRequest } from "fastify";
+import { FastifyInstance, FastifyRequest, FastifyReply, } from "fastify";
 import { db } from "../db/database";
 import * as dbM from "../db/methods";
 import * as tables from "../db/tables";
 import { authGuard } from "../security/authGuard";
 import socket from "../socket";
 import { table } from "console";
+import Queue from "../game/queue";
 
 export default function(fastify: FastifyInstance) {
 	fastify.get("/api/websocket", { preHandler: authGuard, websocket: true }, route);
@@ -30,5 +31,6 @@ async function route(ws: WebSocket, req: FastifyRequest) {
 			dbM.removeUserFromTournaments(uuid);
 			dbM.setUserOffline(uuid);
 		}, 2000);
+		dbM.removeUserFromQueue(uuid);
 	});
 }

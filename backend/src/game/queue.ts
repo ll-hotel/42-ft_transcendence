@@ -31,7 +31,7 @@ class Queue {
 
 		const [isPlaying] = await db.select().from(tables.matches).where(orm.and(
 			orm.or(orm.eq(tables.matches.player1Id, usr.id), orm.eq(tables.matches.player2Id, usr.id)),
-			orm.eq(tables.matches.status, "ongoing"),
+			orm.or(orm.eq(tables.matches.status, "ongoing"), orm.eq(tables.matches.status, "pending"))
 		));
 		if (isPlaying) {
 			return rep.code(STATUS.bad_request).send({ message: "Already in game" });

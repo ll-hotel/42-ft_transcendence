@@ -33,7 +33,7 @@ export class Tournament {
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
 		const user = req.user!;
-		const { name, size } = req.body as { name: string, size: number };
+		const { name, size} = req.body as { name: string, size: number};
 
 		// Sanitization.
 		if (name.length > 16 || /(?:[a-zA-Z].*)\w+/.test(name) == false) {
@@ -52,6 +52,16 @@ export class Tournament {
 				tournamentId: alreadyInTournament.tournamentId,
 			});
 		}
+
+		const [alreadyInMatch] = await db.select().from(tables.matches).where(orm.and(
+			orm.or(orm.eq(tables.matches.player1Id, user.id), orm.eq(tables.matches.player2Id, user.id)),
+			orm.or(orm.eq(tables.matches.status, "pending"), orm.eq(tables.matches.status, "ongoing")),
+		));
+
+		if (alreadyInMatch) {
+			return rep.code(STATUS.bad_request).send({ message: "You are already in a match", playing: true });
+		}
+
 		const [tournament] = await db.insert(tables.tournaments).values({
 			name,
 			createdBy: user.uuid,

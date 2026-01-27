@@ -106,6 +106,7 @@ function send(message: Message): boolean {
 	if (isAlive() == false) {
 		return false;
 	}
+	console.log(message);
 	socket!.send(JSON.stringify(message));
 	return true;
 }

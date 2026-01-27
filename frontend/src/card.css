@@ -78,3 +78,16 @@
 .msg-target {
   @apply self-start bg-red-500 text-white rounded-lg px-3 py-1 max-w-xs wrap-break-word;
 }
+
+.ended-match-mess {
+	@apply flex w-[60vw] h-[30vw] text-2xl text-white justify-center items-center rounded-lg 
+}
+
+.win {
+	@apply bg-[#04809F];
+}
+
+.loose {
+	@apply bg-red-500;
+}
+

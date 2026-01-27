@@ -73,7 +73,7 @@ export class HomePage implements AppPage {
 					notify(join ? join.payload.message : "Can not join queue.", "error");
 				} else {
 					this.inQueue = true;
-					notify(join.payload.message, "info");
+					notify(join.payload.message, "success");
 				}
 	}
 

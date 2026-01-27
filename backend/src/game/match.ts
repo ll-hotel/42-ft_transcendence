@@ -18,7 +18,7 @@ class Match {
 
 		const [match] = await db.select().from(tables.matches).where(drizzle.and(
 			drizzle.or(drizzle.eq(tables.matches.player1Id, usr.id), drizzle.eq(tables.matches.player2Id, usr.id)),
-			drizzle.eq(tables.matches.status, "ongoing"),
+			drizzle.or(drizzle.eq(tables.matches.status, "ongoing"), drizzle.eq(tables.matches.status, "pending")),
 		));
 		if (!match) {
 			return rep.code(STATUS.not_found).send({ message: "User is not in match" });
@@ -40,10 +40,10 @@ class Match {
 		let [user1] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, match.player1Id));
 		let [user2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, match.player2Id));
 
-		if (user1.id !== usr.id) {
+		/*if (user1.id !== usr.id) {
 				[user1, user2] = [user2, user1];
 				[match.scoreP1, match.scoreP2] = [match.scoreP2, match.scoreP1];
-		}
+		}*/
 
 
 		return rep.code(STATUS.success).send({

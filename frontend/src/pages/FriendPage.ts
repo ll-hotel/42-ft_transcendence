@@ -45,7 +45,7 @@ export class FriendPage implements AppPage
 					console.log("Error in html");
 	}
 
-	static async new(content:HTMLElement)
+	static async new(content:HTMLElement): Promise<AppPage | null>
 	{
 		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#friend-chat"))
 		{

@@ -313,9 +313,10 @@ export class PongBall extends PhysicObject {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
 		// TODO remettre l'angle aleatoire
-		let new_dir = 45 + Math.random() * 90;
-		this.speed.setX = Math.cos(new_dir) * 5;
-		this.speed.setY = Math.sin(new_dir) * 5;
+		//let new_dir = 45 + Math.random() * 90;
+		//this.speed.setX = Math.cos(new_dir) * 5;
+		//this.speed.setY = Math.sin(new_dir) * 5;
+		this.speed = new Vector2D( 30, 3);
 	}
 
 	ball_scored(line_position: Position, normal: Vector2D) {

@@ -126,6 +126,23 @@ export async function removeUserFromTournaments(userUUID: string) {
 	}
 }
 
+export async function removeUserFromQueue(userUUID : string)
+{
+	const [user] = await db.select().from(tables.users).where(orm.eq(tables.users.uuid, userUUID));
+	if(!user)
+		return;
+
+	const [inQueuUser] = await db.select()
+		.from(tables.matchmakingQueue,)
+		.where(orm.eq(tables.matchmakingQueue.userId, user.id));
+	
+	if (!inQueuUser)
+		return;
+
+	await db.delete(tables.matchmakingQueue)
+		.where(orm.eq(tables.matchmakingQueue.userId, user.id));
+}
+
 export async function selectTournamentPlayers(id: number) {
 	return db.select({
 		id: tables.tournamentPlayers.userId,
