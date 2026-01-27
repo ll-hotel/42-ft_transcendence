@@ -10,7 +10,7 @@ export class MatchMaking implements AppPage {
 		this.html = html;
 		const queueButton = html.querySelector("#join-queue") as HTMLButtonElement | null;
 		queueButton?.addEventListener("click", async () => {
-			const join = await api.post("/api/matchmaking/join");
+			const join = await api.post("/api/queue/join");
 			if (!join || join.status != Status.success) {
 				notify(join ? join.payload.message : "Can not join queue.", "error");
 			} else {
@@ -32,7 +32,7 @@ export class MatchMaking implements AppPage {
     	socket.removeListener("matchmaking");
     	if (this.inQueue) {
     		this.inQueue = false;
-    		api.post("/api/matchmaking/leave");
+    		api.post("/api/queue/leave");
     	}
     }
 

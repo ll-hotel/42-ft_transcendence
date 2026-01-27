@@ -40,7 +40,7 @@ export class ProfilePage implements AppPage {
 	}
 
 	async loadUserInfo() {
-		const res = await api.get("/api/me");
+		const res = await api.get("/api/user/me");
 		if (!res || res.status != Status.success) {
 			return gotoPage("login");
 		}
@@ -51,7 +51,7 @@ export class ProfilePage implements AppPage {
 			avatarImg.src = userInfo.avatar.startsWith("/") ? userInfo.avatar : `/${userInfo.avatar}`;
 		this.displayname.innerHTML = userInfo.displayName;
 		
-		const resMatch = await api.get("/api/me/history");
+		const resMatch = await api.get("/api/user/me/history");
 		if (!resMatch || resMatch.status != Status.success) {
 			notify("Can't load matchs info", "error");
 			return;
@@ -84,7 +84,7 @@ export class ProfilePage implements AppPage {
 		if (!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed || !infoTourPlacement)
 			return notify("Missing info in Profile.html", "error");
 
-		const resStat = await api.get("/api/me/stats");
+		const resStat = await api.get("/api/user/me/stats");
 
 		if (!resStat || resStat.status != Status.success)
 			return notify("Can't load my stats", "error");

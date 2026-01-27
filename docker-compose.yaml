@@ -1,104 +1,173 @@
 services:
+
   frontend:
     container_name: frontend
     restart: on-failure
     build:
-      context: frontend
+      context: ./frontend
     ports:
       - "8443:443"
     volumes:
       - frontend-static:/srv/app/static
-      - frontend-src:/srv/app/src
-      - secrets:/run/secrets:ro
       - frontend-src:/srv/app/src:ro
+      - cert:/run/secrets:ro
 
-  backend:
-    container_name: backend
+  auth-service:
+    container_name: auth-service
     restart: on-failure
-    healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
-      interval: 10s
-      timeout: 2s
-      retries: 3
-      start_period: 2s
-    ports:
-      - "8080:8080"
     build:
-      context: backend
+      context: ./services/auth
     volumes:
-      - backend-src:/srv/app/src
+      - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - secrets:/run/secrets:ro
-      - uploads:/srv/app/uploads
+      - cert:/run/secrets:ro
     env_file: .env
-    
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    restart: on-failure
-    ports:
-      - 3000:3000
 
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
-    container_name: cadvisor
-    privileged: true
+  chat-service:
+    container_name: chat-service
     restart: on-failure
-    ports:
-      - 8098:8080
+    build:
+      context: ./services/chat
     volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    devices:
-      - /dev/kmsg
+      - chat-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - cert:/run/secrets:ro
+    env_file: .env
 
-  prometheus:
-    image: docker.io/prom/prometheus:latest
-    container_name: prometheus
+  friend-service:
+    container_name: friend-service
     restart: on-failure
-    ports:
-      - 9090:9090
+    build:
+      context: ./services/friend
     volumes:
-      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
+      - friend-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - cert:/run/secrets:ro
+    env_file: .env
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
-      - xpack.security.enabled=false
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:9.2.4
-    container_name: filebeat
+  game-service:
+    container_name: game-service
     restart: on-failure
-    privileged: true
-    user: root
+    build:
+      context: ./services/game
     volumes:
-      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
-      - /var/lib/docker/containers:/var/lib/docker/containers
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      - elasticsearch
+      - game-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - cert:/run/secrets:ro
+    env_file: .env
 
-  kibana:
-    image: docker.elastic.co/kibana/kibana:9.2.4
-    container_name: kibana
+  queue-service:
+    container_name: queue-service
     restart: on-failure
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    ports:
-      - "5601:5601" # Expose Kibana on port 5601
-    depends_on:
-      - elasticsearch
+    build:
+      context: ./services/queue
+    volumes:
+      - queue-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - cert:/run/secrets:ro
+    env_file: .env
+
+  tournament-service:
+    container_name: tournament-service
+    restart: on-failure
+    build:
+      context: ./services/tournament
+    volumes:
+      - tournament-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - cert:/run/secrets:ro
+    env_file: .env
+
+  user-service:
+    container_name: user-service
+    restart: on-failure
+    build:
+      context: ./services/user
+    volumes:
+      - user-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - uploads:/srv/app/uploads
+      - cert:/run/secrets:ro
+    env_file: .env
+
+  websocket-service:
+    container_name: websocket-service
+    restart: on-failure
+    build:
+      context: ./services/websocket
+    volumes:
+      - websocket-service-src:/srv/app/src
+      - backend-db:/srv/app/db
+      - cert:/run/secrets:ro
+    env_file: .env
+
+  # grafana:
+  #   image: grafana/grafana
+  #   container_name: grafana
+  #   restart: on-failure
+  #   ports:
+  #     - 3000:3000
+  #
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor:v0.49.1
+  #   container_name: cadvisor
+  #   privileged: true
+  #   restart: on-failure
+  #   ports:
+  #     - 8098:8080
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:ro
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #     - /dev/disk/:/dev/disk:ro
+  #   devices:
+  #     - /dev/kmsg
+  #
+  # prometheus:
+  #   image: docker.io/prom/prometheus:latest
+  #   container_name: prometheus
+  #   restart: on-failure
+  #   ports:
+  #     - 9090:9090
+  #   volumes:
+  #     - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus-data:/prometheus
+  #
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
+  #   container_name: elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     - ES_JAVA_OPTS=-Xms1g -Xmx1g
+  #     - xpack.security.enabled=false
+  #   ports:
+  #     - 9200:9200
+  #     - 9300:9300
+  #
+  # filebeat:
+  #   image: docker.elastic.co/beats/filebeat:9.2.4
+  #   container_name: filebeat
+  #   restart: on-failure
+  #   privileged: true
+  #   user: root
+  #   volumes:
+  #     - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+  #     - /var/lib/docker/containers:/var/lib/docker/containers
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   depends_on:
+  #     - elasticsearch
+  #
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:9.2.4
+  #   container_name: kibana
+  #   restart: on-failure
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #   ports:
+  #     - 5601:5601
+  #   depends_on:
+  #     - elasticsearch
 
 volumes:
   prometheus-data:
@@ -114,28 +183,69 @@ volumes:
       device: ./frontend/src
       type: none
       o: bind
-  backend-src:
+  auth-service-src:
     driver: local
     driver_opts:
-      device: ./backend/src
+      device: ./services/auth/src
+      type: none
+      o: bind
+  chat-service-src:
+    driver: local
+    driver_opts:
+      device: ./services/chat/src
+      type: none
+      o: bind
+  friend-service-src:
+    driver: local
+    driver_opts:
+      device: ./services/friend/src
+      type: none
+      o: bind
+  game-service-src:
+    driver: local
+    driver_opts:
+      device: ./services/game/src
+      type: none
+      o: bind
+  queue-service-src:
+    driver: local
+    driver_opts:
+      device: ./services/queue/src
+      type: none
+      o: bind
+  tournament-service-src:
+    driver: local
+    driver_opts:
+      device: ./services/tournament/src
+      type: none
+      o: bind
+  user-service-src:
+    driver: local
+    driver_opts:
+      device: ./services/user/src
+      type: none
+      o: bind
+  websocket-service-src:
+    driver: local
+    driver_opts:
+      device: ./services/websocket/src
       type: none
       o: bind
   backend-db:
     driver: local
     driver_opts:
-      device: ./backend/db
+      device: ./database
       type: none
       o: bind
-  secrets:
+  cert:
     driver: local
     driver_opts:
-      device: ./secrets
+      device: ./cert
       type: none
       o: bind
   uploads:
     driver: local
     driver_opts:
-      device: ./backend/uploads
+      device: ./frontend/static/uploads
       type: none
       o: bind
-

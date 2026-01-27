@@ -62,7 +62,7 @@ function initSearchBar() {
 			return;
 		}
 
-		const allUsers = await api.get("/api/users/all");
+		const allUsers = await api.get("/api/user/all");
 
 		if (!allUsers || !allUsers.payload || !allUsers.payload.users) {
 			result.innerHTML = "<div>Pas d'utilisateurs chargés</div>";
@@ -106,7 +106,7 @@ function displayResultSearch(selectedUsers: any) {
 		card.appendChild(name);
 
 		card.onclick = async () => {
-			const me = await api.get("/api/me");
+			const me = await api.get("/api/user/me");
 			if (!me || !me.payload)
 				return;
 			if (me.status != Status.success)

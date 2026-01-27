@@ -16,7 +16,7 @@ export default class PlayMatch implements AppPage {
         if (!matchId || !isNumber(matchId)) {
             return history.back();
         }
-        const matchResponse = await api.get("/api/match/" + matchId);
+        const matchResponse = await api.get("/api/game/" + matchId);
         if (!matchResponse || matchResponse.status != 200) {
             return history.back();
         }

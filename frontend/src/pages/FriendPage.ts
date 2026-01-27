@@ -94,7 +94,7 @@ export class FriendPage implements AppPage
 	{
 		this.listContainer.innerHTML = "<div>Finding friends...</div>";
 
-		const friendRes = await api.get("/api/friends");
+		const friendRes = await api.get("/api/friend");
 		const requestRes = await api.get("/api/friend/requests")
 
 		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success ) {
@@ -330,7 +330,7 @@ export class FriendPage implements AppPage
 			if (!confirmVs)
 				return;
 
-			const me = await api.get("api/me");
+			const me = await api.get("/api/user/me");
 			if (!me || !me.payload)
 				return;
 			if (me.status !== Status.success)

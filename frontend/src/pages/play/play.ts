@@ -42,7 +42,7 @@ export default class Play implements AppPage {
 			notify("Match found! Playing against " + matchMsg.opponent, "success");
 			gotoPage("play/match", `?id=${matchMsg.match}`);
 		})
-		const join = await api.post("/api/matchmaking/join");
+		const join = await api.post("/api/queue/join");
 		if (!join || join.status != Status.success) {
 			notify(join ? join.payload.message : "Can not join queue.", "error");
 		} else {

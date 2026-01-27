@@ -20,7 +20,7 @@ export class Login implements AppPage {
 		this.twoFAHidden = true;
 		const intraButton: HTMLButtonElement = this.content.querySelector("button#button-intra")!;
 		intraButton.onclick = async function() {
-			const res = await api.get("/api/auth42");
+			const res = await api.get("/api/auth/42");
 			if (!res || !res.payload.redirect) {
 				return;
 			}
@@ -28,7 +28,7 @@ export class Login implements AppPage {
 		};
 		const googleButton: HTMLButtonElement = this.content.querySelector("button#button-google")!;
 		googleButton.onclick = async function() {
-			const res = await api.get("/api/authGoogle");
+			const res = await api.get("/api/auth/google");
 			if (!res || !res.payload.redirect) {
 				return;
 			}
@@ -123,11 +123,10 @@ async function loginWithProvider(container: HTMLElement, provider: string, code:
 	notify("Logging in...", "info");
 
 	let path: string;
-	if (provider === "42") {
-		path = "/api/auth42/callback?code=";
-	} else {
-		path = "/api/authGoogle/callback?code=";
-	}
+	if (provider === "42")
+		path = "/api/auth/42/callback?code=";
+	else
+		path = "/api/auth/google/callback?code=";
 	const res = await api.get(path + code);
 	if (!res || !res.payload.loggedIn) {
 		notify(res?.payload.message, "error");

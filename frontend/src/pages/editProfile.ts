@@ -97,7 +97,7 @@ export class editProfile implements AppPage {
 	}
 
 	async loadUserInfo() {
-		const resMe = await api.get("/api/me");
+		const resMe = await api.get("/api/user/me");
 		if (!resMe || !resMe.payload) {
 			return notify("Error when loading user info", "error");
 		}
