@@ -1,15 +1,15 @@
 import fs from "fs";
 import sharp from "sharp";
 
+import { randomBytes } from "crypto";
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "./utils/db/database";
 import * as tables from "./utils/db/tables";
-import { generate2FASecret, generateQRCode, verify2FAToken } from "./utils/security/2fa";
-import { authGuard as preHandler } from './utils/security/authGuard';
-import { comparePassword, hashPassword } from "./utils/security/hash";
 import { MESSAGE, schema, STATUS } from "./utils/http-reply";
-import { randomBytes } from "crypto";
+import { generate2FASecret, generateQRCode, verify2FAToken } from "./utils/security/2fa";
+import { authGuard as preHandler } from "./utils/security/authGuard";
+import { comparePassword, hashPassword } from "./utils/security/hash";
 
 const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
@@ -17,16 +17,37 @@ const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 class User {
 	static setup(app: FastifyInstance) {
 		app.get("/api/user/me", { preHandler }, User.getMe);
-		app.get("/api/user", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUser);
+		app.get(
+			"/api/user",
+			{ preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) },
+			User.getUser,
+		);
 		app.get("/api/user/all", { preHandler }, User.getallUsers);
 		app.get("/api/user/me/history", { preHandler }, User.getMyHistory);
-		app.get("/api/user/history", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUserHistory);
+		app.get(
+			"/api/user/history",
+			{ preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) },
+			User.getUserHistory,
+		);
 		app.get("/api/user/me/stats", { preHandler }, User.getMyStat);
-		app.get("/api/user/stats", { preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) }, User.getUserStat);
+		app.get(
+			"/api/user/stats",
+			{ preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) },
+			User.getUserStat,
+		);
 
-
-		app.patch("/api/user/profile", { preHandler, schema: schema.body({ displayName: "string" }, ["displayName"]) },User.updateProfile);
-		app.patch("/api/user/password", { preHandler, schema: schema.body({ currentPassword: "string", newPassword: "string" }, ["currentPassword", "newPassword"]) }, User.updatePassword);
+		app.patch(
+			"/api/user/profile",
+			{ preHandler, schema: schema.body({ displayName: "string" }, ["displayName"]) },
+			User.updateProfile,
+		);
+		app.patch("/api/user/password", {
+			preHandler,
+			schema: schema.body({ currentPassword: "string", newPassword: "string" }, [
+				"currentPassword",
+				"newPassword",
+			]),
+		}, User.updatePassword);
 		app.patch(
 			"/api/user/twofa",
 			{ preHandler, schema: schema.body({ enable: "boolean" }, ["enable"]) },
@@ -41,38 +62,42 @@ class User {
 		app.post("/api/user/updateAvatar", { preHandler }, User.updateAvatar);
 	}
 
-	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {	
+	static async updateAvatar(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
-		
-		if (!req.isMultipart())
-			return rep.code(STATUS.bad_request).send({ message : "Request is not multipart" });
+
+		if (!req.isMultipart()) {
+			return rep.code(STATUS.bad_request).send({ message: "Request is not multipart" });
+		}
 
 		const uploadedFile = await req.file();
-		if (!uploadedFile)
-			return rep.code(STATUS.bad_request).send({ message : "No file uploaded" });
+		if (!uploadedFile) {
+			return rep.code(STATUS.bad_request).send({ message: "No file uploaded" });
+		}
 
 		const randomKey = randomBytes(32).toString("hex");
-		
+
 		const buffer = await uploadedFile.toBuffer();
 		try {
-			await sharp(buffer).resize(751, 751, { fit: "cover"}).png().toFile("./uploads/" + randomKey + ".png");
+			await sharp(buffer).resize(751, 751, { fit: "cover" }).png().toFile("./uploads/" + randomKey + ".png");
 		} catch {
 			return rep.code(STATUS.bad_request).send({ message: "Invalid image file" });
 		}
-		
+
 		const imgTypes = ["image/png", "image/jpeg", "image/webp"];
-		if (!imgTypes.includes(uploadedFile.mimetype))
-			return rep.code(STATUS.bad_request).send({ message: "Invalid image file "});
-		
+		if (!imgTypes.includes(uploadedFile.mimetype)) {
+			return rep.code(STATUS.bad_request).send({ message: "Invalid image file " });
+		}
+
 		const otherUserAvatar = await db.select().from(tables.users).where(orm.eq(tables.users.avatar, usr.avatar));
-		if (usr.avatar !== `uploads/default_pp.png` && otherUserAvatar.length < 2)
+		if (usr.avatar !== `default_pp.png` && otherUserAvatar.length < 2) {
 			fs.unlink(usr.avatar, () => {});
+		}
 
 		const newAvatar = "uploads/" + randomKey + ".png";
 
 		await db.update(tables.users).set({ avatar: newAvatar }).where(orm.eq(tables.users.id, usr.id));
 
-		return rep.code(STATUS.success).send({ message: `avatar updated`, file: randomKey + ".png"});		
+		return rep.code(STATUS.success).send({ message: `avatar updated`, file: randomKey + ".png" });
 	}
 
 	static async getMe(req: FastifyRequest, rep: FastifyReply) {
@@ -128,7 +153,7 @@ class User {
 
 	static async updateProfile(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user;
-		const { displayName } = req.body as { displayName: string};
+		const { displayName } = req.body as { displayName: string };
 		const data: any = {};
 
 		if (!displayName) {
@@ -147,7 +172,7 @@ class User {
 			}
 			data.displayName = displayName;
 		}
-	
+
 		await db.update(tables.users).set(data).where(orm.eq(tables.users.id, usr!.id));
 
 		return rep.code(STATUS.success).send({ message: "Display name updated" });

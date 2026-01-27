@@ -191,13 +191,13 @@ class AuthService {
 			const res = await fetch(userData.image.versions.medium);
 			const buffer = Buffer.from(await res.arrayBuffer());
 			const filename = `avatar___${uuid}.png`;
-			let avatarPath = "uploads/default_pp.png";
+			let avatarPath = "default_pp.png";
 			try {
 				avatarPath = `./uploads/${filename}`;
 				await sharp(buffer).resize(751, 751, { fit: "cover" }).png().toFile(avatarPath);
 			} catch (error) {
 				console.log(error);
-				avatarPath = "uploads/default_pp.png";
+				avatarPath = "default_pp.png";
 			}
 			await db.insert(users).values({
 				uuid,
@@ -264,12 +264,12 @@ class AuthService {
 			const res = await fetch(userData.picture);
 			const buffer = Buffer.from(await res.arrayBuffer());
 			const filename = `avatar___${uuid}.png`;
-			let avatarPath = "uploads/default_pp.png";
+			let avatarPath = "default_pp.png";
 			try {
 				avatarPath = `./uploads/${filename}`;
 				await sharp(buffer).resize(751, 751, { fit: "cover" }).png().toFile(avatarPath);
 			} catch {
-				avatarPath = "uploads/default_pp.png";
+				avatarPath = "default_pp.png";
 			}
 			let displayName;
 			const displayNameExists = await db.select().from(users).where(eq(users.displayName, userData.given_name));
