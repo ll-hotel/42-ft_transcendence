@@ -14,6 +14,7 @@ type Client = {
 };
 export type BaseMessage = {
 	topic: string,
+	service : string
 };
 type MatchMessage = BaseMessage & {
 	source: string,
@@ -66,14 +67,14 @@ export async function connect(uuid: UUID, socket: WebSocket) {
 				const [displaySender] = await db.select({displayName : tables.users.displayName}).from(tables.users).where(orm.eq(tables.users.uuid, uuid ));
 				if (!displaySender)
 					return;
-				send(json.content, { source: uuid, topic: "vs:invite", content: displaySender.displayName });
+				send(json.content, { source: uuid, topic: "vs:invite", service:"chat", content: displaySender.displayName });
 			}
 		});
 		addListener(uuid, "vs:accept", (json) => {
 			createMatch1vs1(uuid, json.content);
 		});
 		addListener(uuid, "vs:decline", (json) => {
-			send(json.content, { source: uuid, topic: "vs:decline", content: json.content });
+			send(json.content, { source: uuid, topic: "vs:decline", service:"chat", content: json.content });
 		});
 	}
 }
@@ -150,15 +151,15 @@ async function createMatch1vs1(uuid1: string, uuid2: string) {
 
 	if (!p1 || !p2)
 	{
-		send(uuid1,{source : "server", topic: "vs:error", content : "User not find ! "});
-		send(uuid2,{source : "server", topic: "vs:error", content : "User not find !"});
+		send(uuid1,{source : "server", service:"chat", topic: "vs:error", content : "User not find ! "});
+		send(uuid2,{source : "server", service:"chat", topic: "vs:error", content : "User not find !"});
 		return;
 	}
 
 	if (await !tcheckFriends(p1.id, p2.id))
 	{
-		send(uuid1,{source : "server", topic: "vs:error", content : "Users aren't friends anymore !"});
-		send(uuid2,{source : "server", topic: "vs:error", content : "Users aren't friends anymore !"});
+		send(uuid1,{source : "server",  service:"chat", topic: "vs:error", content : "Users aren't friends anymore !"});
+		send(uuid2,{source : "server", service:"chat", topic: "vs:error", content : "Users aren't friends anymore !"});
 		return;
 	}
 
@@ -173,8 +174,8 @@ async function createMatch1vs1(uuid1: string, uuid2: string) {
 
 	if (matchAlreadyGoing.length > 0)
 	{
-		send(uuid1,{source : "server", topic: "vs:error", content : "Someone is already on a match, sorry :("});
-		send(uuid2,{source : "server", topic: "vs:error", content : "Someone is already on a match, sorry :("});
+		send(uuid1,{source : "server", service:"chat", topic: "vs:error", content : "Someone is already on a match, sorry :("});
+		send(uuid2,{source : "server", service:"chat", topic: "vs:error", content : "Someone is already on a match, sorry :("});
 		return;
 	}
 
@@ -184,8 +185,8 @@ async function createMatch1vs1(uuid1: string, uuid2: string) {
 	).prepare();
 	
 	if (alreadyInQueue.all().length) {
-		send(uuid1,{source : "server", topic: "vs:error", content : "Someone is already on a queue, sorry :("});
-		send(uuid2,{source : "server", topic: "vs:error", content : "Someone is already on a queue, sorry :("});
+		send(uuid1,{source : "server", service:"chat", topic: "vs:error", content : "Someone is already on a queue, sorry :("});
+		send(uuid2,{source : "server", service:"chat", topic: "vs:error", content : "Someone is already on a queue, sorry :("});
 		return;
 	}
 
@@ -195,8 +196,8 @@ async function createMatch1vs1(uuid1: string, uuid2: string) {
 		status: "pending",
 	}).returning();
 
-	send(uuid1, {source: "server", topic : "vs:start", match:match.id, opponent : p2.username});
-	send(uuid2, {source: "server", topic : "vs:start", match:match.id, opponent : p1.username});
+	send(uuid1, {source: "server", service:"chat", topic : "vs:start", match:match.id, opponent : p2.username});
+	send(uuid2, {source: "server", service:"chat", topic : "vs:start", match:match.id, opponent : p1.username});
 
 }
 
