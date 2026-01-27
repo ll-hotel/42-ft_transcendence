@@ -29,7 +29,7 @@ export default function(user: tables.User, ws: WebSocket.WebSocket) {
 }
 
 // TODO: add `game` and `queue`.
-const serviceList = ["tournament", "chat"].map(name => {
+const serviceList = ["tournament", "chat", "game"].map(name => {
 	return {
 		name: name,
 		agent: new https.Agent({ ca: fs.readFileSync(`/run/cert/${name}/certificate.pem`), rejectUnauthorized: false }),
