@@ -8,21 +8,21 @@ export COMPOSE_FILE COMPOSE_PROJECT_NAME
 all: up
 
 .PHONY: up
-up: secrets dbDir uploadsDir
+up: cert dbDir uploadsDir
 	$(COMPOSE) up --build --detach
 
-.PHONY: secrets
-secrets: secrets/privatekey.pem secrets/certificate.pem
+.PHONY: cert
+cert: cert/privatekey.pem cert/certificate.pem
 
 dbDir:
 	@mkdir -p ./backend/db
 uploadsDir:
 	@mkdir -p ./backend/uploads
 
-secrets/privatekey.pem secrets/certificate.pem:
+cert/privatekey.pem cert/certificate.pem:
 	@mkdir -p $(dir $@)
-	openssl req -newkey rsa:2048 -nodes -keyout secrets/privatekey.pem -x509 -days 365 -out secrets/certificate.pem
-	cat /dev/urandom | head -c 1024 > secrets/jwt_secret
+	@openssl req -newkey rsa:2048 -nodes -keyout cert/privatekey.pem -x509 -days 365 -out cert/certificate.pem -subj "/CN=internal" -addext "subjectAltName=DNS:localhost" 2>/dev/null
+	@echo "=> New certs has been generated"
 
 .PHONY: build
 build:

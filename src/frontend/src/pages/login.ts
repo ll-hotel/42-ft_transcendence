@@ -119,17 +119,15 @@ export class Login implements AppPage {
 }
 
 async function loginWithProvider(container: HTMLElement, provider: string, code: string) {
+	container.innerHTML = "";
+	notify("Logging in...", "info");
+
 	let path: string;
 	if (provider === "42")
 		path = "/api/auth/42/callback?code=";
 	else
 		path = "/api/auth/google/callback?code=";
-	const logging = document.createElement("p");
-	logging.className = "font-bold text-xl";
-	logging.innerText = "Logging in...";
-	container.appendChild(logging);
 	const res = await api.get(path + code);
-	logging.remove();
 	if (!res || !res.payload.loggedIn) {
 		notify(res?.payload.message, "error");
 		return gotoPage("login");

@@ -88,6 +88,7 @@ export async function deleteTournament(id: number) {
 
 export type TournamentInfo = {
 	name: string,
+	status: string,
 	players: string[],
 	rounds: TournamentMatch[][],
 };
@@ -113,6 +114,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 	);
 	const info: TournamentInfo = {
 		name: tournament.name,
+		status: tournament.status,
 		players: players.map((player) => player.displayName),
 		rounds: [],
 	};
@@ -143,10 +145,16 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 	});
 
 	info.rounds = [];
+	if (tournament.size == 4) {
+		info.rounds.push([]);
+	}
 	for (let round = 0; Math.pow(2, round) <= tournament.size!; round += 1) {
 		const roundMatchs = matchLinks.filter((link) => link.round == round)
 			.map((link) => matchs.find((match) => match.matchId == link.matchId)!);
 		info.rounds.push(roundMatchs);
+	}
+	if (info.rounds.length == 2) {
+		info.rounds.push([]);
 	}
 	return info;
 }

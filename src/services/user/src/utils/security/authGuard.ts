@@ -22,7 +22,10 @@ declare module "fastify" {
 	}
 }
 
-const jwtSecret = fs.readFileSync("/run/secrets/jwt_secret", "utf-8").trim();
+if (!process.env.JWT_SECRET) {
+      throw new Error("Missing Environment value");
+}
+const jwtSecret = process.env.JWT_SECRET!;
 
 export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 	const token = req.cookies ? req.cookies.accessToken : parseCookies(req).get("accessToken");
