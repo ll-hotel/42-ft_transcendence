@@ -1,9 +1,11 @@
+import { createTables } from "./utils/db/database";
 import fastifyCookie from "@fastify/cookie";
 import fastifyWebsocket from "@fastify/websocket";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import authModule from "./auth";
 
+createTables();
 
 const app: FastifyInstance = Fastify({
 	logger: true,

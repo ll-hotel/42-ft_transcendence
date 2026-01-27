@@ -12,26 +12,6 @@ services:
       - frontend-src:/srv/app/src:ro
       - cert:/run/secrets:ro
 
-  backend:
-    container_name: backend
-    restart: on-failure
-    healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8080/ping" ]
-      interval: 10s
-      timeout: 2s
-      retries: 3
-      start_period: 2s
-    ports:
-      - "8080:8080"
-    build:
-      context: src/backend
-    volumes:
-      - backend-src:/srv/app/src
-      - backend-db:/srv/app/db
-      - cert:/run/secrets:ro
-      - uploads:/srv/app/uploads
-    env_file: .env
-
   auth-service:
     container_name: auth-service
     restart: on-failure
@@ -106,6 +86,7 @@ services:
     volumes:
       - user-service-src:/srv/app/src
       - backend-db:/srv/app/db
+      - uploads:/srv/app/uploads
       - cert:/run/secrets:ro
     env_file: .env
 
@@ -202,12 +183,6 @@ volumes:
       device: ./src/frontend/src
       type: none
       o: bind
-  backend-src:
-    driver: local
-    driver_opts:
-      device: ./src/backend/src
-      type: none
-      o: bind
   auth-service-src:
     driver: local
     driver_opts:
@@ -271,6 +246,6 @@ volumes:
   uploads:
     driver: local
     driver_opts:
-      device: ./src/backend/uploads
+      device: ./src/frontend/static/uploads
       type: none
       o: bind

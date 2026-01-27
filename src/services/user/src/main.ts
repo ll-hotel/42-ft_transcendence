@@ -1,8 +1,9 @@
 import fastifyCookie from "@fastify/cookie";
-import fastifyWebsocket from "@fastify/websocket";
 import fastifyMultipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
 import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
+import path from "path";
 import userModule from "./user";
 
 
@@ -14,9 +15,14 @@ const app: FastifyInstance = Fastify({
 	},
 });
 
+app.register(fastifyStatic, {
+	root: path.join(__dirname, "..", "uploads"),
+	prefix: "/uploads/",
+});
+
 app.register(fastifyCookie);
-app.register(userModule);
 app.register(fastifyMultipart);
+app.register(userModule);
 
 app.listen({ port: 8080, host: "0.0.0.0" }, function(err, _address) {
 	if (err) {
