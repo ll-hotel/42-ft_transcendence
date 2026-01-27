@@ -4,7 +4,7 @@ services:
     container_name: frontend
     restart: on-failure
     build:
-      context: src/frontend
+      context: ./frontend
     ports:
       - "8443:443"
     volumes:
@@ -16,7 +16,7 @@ services:
     container_name: auth-service
     restart: on-failure
     build:
-      context: src/services/auth
+      context: ./services/auth
     volumes:
       - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -27,7 +27,7 @@ services:
     container_name: chat-service
     restart: on-failure
     build:
-      context: src/services/chat
+      context: ./services/chat
     volumes:
       - chat-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -38,7 +38,7 @@ services:
     container_name: friend-service
     restart: on-failure
     build:
-      context: src/services/friend
+      context: ./services/friend
     volumes:
       - friend-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -49,7 +49,7 @@ services:
     container_name: game-service
     restart: on-failure
     build:
-      context: src/services/game
+      context: ./services/game
     volumes:
       - game-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -60,7 +60,7 @@ services:
     container_name: queue-service
     restart: on-failure
     build:
-      context: src/services/queue
+      context: ./services/queue
     volumes:
       - queue-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -71,7 +71,7 @@ services:
     container_name: tournament-service
     restart: on-failure
     build:
-      context: src/services/tournament
+      context: ./services/tournament
     volumes:
       - tournament-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -82,7 +82,7 @@ services:
     container_name: user-service
     restart: on-failure
     build:
-      context: src/services/user
+      context: ./services/user
     volumes:
       - user-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -94,7 +94,7 @@ services:
     container_name: websocket-service
     restart: on-failure
     build:
-      context: src/services/websocket
+      context: ./services/websocket
     volumes:
       - websocket-service-src:/srv/app/src
       - backend-db:/srv/app/db
@@ -174,61 +174,61 @@ volumes:
   frontend-static:
     driver: local
     driver_opts:
-      device: ./src/frontend/static
+      device: ./frontend/static
       type: none
       o: bind
   frontend-src:
     driver: local
     driver_opts:
-      device: ./src/frontend/src
+      device: ./frontend/src
       type: none
       o: bind
   auth-service-src:
     driver: local
     driver_opts:
-      device: ./src/services/auth/src
+      device: ./services/auth/src
       type: none
       o: bind
   chat-service-src:
     driver: local
     driver_opts:
-      device: ./src/services/chat/src
+      device: ./services/chat/src
       type: none
       o: bind
   friend-service-src:
     driver: local
     driver_opts:
-      device: ./src/services/friend/src
+      device: ./services/friend/src
       type: none
       o: bind
   game-service-src:
     driver: local
     driver_opts:
-      device: ./src/services/game/src
+      device: ./services/game/src
       type: none
       o: bind
   queue-service-src:
     driver: local
     driver_opts:
-      device: ./src/services/queue/src
+      device: ./services/queue/src
       type: none
       o: bind
   tournament-service-src:
     driver: local
     driver_opts:
-      device: ./src/services/tournament/src
+      device: ./services/tournament/src
       type: none
       o: bind
   user-service-src:
     driver: local
     driver_opts:
-      device: ./src/services/user/src
+      device: ./services/user/src
       type: none
       o: bind
   websocket-service-src:
     driver: local
     driver_opts:
-      device: ./src/services/websocket/src
+      device: ./services/websocket/src
       type: none
       o: bind
   backend-db:
@@ -246,6 +246,6 @@ volumes:
   uploads:
     driver: local
     driver_opts:
-      device: ./src/frontend/static/uploads
+      device: ./frontend/static/uploads
       type: none
       o: bind
