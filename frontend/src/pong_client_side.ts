@@ -226,6 +226,7 @@ export class Game {
 	}
 	send_local_input() {
 		let msg: LocalMessage = {
+			service: "game",
 			topic: "pong",
 			type: "input",
 			p1_up: this.input.get("p1_up")!,
@@ -238,6 +239,7 @@ export class Game {
 
 	send_remote_input() {
 		let msg: InputMessage = {
+			service: "game",
 			topic: "pong",
 			type: "input",
 			up: this.input.get("p1_up")!,

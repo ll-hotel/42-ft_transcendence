@@ -32,15 +32,13 @@ export type StateMessage = BaseMessage & {
 	status: Status,
 };
 
-export type InputMessage = {
-	topic: string,
+export type InputMessage = BaseMessage & {
 	type: "input",
 	up: boolean,
 	down: boolean,
 };
 
-export type LocalMessage = {
-	topic: string,
+export type LocalMessage = BaseMessage & {
 	type: "input",
 	p1_up: boolean,
 	p1_down: boolean,

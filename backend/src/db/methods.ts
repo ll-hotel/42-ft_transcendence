@@ -87,7 +87,7 @@ export async function addTournamentPlayer(tournamentId: number, user: Tournament
 		userUuid: user.uuid,
 	});
 	const players = await selectTournamentPlayers(tournamentId);
-	const message = { topic: "tournament", type: "join", name: user.displayName };
+	const message = { service: "tournament", topic: "join", name: user.displayName };
 	for (const player of players) {
 		socket.send(player.uuid, message);
 	}
@@ -119,7 +119,7 @@ export async function removeUserFromTournaments(userUUID: string) {
 		if (players.length == 0) {
 			await deleteTournament(tournament.id);
 		}
-		const message = { topic: "tournament", type: "left", name: user.displayName };
+		const message = { service: "tournament", topic: "left", name: user.displayName };
 		for (const player of players) {
 			socket.send(player.uuid, message);
 		}

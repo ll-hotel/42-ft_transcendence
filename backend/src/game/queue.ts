@@ -8,6 +8,7 @@ import { create_game } from "./serverside";
 import { Mode } from "./types";
 import { STATUS } from "../shared";
 import socket from "../socket";
+import { queue } from "sharp";
 
 class Queue {
 	static setup(app: FastifyInstance) {
@@ -98,6 +99,7 @@ export default function(fastify: FastifyInstance) {
 
 function notifyUser(uuid: string, match: number, opponent: string) {
 	const message = {
+		service: "queue",
 		topic: "matchmaking:found",
 		match,
 		opponent,

@@ -331,8 +331,8 @@ async function notifyTournamentStart(tournamentId: number) {
 	for (const match of matchs) {
 		const player1 = players.find((player) => player.id == match.player1Id)!;
 		const player2 = players.find((player) => player.id == match.player2Id)!;
-		const message1 = { topic: "vs:start", match: match.id, opponent : player2.displayName};
-		const message2 = { topic: "vs:start", match: match.id, opponent : player1.displayName };
+		const message1 = { service:"tournament", topic: "vs:start", match: match.id, opponent : player2.displayName};
+		const message2 = { service:"tournament", topic: "vs:start", match: match.id, opponent : player1.displayName };
 		socket.send(player1.uuid, message1);
 		socket.send(player2.uuid, message2);
 	}

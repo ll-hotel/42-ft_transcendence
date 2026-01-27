@@ -13,8 +13,8 @@ type Client = {
 	lastOnlineTime: number,
 };
 export type BaseMessage = {
-	topic: string,
 	service : string
+	topic: string,
 };
 type MatchMessage = BaseMessage & {
 	source: string,
