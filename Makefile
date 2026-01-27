@@ -15,9 +15,9 @@ up: cert dbDir uploadsDir
 cert: cert/privatekey.pem cert/certificate.pem
 
 dbDir:
-	@mkdir -p ./backend/db
+	@mkdir -p ./database
 uploadsDir:
-	@mkdir -p ./backend/uploads
+	@mkdir -p ./frontend/static/uploads
 
 cert/privatekey.pem cert/certificate.pem:
 	@mkdir -p $(dir $@)
