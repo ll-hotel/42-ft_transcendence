@@ -3,6 +3,7 @@ import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
+import { MatchMaking } from "./matchmaking.js";
 
 export class HomePage implements AppPage {
 	html: HTMLElement;
@@ -65,7 +66,7 @@ export class HomePage implements AppPage {
 					return;
 				if (res.status == Status.not_found)
 				{
-					this.playRandom();
+					gotoPage("matchmaking");
 				}
 				else if (res.status == Status.success)
 					gotoPage("play/match", "?id=" + res.payload.id);
@@ -81,25 +82,25 @@ export class HomePage implements AppPage {
 		await this.loadFriends();
 	}
 
-	async playRandom() {
+/*	async playRandom() {
 		socket.addListener("matchmaking:found", (message) => {
-					socket.removeListener("matchmaking:found");
-					this.inQueue = false;
-		
-					const matchMsg = message as { match: number, opponent: string };
-					notify("Match found! Playing against " + matchMsg.opponent, "success");
-					setTimeout( () => {
-						gotoPage("play/match", `?id=${matchMsg.match}`);
-					}, 3000);
-				})
-				const join = await api.post("/api/matchmaking/join");
-				if (!join || join.status != Status.success) {
-					notify(join ? join.payload.message : "Can not join queue.", "error");
-				} else {
-					this.inQueue = true;
-					notify(join.payload.message, "success");
-				}
-	}
+			socket.removeListener("matchmaking:found");
+			this.inQueue = false;
+	
+			const matchMsg = message as { match: number, opponent: string };
+			notify("Match found! Playing against " + matchMsg.opponent, "success");
+			setTimeout( () => {
+				gotoPage("play/match", `?id=${matchMsg.match}`);
+			}, 3000);
+		})
+		const join = await api.post("/api/matchmaking/join");
+		if (!join || join.status != Status.success) {
+			notify(join ? join.payload.message : "Can not join queue.", "error");
+		} else {
+			this.inQueue = true;
+			notify(join.payload.message, "success");
+		}
+	}*/
 
 	async loadFriends() {
 		this.listContainer.innerHTML = "<div>Searching friends...</div>";

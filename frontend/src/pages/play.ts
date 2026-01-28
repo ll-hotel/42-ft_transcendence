@@ -33,24 +33,20 @@ export default class Play implements AppPage {
 		return gotoPage("play/local");
 	}
 	async playRandom() {
-		socket.addListener("matchmaking:found", (message) => {
-			socket.removeListener("matchmaking:found");
-			this.inQueue = false;
-
-			const matchMsg = message as { match: number, opponent: string };
-			notify("Match found! Playing against " + matchMsg.opponent, "success");
-			setTimeout( () => {
-				gotoPage("play/match", `?id=${matchMsg.match}`);
-			}, 3000);
-		})
-		const join = await api.post("/api/matchmaking/join");
-		if (!join || join.status != Status.success) {
-			notify(join ? join.payload.message : "Can not join queue.", "error");
-		} else {
-			this.inQueue = true;
-			notify(join.payload.message, "success");
-		}
+		api.get("/api/match/current").then((res) => {
+			if (!res)
+				return;
+			if (res.status == Status.not_found)
+			{
+				gotoPage("matchmaking");
+			}
+			else if (res.status == Status.success)
+				gotoPage("play/match", "?id=" + res.payload.id);
+			else
+				notify("Error " + res.status, "error");
+		});
 	}
+
 	playTournament() {
 		gotoPage("tournaments");
 	}

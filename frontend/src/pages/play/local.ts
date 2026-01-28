@@ -107,7 +107,7 @@ export default class PlayLocal implements AppPage {
 		canvas.width = 1920;
 		canvas.height = canvas.width * table_ratio;
 
-		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.local);
+		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.local, -1);
 		this.game.onScore = () => {
 			this.onScore();
 		};

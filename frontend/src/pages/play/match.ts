@@ -15,7 +15,7 @@ export default class PlayMatch implements AppPage {
 	p2_Avatar : HTMLImageElement | null;
 	p1_Score : HTMLDivElement | null;
 	p2_Score : HTMLDivElement | null;
-	matchId: string | null;
+	matchId: number | null;
 	matchWindow : HTMLElement | null;
 	matchCanvas : HTMLElement | null;
 	
@@ -61,7 +61,7 @@ export default class PlayMatch implements AppPage {
 		this.matchCanvas!.hidden = false;
 
 		const query = new URLSearchParams(location.search);
-		this.matchId = query.get("id");
+		this.matchId = new Number(query.get("id")).valueOf();
 		const matchResponse = await api.get("/api/match/" + this.matchId);
 		if (!matchResponse || matchResponse.status != 200) {
 			return history.back();
@@ -80,7 +80,7 @@ export default class PlayMatch implements AppPage {
 		canvas.width = 1920;
 		canvas.height = canvas.width * table_ratio;
 
-		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote);
+		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.remote, this.matchId);
 		this.game.onScore = () => {
 			this.onScore();
 		};
