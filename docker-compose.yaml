@@ -106,39 +106,36 @@ services:
       - chat-service-cert:/run/cert/chat:ro
     env_file: .env
 
-  # grafana:
-  #   image: grafana/grafana
-  #   container_name: grafana
-  #   restart: on-failure
-  #   ports:
-  #     - 3000:3000
-  #
-  # cadvisor:
-  #   image: gcr.io/cadvisor/cadvisor:v0.49.1
-  #   container_name: cadvisor
-  #   privileged: true
-  #   restart: on-failure
-  #   ports:
-  #     - 8098:8080
-  #   volumes:
-  #     - /:/rootfs:ro
-  #     - /var/run:/var/run:ro
-  #     - /sys:/sys:ro
-  #     - /var/lib/docker/:/var/lib/docker:ro
-  #     - /dev/disk/:/dev/disk:ro
-  #   devices:
-  #     - /dev/kmsg
-  #
-  # prometheus:
-  #   image: docker.io/prom/prometheus:latest
-  #   container_name: prometheus
-  #   restart: on-failure
-  #   ports:
-  #     - 9090:9090
-  #   volumes:
-  #     - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-  #     - prometheus-data:/prometheus
-  #
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: on-failure
+    volumes:
+      - cert:/var/cert:ro
+      - grafana-config:/etc/grafana
+  
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    privileged: true
+    restart: on-failure
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+  
+  prometheus:
+    image: docker.io/prom/prometheus:latest
+    container_name: prometheus
+    restart: on-failure
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+  
   # elasticsearch:
   #   image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
   #   container_name: elasticsearch
@@ -175,7 +172,6 @@ services:
   #     - elasticsearch
 
 volumes:
-  prometheus-data:
   frontend-static:
     driver: local
     driver_opts:
@@ -290,5 +286,12 @@ volumes:
     driver: local
     driver_opts:
       device: ./frontend/static/uploads
+      type: none
+      o: bind
+  prometheus-data:
+  grafana-config:
+    driver: local
+    driver_opts:
+      device: ./config/grafana/
       type: none
       o: bind
