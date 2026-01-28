@@ -42,7 +42,7 @@ export class HomePage implements AppPage {
 		}
 
 /*		buttonOnlineVs.onclick = () => {
-				api.get("/api/match/current").then((res) => {
+				api.get("/api/game/current").then((res) => {
 					if (!res)
 						return;
 					if (res.status == Status.not_found)
@@ -61,7 +61,7 @@ export class HomePage implements AppPage {
 		}
 
 		buttonOnlineVs.onclick =  () => {
-			api.get("/api/match/current").then((res) => {
+			api.get("/api/game/current").then((res) => {
 				if (!res)
 					return;
 				if (res.status == Status.not_found)
@@ -104,8 +104,8 @@ export class HomePage implements AppPage {
 
 	async loadFriends() {
 		this.listContainer.innerHTML = "<div>Searching friends...</div>";
-		const friendRes = await api.get("/api/friends");
-		const requestRes = await api.get("/api/friend/requests");
+		const friendRes = await api.get("/api/friend");
+		const requestRes = await api.get("/api/friend/requests")
 
 		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success) {
 			this.listContainer.innerHTML = "<div>Error while searching...</div>";

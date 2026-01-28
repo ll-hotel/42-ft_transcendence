@@ -72,7 +72,7 @@ export class Tournament implements AppPage {
 		}
 	}
 	async toggleStartButton(info: TournamentInfo) {
-		const res = await api.get("/api/me");
+		const res = await api.get("/api/user/me");
 		if (!res || res.status != Status.success) {
 			if (res && res.payload.message) notify(res.payload.message, "error");
 			return;

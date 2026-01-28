@@ -62,7 +62,7 @@ export default class PlayMatch implements AppPage {
 
 		const query = new URLSearchParams(location.search);
 		this.matchId = new Number(query.get("id")).valueOf();
-		const matchResponse = await api.get("/api/match/" + this.matchId);
+		const matchResponse = await api.get("/api/game/" + this.matchId);
 		if (!matchResponse || matchResponse.status != 200) {
 			return history.back();
 		}

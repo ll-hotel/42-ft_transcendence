@@ -20,7 +20,7 @@ export class FriendChat {
 		this.isActive = true;
 		if (this.ws)
 			return this.ws;
-		const me = await api.get("/api/me");
+		const me = await api.get("/api/user/me");
 		if (!me || !me.payload ||me.status!==Status.success)
 			return notify("Error API me", "error");
 		this.username = me.payload.username;
