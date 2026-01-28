@@ -6,4 +6,4 @@ cert/
 *.sqlite
 uploads/
 .idea/
-cert/
+tmp/
