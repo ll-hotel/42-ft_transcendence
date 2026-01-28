@@ -3,8 +3,9 @@ import { editProfile } from "./pages/editProfile.js";
 import { FriendPage } from "./pages/FriendPage.js";
 import { HomePage } from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
-import PlayLocal from "./pages/play/play_local.js";
-import PlayMatch from "./pages/play/play_match.js";
+import Play from "./pages/play.js";
+import PlayLocal from "./pages/play/local.js";
+import PlayMatch from "./pages/play/match.js";
 import { PongPage } from "./pages/PongPage.js";
 import { OtherProfilePage } from "./pages/otherProfile.js";
 import { ProfilePage } from "./pages/profile.js";
@@ -23,6 +24,7 @@ const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[
 	{ name: "profile/other", new: OtherProfilePage.new },
 	{ name: "profile/edit", new: editProfile.new },
 	{ name: "friends", new: FriendPage.new },
+	{ name : "play", new: Play.new},
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
 	{ name: "friends", new: FriendPage.new},
@@ -114,7 +116,7 @@ export async function gotoPage(name: string, search: string = "") {
 
 async function loadPage(replaceState: boolean) {
 	const path = location.pathname.substring(1);
-	let pageName = strToPageName(path) || "login";
+	let pageName = strToPageName(path) || "home";	
 
 	if (!await socket.connect() && !(pageName === "register" || pageName === "login")) {
 		pageName = "login";

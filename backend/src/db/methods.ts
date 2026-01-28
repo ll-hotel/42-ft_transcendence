@@ -87,7 +87,7 @@ export async function addTournamentPlayer(tournamentId: number, user: Tournament
 		userUuid: user.uuid,
 	});
 	const players = await selectTournamentPlayers(tournamentId);
-	const message = { topic: "tournament", type: "join", name: user.displayName };
+	const message = { service: "tournament", topic: "join", name: user.displayName };
 	for (const player of players) {
 		socket.send(player.uuid, message);
 	}
@@ -119,11 +119,28 @@ export async function removeUserFromTournaments(userUUID: string) {
 		if (players.length == 0) {
 			await deleteTournament(tournament.id);
 		}
-		const message = { topic: "tournament", type: "left", name: user.displayName };
+		const message = { service: "tournament", topic: "left", name: user.displayName };
 		for (const player of players) {
 			socket.send(player.uuid, message);
 		}
 	}
+}
+
+export async function removeUserFromQueue(userUUID : string)
+{
+	const [user] = await db.select().from(tables.users).where(orm.eq(tables.users.uuid, userUUID));
+	if(!user)
+		return;
+
+	const [inQueuUser] = await db.select()
+		.from(tables.matchmakingQueue,)
+		.where(orm.eq(tables.matchmakingQueue.userId, user.id));
+	
+	if (!inQueuUser)
+		return;
+
+	await db.delete(tables.matchmakingQueue)
+		.where(orm.eq(tables.matchmakingQueue.userId, user.id));
 }
 
 export async function selectTournamentPlayers(id: number) {
@@ -146,6 +163,7 @@ export async function deleteTournament(id: number) {
 
 export type TournamentInfo = {
 	name: string,
+	status: string,
 	players: string[],
 	rounds: TournamentMatch[][],
 };
@@ -171,6 +189,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 	);
 	const info: TournamentInfo = {
 		name: tournament.name,
+		status: tournament.status,
 		players: players.map((player) => player.displayName),
 		rounds: [],
 	};
@@ -201,10 +220,16 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 	});
 
 	info.rounds = [];
+	if (tournament.size == 4) {
+		info.rounds.push([]);
+	}
 	for (let round = 0; Math.pow(2, round) <= tournament.size!; round += 1) {
 		const roundMatchs = matchLinks.filter((link) => link.round == round)
 			.map((link) => matchs.find((match) => match.matchId == link.matchId)!);
 		info.rounds.push(roundMatchs);
+	}
+	if (info.rounds.length == 2) {
+		info.rounds.push([]);
 	}
 	return info;
 }
@@ -252,7 +277,7 @@ export async function createMatch(idUser1: number, idUser2: number) {
 	const [match] = await db.insert(tables.matches).values({
 		player1Id: idUser1,
 		player2Id: idUser2,
-		status: "ongoing",
+		status: "pending",
 	}).returning();
 	return match;
 }

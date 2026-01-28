@@ -156,8 +156,9 @@ export class GameInstance {
 		this.status = status;
 		const state = this.state();
 		let message: StateMessage = {
+			service: "game",
 			topic: "pong",
-			type: TypeMsg.state,
+			type : TypeMsg.state,
 			...state
 		} as StateMessage;
 		socket.send(this.p1_uuid, message);
@@ -279,6 +280,7 @@ export class PongBall extends PhysicObject {
 
 	sendScore() {
 		let init_msg: ScoreMessage = {
+			service : "game",
 			topic: "pong",
 			type: TypeMsg.score,
 			p1_score: this.score.p1,

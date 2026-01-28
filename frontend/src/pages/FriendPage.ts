@@ -45,7 +45,7 @@ export class FriendPage implements AppPage
 					console.log("Error in html");
 	}
 
-	static async new(content:HTMLElement)
+	static async new(content:HTMLElement): Promise<AppPage | null>
 	{
 		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#friend-chat"))
 		{
@@ -188,7 +188,6 @@ export class FriendPage implements AppPage
 
 			if (acceptRes && acceptRes.status == Status.success)
 			{
-				console.log(`Tu es ami avec ${request.requestFrom}`);
 				notify(`You are now friend with ${request.requestFrom}`, "success");
 				card.remove();
 				this.loadFriends();
@@ -206,7 +205,6 @@ export class FriendPage implements AppPage
 
 			if (declineRes && declineRes.status == Status.success)
 			{
-				console.log(`Tu n'es pas ami avec ${request.requestFrom}`);
 				notify(`You declined friend request from ${request.requestFrom}`, "info");
 				card.remove();
 			}
@@ -337,8 +335,9 @@ export class FriendPage implements AppPage
 				return notify("Error when getting user info: " + me.payload.message, "error");
 			socket.send({
 				source: me.payload.uuid,
+				service:"chat",
 				topic: "vs:invite",
-				target : targetUuid,
+				content : targetUuid,
 			});
 		}
 	}

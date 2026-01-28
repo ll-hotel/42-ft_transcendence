@@ -22,9 +22,8 @@ export class ProfilePage implements AppPage {
 		const logout = content.querySelector("#logout");
 		const edit = content.querySelector("#edit");
 		const displayname = content.querySelector("#profile-displayname");
-		// const username = content.querySelector("#profile-username")!;
-		// if (!content || !logout || !displayname || !username) {
-		if (!content || !logout || !displayname || !edit) {
+		const username = content.querySelector("#profile-username");
+		if (!content || !logout || !displayname || !edit || !username) {
 			return null;
 		}
 		return new ProfilePage(content! as HTMLElement);
@@ -44,12 +43,13 @@ export class ProfilePage implements AppPage {
 		if (!res || res.status != Status.success) {
 			return gotoPage("login");
 		}
-		const userInfo = res.payload as { displayName: string, id:number, avatar: string };
+		const userInfo = res.payload as { displayName: string, username:string, id:number, avatar: string };
 		const contMatchList = this.content.querySelector("#match-list");
 		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
 		if (avatarImg)
 			avatarImg.src = userInfo.avatar == "DEFAULT_AVATAR" ? "default_pp.png" : userInfo.avatar;
-		this.displayname.innerHTML = userInfo.displayName;
+		this.displayname.innerText = userInfo.displayName;
+		this.username.innerText = userInfo.username;
 		
 		const resMatch = await api.get("/api/me/history");
 		if (!resMatch || resMatch.status != Status.success) {
@@ -65,7 +65,7 @@ export class ProfilePage implements AppPage {
 				contMatchList.append(MatchInfo.new(
 					date.toLocaleDateString("fr-FR"),
 					date.toLocaleTimeString("fr-FR"),
-					{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
+					{ name: this.displayname.innerText, score: matchInfo.match.scoreP1 },
 					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
 					userInfo.displayName || "Display name"
 				).toHTML());

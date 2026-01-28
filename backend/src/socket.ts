@@ -1,6 +1,6 @@
 import * as orm from "drizzle-orm";
 import { db } from "./db/database";
-import { matches, users } from "./db/tables";
+import * as tables from "./db/tables";
 import { tcheckFriends } from "./user/friend";
 
 type HandlerFn = (data?: any) => void;
@@ -13,6 +13,7 @@ type Client = {
 	lastOnlineTime: number,
 };
 export type BaseMessage = {
+	service : string
 	topic: string,
 };
 type MatchMessage = BaseMessage & {
@@ -22,9 +23,10 @@ type MatchMessage = BaseMessage & {
 };
 
 type VersusMessage = BaseMessage & {
-	source: string,
-	target: string,
-};
+	source: string;
+	content: string;
+}
+
 type Message = BaseMessage | MatchMessage | VersusMessage;
 
 export const clients: Map<UUID, Client> = new Map();
@@ -54,39 +56,39 @@ export async function connect(uuid: UUID, socket: WebSocket) {
 	const client = clients.get(uuid)!;
 	client.sockets.push(socket);
 	client.lastOnlineTime = Date.now();
-
+	
 	socket.addEventListener("message", (event) => onMessage(client, event));
 	socket.addEventListener("close", () => disconnect(uuid, socket));
 
-	addListener(uuid, "vs:invite", (json) => {
-		if (isOnline(json.target)) {
-			send(json.target, { source: uuid, topic: "vs:invite", target: json.target });
-		}
-	});
-	addListener(uuid, "vs:accept", (json) => {
-		createMatchBetween(uuid, json.target);
-	});
-	addListener(uuid, "vs:decline", (json) => {
-		send(json.target, { source: uuid, topic: "vs:decline", target: json.target });
-	});
-}
+	if (client.handlers.filter((h) => h.topic == "vs:invite").length === 0) {
+		addListener(uuid, "vs:invite", async (json) => {
 
+			if (isOnline(json.content)) {
+				const [displaySender] = await db.select({displayName : tables.users.displayName}).from(tables.users).where(orm.eq(tables.users.uuid, uuid ));
+				if (!displaySender)
+					return;
+				send(json.content, { source: uuid, topic: "vs:invite", service:"chat", content: displaySender.displayName });
+			}
+		});
+		addListener(uuid, "vs:accept", (json) => {
+			createMatch1vs1(uuid, json.content);
+		});
+		addListener(uuid, "vs:decline", (json) => {
+			send(json.content, { source: uuid, topic: "vs:decline", service:"chat", content: json.content });
+		});
+	}
+}
+	
 function updateOnlineTime(client: Client) {
 	client.lastOnlineTime = Date.now();
 }
 function onMessage(client: Client, event: MessageEvent) {
 	updateOnlineTime(client);
 	try {
-		const json = JSON.parse(event.data);
-		if (json.source === "ping") {
-			return;
-		}
-		client.onMessage.forEach((fn) => fn(json));
-		client.handlers.forEach((handler) => {
-			if (handler.topic === json.source) {
-				handler.fn(json);
-			}
-		});
+		const msg = JSON.parse(event.data);
+		if (msg.source === "ping") return;
+		client.onMessage.forEach((handler) => handler(msg));
+		client.handlers.filter(handler => handler.topic == msg.topic).forEach((handler) => handler.fn(msg))
 	} catch (_) {}
 }
 
@@ -143,42 +145,60 @@ export function removeListener(uuid: UUID, topic: string) {
 	}
 }
 
-async function createMatchBetween(uuid1: string, uuid2: string) {
-	const [p1] = await db.select().from(users).where(orm.eq(users.uuid, uuid1));
-	const [p2] = await db.select().from(users).where(orm.eq(users.uuid, uuid2));
+async function createMatch1vs1(uuid1: string, uuid2: string) {
+	const [p1] = await db.select().from(tables.users).where(orm.eq(tables.users.uuid, uuid1));
+	const [p2] = await db.select().from(tables.users).where(orm.eq(tables.users.uuid, uuid2));
 
-	if (!p1 || !p2) {
+	if (!p1 || !p2)
+	{
+		send(uuid1,{source : "server", service:"chat", topic: "vs:error", content : "User not find ! "});
+		send(uuid2,{source : "server", service:"chat", topic: "vs:error", content : "User not find !"});
 		return;
 	}
 
-	if (await !tcheckFriends(p1.id, p2.id)) {
-		// They aren't friend anymore, so we can't create a game, sorry :(
+	if (await !tcheckFriends(p1.id, p2.id))
+	{
+		send(uuid1,{source : "server",  service:"chat", topic: "vs:error", content : "Users aren't friends anymore !"});
+		send(uuid2,{source : "server", service:"chat", topic: "vs:error", content : "Users aren't friends anymore !"});
 		return;
 	}
 
-	const matchAlreadyGoing = await db.select().from(matches).where(orm.and(
-		orm.or(
-			orm.eq(matches.player1Id, p1.id),
-			orm.eq(matches.player1Id, p2.id),
-			orm.eq(matches.player2Id, p1.id),
-			orm.eq(matches.player2Id, p2.id),
-		),
-		orm.eq(matches.status, "ongoing"),
+	const matchAlreadyGoing = await db.select().from(tables.matches).where(orm.and(orm.or(
+		orm.eq(tables.matches.player1Id, p1.id),
+		orm.eq(tables.matches.player1Id, p2.id),
+		orm.eq(tables.matches.player2Id, p1.id),
+		orm.eq(tables.matches.player2Id, p2.id),
+	),
+	orm.or(orm.eq(tables.matches.status, "ongoing"), orm.eq(tables.matches.status, "pending"))
 	));
 
-	if (matchAlreadyGoing.length > 0) {
-		// Someone is already in a match, sorry :(
+	if (matchAlreadyGoing.length > 0)
+	{
+		send(uuid1,{source : "server", service:"chat", topic: "vs:error", content : "Someone is already on a match, sorry :("});
+		send(uuid2,{source : "server", service:"chat", topic: "vs:error", content : "Someone is already on a match, sorry :("});
 		return;
 	}
 
-	const [match] = await db.insert(matches).values({
-		player1Id: p1.id,
-		player2Id: p2.id,
-		status: "ongoing",
+	const alreadyInQueue = db.select().from(tables.matchmakingQueue).where(orm.or(
+		orm.eq(tables.matchmakingQueue.userId, p1.id),
+		orm.eq(tables.matchmakingQueue.userId, p2.id))
+	).prepare();
+	
+	if (alreadyInQueue.all().length) {
+		send(uuid1,{source : "server", service:"chat", topic: "vs:error", content : "Someone is already on a queue, sorry :("});
+		send(uuid2,{source : "server", service:"chat", topic: "vs:error", content : "Someone is already on a queue, sorry :("});
+		return;
+	}
+
+	const [match] = await db.insert(tables.matches).values({
+		player1Id : p1.id,
+		player2Id : p2.id,
+		status: "pending",
 	}).returning();
 
-	send(uuid1, { source: "server", topic: "vs:start", match: match.id, opponent: p2.username });
-	send(uuid2, { source: "server", topic: "vs:start", match: match.id, opponent: p1.username });
+	send(uuid1, {source: "server", service:"chat", topic : "vs:start", match:match.id, opponent : p2.username});
+	send(uuid2, {source: "server", service:"chat", topic : "vs:start", match:match.id, opponent : p1.username});
+
 }
 
 export default {

@@ -77,7 +77,7 @@ export class PongPage implements AppPage {
 	showScore() {
 		if (!this.game) return;
 		this.onclick = () => this.showStart();
-		const scorePanel = this.html.querySelector("#panel-score");
+		const scorePanel = this.html.querySelector<HTMLDivElement>("#panel-score");
 		if (scorePanel) {
 			const score = this.game.score;
 			if (score.p1 > score.p2) {

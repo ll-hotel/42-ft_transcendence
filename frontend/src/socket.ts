@@ -2,6 +2,7 @@ import { api, Status } from "./api.js";
 import * as game from "./pong_client_side.js";
 
 export type BaseMessage = {
+	service : string,
 	topic: string,
 };
 
@@ -13,7 +14,7 @@ export type MatchMessage = BaseMessage & {
 
 export type VersusMessage = BaseMessage & {
 	source: string,
-	target: string,
+	content: string;
 };
 
 export type StateMessage = BaseMessage & {
@@ -96,7 +97,7 @@ async function connect(): Promise<boolean> {
 }
 function pingLoop() {
 	setTimeout(() => {
-		send({ topic: "ping" }) && pingLoop();
+		send({  service:"chat",topic: "ping" }) && pingLoop();
 	}, 4000);
 }
 function isAlive() {

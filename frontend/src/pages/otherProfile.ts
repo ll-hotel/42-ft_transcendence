@@ -7,19 +7,18 @@ import { notify } from "../utils/notifs.js";
 
 export class OtherProfilePage implements AppPage {
 	content: HTMLElement;
-	displayname: HTMLElement;
-	username: HTMLElement;
+	displayname: HTMLDivElement;
+	username: HTMLDivElement;
 
 	private constructor(content: HTMLElement) {
 		this.content = content;
-		this.displayname = content.querySelector("#profile-displayname")!;
-		this.username = content.querySelector("#profile-username")!;
+		this.displayname = content.querySelector<HTMLDivElement>("#profile-displayname")!;
+		this.username = content.querySelector<HTMLDivElement>("#profile-username")!;
 	}
 	static async new(content: HTMLElement) {
-		const displayname = content.querySelector("#profile-displayname");
-		// const username = content.querySelector("#profile-username")!;
-		// if (!content || !logout || !displayname || !username) {
-		if (!content || !displayname) {
+		const displayname = content.querySelector<HTMLDivElement>("#profile-displayname");
+		 const username = content.querySelector<HTMLDivElement>("#profile-username")!;
+		if (!content || !displayname || !username) {
 			return null;
 		}
 		return new OtherProfilePage(content! as HTMLElement);
@@ -51,24 +50,24 @@ export class OtherProfilePage implements AppPage {
 			let userinfo;
 		try {
 			userinfo = res.payload.user;
-			this.displayname.innerHTML = userinfo.displayName;
+			this.displayname.innerText = userinfo.displayName;
+			this.username.innerText = userinfo.username;
 			const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
 			if (avatarImg)
 				avatarImg.src = userinfo.avatar.startsWith("/") ? userinfo.avatar : `/${userinfo.avatar}`;
 		} catch {
 		}
 		const statusDot = this.content.querySelector("#status-dot");
-		const statusText = this.content.querySelector("#status-text");
+		const statusText = this.content.querySelector<HTMLSpanElement>("#status-text");
 		const contMatchList = this.content.querySelector("#match-list");
 		const cntFriendButton = this.content.querySelector(".friend-buttons");
 
 		if (!contMatchList || !statusDot || !statusText || !cntFriendButton)
 		{
-			console.log("Missing HTML info")
 			return;
 		}
 
-		statusText.innerHTML = "";
+		statusText.innerText = "";
 		contMatchList.innerHTML = "";
 		const isOnline = userinfo.isOnline;
 		statusDot.className = isOnline ? "friend-round-online" : "friend-round-offline";
@@ -96,7 +95,7 @@ export class OtherProfilePage implements AppPage {
 				contMatchList.append(MatchInfo.new(
 					date.toLocaleDateString("fr-FR"),
 					date.toLocaleTimeString("fr-FR"),
-					{ name: this.displayname.innerHTML, score: matchInfo.match.scoreP1 },
+					{ name: this.displayname.innerText, score: matchInfo.match.scoreP1 },
 					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
 					resMe.payload.displayName
 				).toHTML());

@@ -82,6 +82,7 @@ async function postInput(request: FastifyRequest, reply: FastifyReply): Promise<
 	}
 
 	const messageP1: InputMessage = {
+		service: "game",
 		topic: "pong",
 		type: "input",
 		up: body.p1_up,
@@ -91,6 +92,7 @@ async function postInput(request: FastifyRequest, reply: FastifyReply): Promise<
 
 	if (game.mode == Mode.local) {
 		const messageP2: InputMessage = {
+			service: "game",
 			topic: "pong",
 			type: "input",
 			up: body.p2_up!,

@@ -10,26 +10,27 @@ export async function initSocket() {
 	isSocket = true;
 
 	socket.addListener("vs:invite", (m:Message) => {
-		const mess = m as  unknown as {source:string, target: string, topic : string};
-		const isMatch = confirm(`New invitation to play with ${mess.source}, let's win ?`);
-		socket.send({source : "server", topic : isMatch ? "vs:accept" : "vs:decline", target: mess.source})
+		const mess = m as  unknown as {source:string, content: string, topic : string};
+		const isMatch = confirm(`New invitation to play with ${mess.content}, let's win ?`);
+		socket.send({source : "server", service:"chat", topic : isMatch ? "vs:accept" : "vs:decline", content: mess.source})
 	});
 
 	socket.addListener("vs:start", (m) => {
 		const mess = m as  unknown as {match:number, opponent: string};
-		console.log(`play match n°${mess.match} within ${mess.opponent}`);
-		gotoPage("play/match", `?id=${mess.match}`);
+		notify(`You're going to play against ${mess.opponent} in 3 seconds !`, "success");
+		setTimeout( () => {
+			gotoPage("play/match", `?id=${mess.match}`)
+		}, 3000);
 	});
 
 	socket.addListener("vs:decline", (m:Message) => {
-		const mess = m as  unknown as {source: string};
-		notify(`${mess.source} didn't want to play with you :(`, "error");
+		const mess = m as  unknown as {source: string, content:string};
+		notify(`${mess.content} didn't want to play with you :(`, "error");
 	});
 
-	socket.addListener("match", (m) => {
-		const match = m as unknown as { id?: number };
-		// TODO: gotoPage("match", "?id=" + message.id!);
-		notify("Match found: id=" + match.id!, "success")
+	socket.addListener("vs:error", (m:Message) => {
+		const mess = m as unknown as {content: string };
+		notify (`${mess.content}`, "error");
 	})
 }
 

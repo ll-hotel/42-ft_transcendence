@@ -1,6 +1,7 @@
 import socket, { InputMessage, LocalMessage, Message, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
 import {api, Status} from "./api.js";
 // import {notify} from "./pages/utils/notifs.js";
+import { notify } from "./utils/notifs.js";
 
 type Position = { x: number, y: number };
 type Score = { p1: number, p2: number };
@@ -103,27 +104,33 @@ export class Game {
 	private ball: PongBall;
 	public paddle_p1: PongPaddle;
 	public paddle_p2: PongPaddle;
-	readonly score: Score;
+	public score: Score;
 	public input: Map<string, boolean>;
 	private mode: Mode;
 	private tick_rate: number;
 
 	// HTMLElement
-	private score_viewer: HTMLElement;
+	//private score_viewer_p1: HTMLElement;
+	//private score_viewer_p2: HTMLElement;
+	//private content_window: HTMLDivElement;
 
-	private current_interval_id: number | null = null;
+	private current_interval_id: NodeJS.Timeout | null = null;
 	private canvas_ratio: Size;
 	private speed_ratio: number;
 	private sendInputs: () => void;
 	running: boolean = false;
+	onScore : (() => void ) | null = null;
+	onEnded : (() => void ) | null = null;
 	private matchId : number;
 	private last_input: {p1_up: boolean, p1_down: boolean, p2_up: boolean, p2_down: boolean};
 
 	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement, mode: Mode, matchId: number) {
 		this.matchId = matchId;
-		this.canvas = html.querySelector("#pong-canvas")! as HTMLCanvasElement;
+		this.canvas = html.querySelector("#match-canvas")! as HTMLCanvasElement;
 		this.context = this.canvas.getContext("2d")!;
-		this.score_viewer = html.querySelector("#panel-score")! as HTMLElement;
+		//this.score_viewer_p1 = html.querySelector("#player1-score")! as HTMLElement;
+		//this.score_viewer_p2 = html.querySelector("#player2-score")! as HTMLElement;
+		//this.content_window = html.querySelector("#content")
 		this.score = { p1: 0, p2: 0 };
 		this.canvas_ratio = { w: this.canvas.width / width_server , h: this.canvas.height / height_server };
 		const paddle_size = { w: this.canvas.width * 0.06, h: this.canvas.width * 0.06 * 1.80 };
@@ -155,14 +162,15 @@ export class Game {
 			this.ball.pos.y = this.canvas.height / 2;
 			this.score.p1 = (msg as ScoreMessage).p1_score;
 			this.score.p2 = (msg as ScoreMessage).p2_score;
+			if (this.onScore) this.onScore();
 			return;
 		}
 		const state = msg as StateMessage;
 		if (state.status == PongStatus.started) {
 			this.run();
 		} else if (state.status == PongStatus.ended) {
+			if (this.onEnded) this.onEnded();
 			this.stop();
-			alert("Match ended.");
 			return;
 		} else if (state.status == PongStatus.ongoing) {
 			if (this.current_interval_id === null) {
@@ -190,8 +198,13 @@ export class Game {
 		}
 	}
 
+	ended() {
+		this.canvas.hidden=true;
+		
+	}
 	send_local_input() {
 		let msg: LocalMessage = {
+			service: "game",
 			topic: "pong",
 			type: "input",
 			p1_up: this.input.get("p1_up")!,
@@ -206,8 +219,8 @@ export class Game {
 		await api.post("/api/game/input", {
 			gameId: this.matchId,
 			p1_up: this.input.get("p1_up"),
-			p1_down: this.input.get("p1_down")}
-			);
+			p1_down: this.input.get("p1_down")
+		});
 		// let msg: InputMessage = {
 		// 	topic: "pong",
 		// 	type: "input",
@@ -225,16 +238,17 @@ export class Game {
 		// 	if (test.status != Status.success)
 		// 		return notify("Error: " + test.payload.message, "error");
 		// 	msg = test.payload;
-			this.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
-			this.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
-			scale_vec(this.ball.speed, this.speed_ratio);
+		this.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
+		this.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
+		scale_vec(this.ball.speed, this.speed_ratio);
 
-			this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
-			this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
-			this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_ratio.h);
-			this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
-		// });
-	}
+		this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
+		this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
+		this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_ratio.h);
+		this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
+		this.score.p1 = msg.score.p1;
+		this.score.p2 = msg.score.p2;
+	}	
 
 	render() {
 		this.context!.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -328,7 +342,6 @@ export class Game {
 			this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
 		if (this.input.get("p2_up"))
 			this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
-		this.score_viewer.innerText = this.score.p1.toString() + " - " + this.score.p2.toString();
 		if (this.shouldSendInputs()) {
 			this.sendInputs();
 		}
