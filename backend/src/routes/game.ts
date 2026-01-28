@@ -3,19 +3,19 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { db } from "../db/database";
 import * as tables from "../db/tables";
 import { games as serverGames } from "../game/serverside";
-import { InputMessage, Mode } from "../game/types";
+import {InputMessage, LocalMessage, Mode} from "../game/types";
 import { authGuard } from "../security/authGuard";
 import { MESSAGE, schema, STATUS } from "../shared";
 import socket from "../socket";
-
 const stateSchema = schema.query({ matchId: "number" }, ["matchId"]);
-const inputSchema = schema.body({
+const inputSchema = schema.body({ 
 	matchId: "number",
+	clientId: "string",
 	p1_up: "boolean",
 	p1_down: "boolean",
 	p2_up: "boolean",
 	p2_down: "boolean",
-}, ["gameId", "p1_up", "p1_down"]);
+	}, ["gameId", "p1_up", "p1_down"]);
 
 export default function(fastify: FastifyInstance) {
 	fastify.get("/api/game/websocket", { preHandler: authGuard, websocket: true }, websocket);
@@ -53,8 +53,11 @@ async function getState(request: FastifyRequest, reply: FastifyReply): Promise<v
 }
 
 async function postInput(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+	if (!request.user)
+		return reply.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized });
 	const body = request.body as {
 		gameId: number,
+		clientId: string,
 		p1_up: boolean,
 		p1_down: boolean,
 		p2_up?: boolean,
@@ -81,24 +84,28 @@ async function postInput(request: FastifyRequest, reply: FastifyReply): Promise<
 		return reply.code(STATUS.bad_request).send({ message: "Missing player 2 inputs" });
 	}
 
-	const messageP1: InputMessage = {
-		service: "game",
-		topic: "pong",
-		type: "input",
-		up: body.p1_up,
-		down: body.p1_down,
-	};
-	game.p1_event_listener(messageP1);
-
 	if (game.mode == Mode.local) {
-		const messageP2: InputMessage = {
+		const messageLocal: LocalMessage = {
+			service : "game",
+			topic: "pong",
+			type: "input",
+			p1_up: body.p1_up,
+			p1_down: body.p1_down,
+			p2_up: body.p2_up!,
+			p2_down: body.p2_down!,
+		};
+		game.local_input_listener(messageLocal);
+	}
+	else{
+		const messageP1: InputMessage = {
 			service: "game",
 			topic: "pong",
 			type: "input",
-			up: body.p2_up!,
-			down: body.p2_down!,
+			clientId: request.user.uuid,
+			up: body.p1_up,
+			down: body.p1_down,
 		};
-		game.p2_event_listener(messageP2);
+		game.remote_input_listener(messageP1);
 	}
 
 	return reply.code(STATUS.success).send({message: "input received"});

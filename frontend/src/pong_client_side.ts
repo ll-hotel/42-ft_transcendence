@@ -219,8 +219,8 @@ export class Game {
 		await api.post("/api/game/input", {
 			gameId: this.matchId,
 			p1_up: this.input.get("p1_up"),
-			p1_down: this.input.get("p1_down")
-		});
+			p1_down: this.input.get("p1_down")}
+		);
 		// let msg: InputMessage = {
 		// 	topic: "pong",
 		// 	type: "input",
@@ -422,3 +422,4 @@ export class PongBall extends PhysicObject {
 		);
 	}
 }
+
