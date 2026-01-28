@@ -12,7 +12,7 @@ up: cert dbDir uploadsDir
 	$(COMPOSE) up --build --detach
 
 .PHONY: cert
-cert: cert/privatekey.pem cert/certificate.pem
+cert: services-cert cert/privatekey.pem cert/certificate.pem
 
 dbDir:
 	@mkdir -p ./database
