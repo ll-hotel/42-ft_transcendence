@@ -6,3 +6,4 @@ secrets/
 *.sqlite
 uploads/
 .idea/
+cert/

@@ -128,9 +128,6 @@ export class Game {
 		this.matchId = matchId;
 		this.canvas = html.querySelector("#match-canvas")! as HTMLCanvasElement;
 		this.context = this.canvas.getContext("2d")!;
-		//this.score_viewer_p1 = html.querySelector("#player1-score")! as HTMLElement;
-		//this.score_viewer_p2 = html.querySelector("#player2-score")! as HTMLElement;
-		//this.content_window = html.querySelector("#content")
 		this.score = { p1: 0, p2: 0 };
 		this.canvas_ratio = { w: this.canvas.width / width_server , h: this.canvas.height / height_server };
 		const paddle_size = { w: this.canvas.width * 0.06, h: this.canvas.width * 0.06 * 1.80 };
@@ -221,14 +218,6 @@ export class Game {
 			p1_up: this.input.get("p1_up"),
 			p1_down: this.input.get("p1_down")}
 		);
-		// let msg: InputMessage = {
-		// 	topic: "pong",
-		// 	type: "input",
-		// 	up: this.input.get("p1_up")!,
-		// 	down: this.input.get("p1_down")!,
-		// };
-		// debug_message("remote input", msg);
-		// socket.send(msg);
 	}
 
 	update_state(msg: StateMessage) {
@@ -330,20 +319,22 @@ export class Game {
 	}
 
 	update(): void {
-		if (this.running == false) {
+		if (this.running == false)
 			return;
-		}
-		this.ball.tick();
-		if (this.input.get("p1_down"))
-			this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
-		if (this.input.get("p1_up"))
-			this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
-		if (this.input.get("p2_down"))
-			this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
-		if (this.input.get("p2_up"))
-			this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
 		if (this.shouldSendInputs()) {
 			this.sendInputs();
+		}
+		this.ball.tick();
+		if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.canvas.height * 0.1) < this.canvas.height)
+			this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
+		if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.canvas.height * 0.1) > 0)
+			this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
+		if (this.mode == Mode.local)
+		{
+			if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.canvas.height * 0.1) < this.canvas.height)
+				this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
+			if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.canvas.height * 0.1) > 0)
+				this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
 		}
 		this.render();
 	}
