@@ -33,7 +33,7 @@ export class MatchMaking implements AppPage {
 				gotoPage("play/match", `?id=${matchMsg.match}`);
 			}, 3000);
 		})
-		api.post("/api/matchmaking/join").then( (join) =>
+		api.post("/api/queue/join").then( (join) =>
 		{
 			if (!join || join.status != Status.success) {
 				notify(join ? join.payload.message : "Can not join queue.", "error");
@@ -44,7 +44,7 @@ export class MatchMaking implements AppPage {
 		});
 
 		this.queueButton!.addEventListener("click", async () => {
-			const leave = await api.post("/api/matchmaking/leave");
+			const leave = await api.post("/api/queue/leave");
 			if (!leave)
 				return;
 			if (leave.status != Status.success)

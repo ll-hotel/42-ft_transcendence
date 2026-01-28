@@ -38,7 +38,7 @@ export class FriendButton {
 	private async initStatus ()
 	{
 		try {
-			const resRequest = await api.get(`/api/friends/status?displayName=${this.displayName}`);
+			const resRequest = await api.get(`/api/friend/status?displayName=${this.displayName}`);
 			if (resRequest?.status === Status.success)
 			{
 				const statusRequest = resRequest.payload.status;
@@ -102,7 +102,7 @@ export class FriendButton {
 			const res = await api.post(`/api/friend/request`, { displayName: this.displayName });
 			if (res && res.status === Status.success)
 			{
-				const resFriends =  await api.get(`/api/friends/status?displayName=${this.displayName}`); 
+				const resFriends =  await api.get(`/api/friend/status?displayName=${this.displayName}`); 
 				if(resFriends?.status == Status.success && resFriends.payload.status === "accepted")
 					this.status = "friend";
 				else
@@ -179,7 +179,8 @@ export class FriendButton {
 		const confirmVs = confirm(`Do you want to play with ${this.displayName} ?`)
 		if (!confirmVs)
 			return;
-		const me = await api.get("/api/me");
+		
+		const me = await api.get("/api/user/me");
 		const friend = await api.get(`/api/user?displayName=${this.displayName}`);
 		if (!me || ! friend || !me.payload || !friend.payload)
 			return notify("Error when getting user or friend info", "error");
