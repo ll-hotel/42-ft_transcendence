@@ -113,18 +113,7 @@ services:
     volumes:
       - grafana-config:/etc/grafana
       - cert:/var/certs:ro
-  
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
-    container_name: cadvisor
-    privileged: true
-    restart: on-failure
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
+    env_file: .env
   
   prometheus:
     image: docker.io/prom/prometheus:v3.9.0
@@ -136,6 +125,18 @@ services:
     volumes:
       - prometheus-config:/etc/prometheus
       - cert:/var/certs:ro
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    privileged: true
+    restart: on-failure
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
   
   # elasticsearch:
   #   image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
@@ -292,12 +293,12 @@ volumes:
   grafana-config:
     driver: local
     driver_opts:
-      device: ./config/grafana/
+      device: ./monitoring/grafana/
       type: none
       o: bind
   prometheus-config:
     driver: local
     driver_opts:
-      device: ./config/prometheus/
+      device: ./monitoring/prometheus/
       type: none
       o: bind
