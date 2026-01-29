@@ -11,6 +11,7 @@ export type TournamentPlayer = {
 
 export async function addTournamentPlayer(tournamentId: number, user: TournamentPlayer) {
 	const [player] = await db.select({ id: tables.tournamentPlayers.userId }).from(tables.tournamentPlayers).where(
+		orm.eq(tables.tournamentPlayers.userId, user.id),
 		orm.eq(tables.tournamentPlayers.userId, user.id)
 	);
 	if (player) return;
@@ -27,7 +28,7 @@ export async function addTournamentPlayer(tournamentId: number, user: Tournament
 }
 
 export async function removeUserFromTournaments(userUUID: string) {
-	
+
 	const tournaments = await db.select({ id: tables.tournamentPlayers.tournamentId }).from(tables.tournamentPlayers)
 		.where(orm.eq(tables.tournamentPlayers.userUuid, userUUID));
 	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status }).from(
@@ -115,7 +116,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 		orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
 	);
 	if (matchLinks.length === 0) {
-		
+
 		const waitingUsers = await db.select().from(tables.users).where(
 			orm.inArray(tables.users.id, playerLinks.map((link: { userId: number }) => link.userId)),
 		);
@@ -129,7 +130,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 
 	const matchIds = matchLinks.map((x: { matchId: number }) => x.matchId);
 	const dbMatchs = await db.select().from(tables.matches).where(orm.inArray(tables.matches.id, matchIds));
-	
+
 	const uniquePlayerIds = Array.from(new Set(
 		dbMatchs.flatMap((m: { player1Id: number, player2Id: number }) => [m.player1Id, m.player2Id])
 	));
@@ -157,7 +158,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 	info.rounds = [];
 	const roundsCount = Math.log2(tournament.size!);
 	if (tournament.size == 4) {
-	
+
 		info.rounds.push([]);
 	}
 	for (let round = 0; round < roundsCount; round += 1) {
