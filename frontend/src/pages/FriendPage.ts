@@ -14,6 +14,7 @@ X Link l'input text, et le button send
 import { api, Status } from "../api.js";
 import { gotoUserPage } from "../PageLoader.js";
 import socket from "../socket.js";
+import { initSearchBar } from "../user_action.js";
 import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
 import { FriendChat } from "./FriendChat.js";
@@ -25,11 +26,14 @@ export class FriendPage implements AppPage {
 	selectedCard: HTMLElement | null;
 	renderInterval: number | null = null;
 	chat: FriendChat;
+	searchBar: HTMLElement;
 
-	constructor(content: HTMLElement) {
+	constructor(content: HTMLElement, searchBar: HTMLElement) {
 		this.content = content;
 		this.listContainer = content.querySelector("#friend-list-content")!;
 		this.chatContainer = content.querySelector("#friend-chat")!;
+		initSearchBar(searchBar, (card) => this.userSelected(card));
+		this.searchBar = searchBar;
 		this.selectedCard = null;
 		this.chat = new FriendChat();
 		if (!this.listContainer || !this.chatContainer) {
@@ -42,7 +46,17 @@ export class FriendPage implements AppPage {
 			console.log("Missing Friend list or Friend chat in html");
 			return null;
 		}
-		return new FriendPage(content);
+		const searchBar = content.querySelector<HTMLElement>("#search-user-action");
+		if (!searchBar) {
+			console.log("friend page: missing search bar");
+			return null;
+		}
+		return new FriendPage(content, searchBar);
+	}
+
+	async userSelected(card: HTMLElement): Promise<void> {
+		const userDisplayName = card.querySelector<HTMLElement>("span")?.innerText || "";
+		this.loadChat(userDisplayName);
 	}
 
 	async loadInto(container: HTMLElement) {
@@ -115,7 +129,7 @@ export class FriendPage implements AppPage {
 				card.classList.add("friend-card-select");
 
 				this.selectedCard = card;
-				this.loadChat(friend.displayName, friend.username, friend.uuid);
+				this.loadChat(friend.displayName);
 			};
 			this.listContainer.appendChild(card);
 		});
@@ -195,10 +209,16 @@ export class FriendPage implements AppPage {
 		return card;
 	}
 
-	// Gestion Chargement du chat
-
-	async loadChat(targetDisplayname: string, targetUsername: string, targetUuid: string) {
-		if (targetUsername == this.chat.targetUsername) {
+	/** Creates or join a chat room and load it on the page. */
+	async loadChat(displayName: string, targetUuid?: string): Promise<void> {
+		const userResponse = await api.get("/api/user?displayName=" + displayName);
+		if (!userResponse) return;
+		if (userResponse.status != Status.success) {
+			notify(userResponse.payload.message, "error");
+			return;
+		}
+		const { user } = userResponse.payload as { user: { username: string } };
+		if (user.username == this.chat.targetUsername) {
 			return;
 		}
 
@@ -212,18 +232,18 @@ export class FriendPage implements AppPage {
 
 		chatList.innerHTML = "";
 		this.chat.cleanRoomState();
-		await this.chat.openRoom(targetUsername);
+		await this.chat.openRoom(user.username);
 		await this.chat.loadHistory();
 
-		chatName.textContent = targetDisplayname;
+		chatName.textContent = displayName;
 		chatName.classList.add("hover:text-[#04809F]");
 		chatName.classList.add("cursor-pointer");
 		chatName.onclick = async () => {
-			await gotoUserPage(targetDisplayname);
+			await gotoUserPage(displayName);
 		};
-		await this.setRemoveFriendButton(chatName, chatList, targetDisplayname);
-		await this.setBlockButton(chatName, chatList, targetDisplayname);
-		this.setVsButton(targetDisplayname, targetUuid);
+		await this.setRemoveFriendButton(chatName, chatList, displayName);
+		await this.setBlockButton(chatName, chatList, displayName);
+		this.setVsButton(displayName, targetUuid || "");
 		this.renderMessages(chatList);
 
 		if (this.renderInterval) {

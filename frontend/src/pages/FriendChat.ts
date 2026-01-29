@@ -72,12 +72,13 @@ export class FriendChat {
 	}
 
 	async openRoom(username: string): Promise<string | null> {
-		const Roomres = await api.post(`/api/chat/private/${username}`);
-		if (!Roomres || Roomres.status !== Status.success) {
-			notify("Room error", "error");
+		const roomResponse = await api.post(`/api/chat/private/${username}`);
+		if (!roomResponse) return null;
+		if (roomResponse.status !== Status.success) {
+			notify(roomResponse.payload.message, "error");
 			return null;
 		}
-		this.currentRoomId = Roomres.payload.roomId;
+		this.currentRoomId = roomResponse.payload.roomId;
 		this.targetUsername = username;
 		this.lastMessage = 0;
 		return this.currentRoomId;
