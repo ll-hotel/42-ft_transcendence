@@ -50,6 +50,7 @@ export class MatchMaking implements AppPage {
 				return;
 			if (leave.status != Status.success)
 				notify("Error : " + leave.payload.message, "error");
+			notify("Left queue", "info");
 			if (history.length > 1)
 				history.back();
 			else
