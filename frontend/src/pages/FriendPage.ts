@@ -46,6 +46,7 @@ export class FriendPage implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement) {
+		this.bindSend();
 		container.appendChild(this.content);
 		await this.chat.connect();
 		await this.loadFriends();
@@ -224,7 +225,6 @@ export class FriendPage implements AppPage {
 		await this.setBlockButton(chatName, chatList, targetDisplayname);
 		this.setVsButton(targetDisplayname, targetUuid);
 		this.renderMessages(chatList);
-		this.bindSend();
 
 		if (this.renderInterval) {
 			clearInterval(this.renderInterval);
