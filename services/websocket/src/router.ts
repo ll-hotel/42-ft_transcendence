@@ -85,7 +85,7 @@ class ClientServices {
 		}
 		let service: WebSocket.WebSocket | null = null;
 		for (const serviceName in this.services) {
-			if (serviceName == json.topic) {
+			if (serviceName == json.service) {
 				service = this.services[serviceName];
 				break;
 			}
@@ -93,7 +93,7 @@ class ClientServices {
 		if (service) {
 			service.send(message.data);
 		} else {
-			const message = { topic: "unavailable", service: json.topic };
+			const message = { topic: "unavailable", service: json.service };
 			socketPool.send(this.uuid, message);
 		}
 	}

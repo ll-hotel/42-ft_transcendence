@@ -4,6 +4,8 @@ import { db } from "./utils/db/database";
 import * as tables from "./utils/db/tables";
 import { authGuard } from "./utils/security/authGuard";
 import { schema, STATUS } from "./utils/http-reply";
+import { create_game } from "./serverside";
+import { Mode } from "./types";
 
 class Match {
 	static setup(app: FastifyInstance) {
@@ -12,7 +14,35 @@ class Match {
 		// app.post("/api/match/:id/end", { preHandler: authGuard }, Match.end);
 		// use case: player invited to play by chat.
 		app.post("/api/game/create", { preHandler: authGuard, schema: schema.body({p1Id: "number", p2Id: "number"}, ["p1Id", "p2Id"])}, Match.create);
+
+		app.post("/api/game/launch", {preHandler: authGuard, schema: schema.body({matchId: "number"}, ["matchId"])}, Match.LaunchGame);
 	}
+	static async LaunchGame(req: FastifyRequest, rep: FastifyReply){
+		const { matchId } = req.body as { matchId: number };
+		const usr = req.user!;
+
+		const [matchExists] = await db.select().from(tables.matches)
+		.where(drizzle.eq(tables.matches.id, matchId));
+		if (!matchExists)
+			return rep.code(STATUS.bad_request).send({ message: "Match not found"});
+		
+		if (matchExists.status !== "ongoing")
+			return rep.code(STATUS.bad_request).send({ message: "Match already started or ended"});
+		
+		let opponentId = matchExists.player1Id;
+		if(matchExists.player1Id === usr.id)
+			opponentId = matchExists.player2Id;
+
+		const [opponent] = await db.select().from(tables.users)
+		.where(drizzle.eq(tables.users.id, opponentId));
+		if (!opponent)
+			return rep.code(STATUS.bad_request).send({ message: "User not found" });
+
+		create_game(matchId, usr.uuid, opponent.uuid, Mode.remote);
+
+		return rep.code(STATUS.success).send({ message: "Game Launched"});
+	}
+
 	static async getCurrent(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 
@@ -58,7 +88,7 @@ class Match {
 		const [p1] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p1Id));
 		if (!p1)
 			return rep.code(STATUS.bad_request).send({ message: "p1 doesn't exists" });
-		const [p2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p1Id));
+		const [p2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, p2Id));
 		if (!p2)
 			return rep.code(STATUS.bad_request).send({ message: "p2 doesn't exists" });
 

@@ -53,6 +53,7 @@ export default class PlayMatch implements AppPage {
 			this.game.deinit();
 			this.game = null;
 		}
+		
 
 		container.innerHTML = "";
 		container.appendChild(this.html);
@@ -63,9 +64,10 @@ export default class PlayMatch implements AppPage {
 		const query = new URLSearchParams(location.search);
 		this.matchId = new Number(query.get("id")).valueOf();
 		const matchResponse = await api.get("/api/game/" + this.matchId);
-		if (!matchResponse || matchResponse.status != 200) {
+		if (!matchResponse || matchResponse.status != Status.success) {
 			return history.back();
 		}
+		await api.post("/api/game/launch", { matchId: this.matchId });
 		const match = matchResponse.payload;
 
 		this.p1_DisplayName!.innerText = match.p1.name;
@@ -88,6 +90,7 @@ export default class PlayMatch implements AppPage {
 			this.onEnded();
 		};
 		this.game.init();
+		
 
 		container.innerHTML = "";
 		container.appendChild(this.html);
