@@ -107,12 +107,12 @@ services:
     env_file: .env
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:12.3
     container_name: grafana
     restart: on-failure
     volumes:
-      - cert:/var/cert:ro
       - grafana-config:/etc/grafana
+      - cert:/var/certs:ro
   
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
@@ -125,16 +125,17 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
-    devices:
-      - /dev/kmsg
   
   prometheus:
-    image: docker.io/prom/prometheus:latest
+    image: docker.io/prom/prometheus:v3.9.0
     container_name: prometheus
     restart: on-failure
+    command:
+      - '--web.config.file=/etc/prometheus/web.yml'
+      - '--config.file=/etc/prometheus/prometheus.yml'
     volumes:
-      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
+      - prometheus-config:/etc/prometheus
+      - cert:/var/certs:ro
   
   # elasticsearch:
   #   image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
@@ -288,10 +289,15 @@ volumes:
       device: ./frontend/static/uploads
       type: none
       o: bind
-  prometheus-data:
   grafana-config:
     driver: local
     driver_opts:
       device: ./config/grafana/
+      type: none
+      o: bind
+  prometheus-config:
+    driver: local
+    driver_opts:
+      device: ./config/prometheus/
       type: none
       o: bind

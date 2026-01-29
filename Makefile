@@ -22,7 +22,8 @@ uploadsDir:
 cert/privatekey.pem cert/certificate.pem:
 	@mkdir -p $(dir $@)
 	@openssl req -newkey rsa:2048 -nodes -keyout cert/privatekey.pem -x509 -days 365 -out cert/certificate.pem \
-		-subj "/CN=internal" -addext "subjectAltName=DNS:localhost" 2>/dev/null
+		-subj "/CN=internal" -addext "subjectAltName=DNS:localhost,DNS:prometheus" 2>/dev/null
+	@chmod 644 cert/*
 	@echo "=> New certs has been generated"
 
 .PHONY: services-cert
