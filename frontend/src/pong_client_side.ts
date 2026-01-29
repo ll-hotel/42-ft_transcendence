@@ -1,5 +1,5 @@
+import { api, Status } from "./api.js";
 import socket, { InputMessage, LocalMessage, Message, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
-import {api, Status} from "./api.js";
 // import {notify} from "./pages/utils/notifs.js";
 import { notify } from "./utils/notifs.js";
 
@@ -12,9 +12,8 @@ type Size = { w: number, h: number };
 //  - les inputs marchent plus si je refresh
 //  - check de la position de la balle et la replacer si jamais
 
-
 const width_server = 500;
-const height_server = width_server * (1/2);
+const height_server = width_server * (1 / 2);
 
 export enum Mode {
 	local = "local",
@@ -110,37 +109,47 @@ export class Game {
 	private tick_rate: number;
 
 	// HTMLElement
-	//private score_viewer_p1: HTMLElement;
-	//private score_viewer_p2: HTMLElement;
-	//private content_window: HTMLDivElement;
+	// private score_viewer_p1: HTMLElement;
+	// private score_viewer_p2: HTMLElement;
+	// private content_window: HTMLDivElement;
 
 	private current_interval_id: number | null = null;
 	private canvas_ratio: Size;
 	private speed_ratio: number;
 	private sendInputs: () => void;
 	running: boolean = false;
-	onScore : (() => void ) | null = null;
-	onEnded : (() => void ) | null = null;
-	private matchId : number;
-	private last_input: {p1_up: boolean, p1_down: boolean, p2_up: boolean, p2_down: boolean};
+	onScore: (() => void) | null = null;
+	onEnded: (() => void) | null = null;
+	private matchId: number;
+	private last_input: { p1_up: boolean, p1_down: boolean, p2_up: boolean, p2_down: boolean };
 
-	constructor(html: HTMLElement, ball_texture: HTMLImageElement, paddle_texture: HTMLImageElement, mode: Mode, matchId: number) {
+	constructor(
+		html: HTMLElement,
+		ball_texture: HTMLImageElement,
+		paddle_texture: HTMLImageElement,
+		mode: Mode,
+		matchId: number,
+	) {
 		this.matchId = matchId;
 		this.canvas = html.querySelector("#match-canvas")! as HTMLCanvasElement;
 		this.context = this.canvas.getContext("2d")!;
 		this.score = { p1: 0, p2: 0 };
-		this.canvas_ratio = { w: this.canvas.width / width_server , h: this.canvas.height / height_server };
+		this.canvas_ratio = { w: this.canvas.width / width_server, h: this.canvas.height / height_server };
 		const paddle_size = { w: this.canvas.width * 0.06, h: this.canvas.width * 0.06 * 1.80 };
-		this.paddle_p1 = new PongPaddle({ x: paddle_size.w / 2 , y: this.canvas.height / 2 }, paddle_texture, paddle_size);
+		this.paddle_p1 = new PongPaddle(
+			{ x: paddle_size.w / 2, y: this.canvas.height / 2 },
+			paddle_texture,
+			paddle_size,
+		);
 		this.paddle_p2 = new PongPaddle(
-			{ x: this.canvas.width - ( paddle_size.w / 2), y: this.canvas.height / 2 },
+			{ x: this.canvas.width - (paddle_size.w / 2), y: this.canvas.height / 2 },
 			paddle_texture,
 			paddle_size,
 		);
 		this.ball = new PongBall(this.canvas, this.context, ball_texture);
 		this.tick_rate = 60;
 		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
-		this.last_input =  {p1_up: false, p1_down: false, p2_up: false, p2_down: false};
+		this.last_input = { p1_up: false, p1_down: false, p2_up: false, p2_down: false };
 		this.speed_ratio = 10 / this.tick_rate;
 		this.mode = mode;
 		if (this.mode == Mode.local) {
@@ -196,8 +205,7 @@ export class Game {
 	}
 
 	ended() {
-		this.canvas.hidden=true;
-		
+		this.canvas.hidden = true;
 	}
 	send_local_input() {
 		let msg: LocalMessage = {
@@ -216,8 +224,8 @@ export class Game {
 		await api.post("/api/game/input", {
 			gameId: this.matchId,
 			p1_up: this.input.get("p1_up"),
-			p1_down: this.input.get("p1_down")}
-		);
+			p1_down: this.input.get("p1_down"),
+		});
 	}
 
 	update_state(msg: StateMessage) {
@@ -237,7 +245,7 @@ export class Game {
 		this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
 		this.score.p1 = msg.score.p1;
 		this.score.p2 = msg.score.p2;
-	}	
+	}
 
 	render() {
 		this.context!.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -319,38 +327,44 @@ export class Game {
 	}
 
 	update(): void {
-		if (this.running == false)
+		if (this.running == false) {
 			return;
+		}
 		if (this.shouldSendInputs()) {
 			this.sendInputs();
 		}
 		this.ball.tick();
-		if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.canvas.height * 0.1) < this.canvas.height)
+		if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.canvas.height * 0.1) < this.canvas.height) {
 			this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
-		if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.canvas.height * 0.1) > 0)
+		}
+		if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.canvas.height * 0.1) > 0) {
 			this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
-		if (this.mode == Mode.local)
-		{
-			if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.canvas.height * 0.1) < this.canvas.height)
+		}
+		if (this.mode == Mode.local) {
+			if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.canvas.height * 0.1) < this.canvas.height) {
 				this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
-			if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.canvas.height * 0.1) > 0)
+			}
+			if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.canvas.height * 0.1) > 0) {
 				this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
+			}
 		}
 		this.render();
 	}
 
 	shouldSendInputs(): boolean {
-
-		if (this.last_input.p1_down !== this.input.get("p1_down"))
+		if (this.last_input.p1_down !== this.input.get("p1_down")) {
 			return this.reset_last_input();
-		if (this.last_input.p1_up !== this.input.get("p1_up"))
+		}
+		if (this.last_input.p1_up !== this.input.get("p1_up")) {
 			return this.reset_last_input();
-		if (this.mode == Mode.local)
-		{
-			if (this.last_input.p2_down !== this.input.get("p2_down"))
+		}
+		if (this.mode == Mode.local) {
+			if (this.last_input.p2_down !== this.input.get("p2_down")) {
 				return this.reset_last_input();
-			if (this.last_input.p2_up !== this.input.get("p2_up"))
+			}
+			if (this.last_input.p2_up !== this.input.get("p2_up")) {
 				return this.reset_last_input();
+			}
 		}
 		return false;
 	}
@@ -358,13 +372,11 @@ export class Game {
 	reset_last_input(): boolean {
 		this.last_input.p1_up = this.input.get("p1_up")!;
 		this.last_input.p1_down = this.input.get("p1_down")!;
-		if (this.mode == Mode.local)
-		{
+		if (this.mode == Mode.local) {
 			this.last_input.p2_up = this.input.get("p2_up")!;
 			this.last_input.p2_down = this.input.get("p2_down")!;
 		}
 		return true;
-
 	}
 }
 
@@ -413,4 +425,3 @@ export class PongBall extends PhysicObject {
 		);
 	}
 }
-
