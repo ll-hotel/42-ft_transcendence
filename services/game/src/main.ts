@@ -4,7 +4,7 @@ import Fastify, { FastifyInstance } from "fastify";
 import fs from "fs";
 import gameMatch from "./game";
 import websocketRoute from "./routes/websocket";
-
+import gameRoute from "./routes/game";
 
 const app: FastifyInstance = Fastify({
 	logger: true,
@@ -18,6 +18,7 @@ app.register(fastifyCookie);
 app.register(fastifyWebsocket);
 app.register(gameMatch);
 app.register(websocketRoute)
+app.register(gameRoute);
 
 app.listen({ port: 8080, host: "0.0.0.0" }, function (err, _address) {
 	if (err) {

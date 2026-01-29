@@ -3,6 +3,69 @@ import socket from "../socket";
 import { db } from "./database";
 import * as tables from "./tables";
 
+export async function startMatch(matchId: number): Promise<boolean> {
+	const [match] = await db.select().from(tables.matches).where(orm.eq(tables.matches.id, matchId));
+	if (!match) {
+		return false;
+	}
+	if (match.status !== "pending") {
+		return false;
+	}
+	await db.update(tables.matches).set({ status: "ongoing" }).where(orm.eq(tables.matches.id, matchId));
+	return true;
+}
+
+export async function endMatch(matchId: number) {
+	// TODO Verif score dans la DB a la fin du match
+
+	const [match] = await db.select().from(tables.matches).where(orm.eq(tables.matches.id, matchId));
+	if (!match) {
+		return false;
+	}
+	if (match.status !== "ongoing") {
+		return false;
+	}
+	let winnerId: number;
+	if (match.scoreP1 > match.scoreP2) {
+		winnerId = match.player1Id;
+	} else {
+		winnerId = match.player2Id;
+	}
+	await db.update(tables.matches).set({
+		status: "ended",
+		winnerId: winnerId,
+		endedAt: Date.now(),
+	}).where(orm.eq(tables.matches.id, matchId));
+	/*const [tm] = await db.select().from(tables.tournamentMatches).where(
+		drizzle.eq(tables.tournamentMatches.matchId, matchId),
+	);*/
+	// if (tm) {
+	// 	await tournamentEndMatch(matchId, winnerId);
+	// }
+	return true;
+}
+
+export async function updateMatchInfo(matchId: number, score_p1: number, score_p2: number) {
+	const [match] = await db.select().from(tables.matches).where(orm.eq(tables.matches.id, matchId));
+	if (!match) {
+		return false;
+	}
+	if (match.status !== "ongoing") {
+		return false;
+	}
+	await db.update(tables.matches).set({
+		scoreP1: score_p1,
+		scoreP2: score_p2,
+	}).where(orm.eq(tables.matches.id, matchId));
+	/*const [tm] = await db.select().from(tables.tournamentMatches).where(
+		drizzle.eq(tables.tournamentMatches.matchId, matchId),
+	);*/
+	// if (tm) {
+	// 	await tournamentEndMatch(matchId, winnerId);
+	// }
+	return true;
+}
+
 export type TournamentPlayer = {
 	id: number,
 	uuid: string,
@@ -29,7 +92,7 @@ export async function addTournamentPlayer(tournamentId: number, user: Tournament
 		userUuid: user.uuid,
 	});
 	const players = await selectTournamentPlayers(tournamentId);
-	const message = { topic: "tournament", type: "join", name: user.displayName };
+	const message = { service: "tournament", topic: "join", name: user.displayName };
 	for (const player of players) {
 		socket.send(player.uuid, message);
 	}
@@ -61,11 +124,28 @@ export async function removeUserFromTournaments(userUUID: string) {
 		if (players.length == 0) {
 			await deleteTournament(tournament.id);
 		}
-		const message = { topic: "tournament", type: "left", name: user.displayName };
+		const message = { service: "tournament", topic: "left", name: user.displayName };
 		for (const player of players) {
 			socket.send(player.uuid, message);
 		}
 	}
+}
+
+export async function removeUserFromQueue(userUUID : string)
+{
+	const [user] = await db.select().from(tables.users).where(orm.eq(tables.users.uuid, userUUID));
+	if(!user)
+		return;
+
+	const [inQueuUser] = await db.select()
+		.from(tables.matchmakingQueue,)
+		.where(orm.eq(tables.matchmakingQueue.userId, user.id));
+	
+	if (!inQueuUser)
+		return;
+
+	await db.delete(tables.matchmakingQueue)
+		.where(orm.eq(tables.matchmakingQueue.userId, user.id));
 }
 
 export async function selectTournamentPlayers(id: number) {
@@ -202,7 +282,7 @@ export async function createMatch(idUser1: number, idUser2: number) {
 	const [match] = await db.insert(tables.matches).values({
 		player1Id: idUser1,
 		player2Id: idUser2,
-		status: "ongoing",
+		status: "pending",
 	}).returning();
 	return match;
 }

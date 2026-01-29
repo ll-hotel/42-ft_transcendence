@@ -1,3 +1,31 @@
-<div>
-  <p>Local</p>
+<div class="flex w-full h-screen items-center justify-center">
+	<div id="match-widget" class="w-4/5 h-full flex justify-center align-middle pt-26 sm:pt-18">
+		<div id="all-match" class="h-full w-fit grid grid-rows-[10%_80%_10%] rounded-md">
+			<div id="match-header" class="h-full w-full grid grid-cols-2">
+				<div id ="player1" class="h-full  flex items-center justify-around bg-neutral-600 rounded-tl-md py-3" >
+					<img id="player1-picture" src="default_pp.png"
+						class="block justify-content-center items-center rounded-[100%] overflow-hidden md:h-12 h-10 w-auto bg-transparent"/>
+					<p id="player1-name" class="font-bold  text-md md:text-lg text-white">Player 1</p>
+					<div id="player1-score" class="text-lg md:text-xl text-white">0</div>
+				</div>
+				<div id ="player2" class="h-full flex flex-row-reverse items-center justify-around bg-neutral-600 rounded-tr-md py-3" >
+						<img id="player2-picture" src="default_pp.png"
+							class="justify-content-center items-center rounded-[100%] overflow-hidden md:h-12 h-10 bg-transparent"/>
+					<p id="player2-name" class="font-bold text-md md:text-lg text-white">Player 1</p>
+					<div id="player2-score" class="text-lg md:text-xl text-white">0</div>
+				</div>
+			</div>
+			<div id="match-content" class="flex min-w-fit items-center justify-center bg-neutral-600 rounded-b-md">
+				<canvas id="match-canvas" class="max-h-full max-w-full"></canvas>
+			</div>
+			<div id="match-footer" class="w-full grid grid-cols-2">
+				<p id="p1-inputs">
+					w = up s = down
+				</p>
+				<p id="p2-inputs">
+					↑ = up ↓ = down
+				</p>
+			</div>
+		</div>
+	</div>
 </div>
