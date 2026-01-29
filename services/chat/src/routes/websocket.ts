@@ -1,11 +1,11 @@
 import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import * as WebSocket from "ws";
+import { chat } from "../chat";
 import { db } from "../utils/db/database";
-import * as dbM from "../utils/db/methods";
 import * as tables from "../utils/db/tables";
 import { schema, STATUS } from "../utils/http-reply";
-import socket from "../utils/socket";
+import socketPool from "../utils/socket";
 
 export default function(fastify: FastifyInstance): void {
 	fastify.get("/websocket", {
@@ -18,15 +18,8 @@ export default function(fastify: FastifyInstance): void {
 function route(ws: WebSocket.WebSocket, req: FastifyRequest): void {
 	ws.on("error", (error) => console.log(error));
 
-	socket.connect(req.user!.uuid, ws);
-	socket.addListener(req.user!.uuid, "disconnect", () => {
-		setTimeout(() => {
-			if (socket.isOnline(req.user!.uuid)) {
-				return;
-			}
-			dbM.removeUserFromTournaments(req.user!.uuid);
-		}, 1000);
-	});
+	socketPool.connect(req.user!.uuid, ws);
+	chat.newWebsocketConnection(ws, req);
 }
 
 async function userByUUID(req: FastifyRequest, rep: FastifyReply) {
