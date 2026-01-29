@@ -5,21 +5,15 @@ import * as WebSocket from "ws";
 import { db } from "./utils/db/database";
 import * as dbM from "./utils/db/methods";
 import * as tables from "./utils/db/tables";
-import socketPool from "./utils/socket";
 
 export default function(user: tables.User, ws: WebSocket.WebSocket) {
-	const isNewClient = socketPool.clients.get(user.uuid) === undefined;
-
-	socketPool.connect(user.uuid, ws);
-
-	db.update(tables.users).set({ isOnline: 1 }).where(orm.eq(tables.users.id, user.id)).prepare().execute();
-
-	if (isNewClient === false) {
+	if (services.has(user.uuid)) {
 		return;
 	}
-	socketPool.addListener(user.uuid, "disconnect", () => {
+	db.update(tables.users).set({ isOnline: 1 }).where(orm.eq(tables.users.id, user.id)).prepare().execute();
+	ws.on("close", () => {
 		setTimeout(() => {
-			if (socketPool.isOnline(user.uuid)) {
+			if (services.has(user.uuid)) {
 				return;
 			}
 			dbM.setUserOffline(user.uuid);
@@ -70,15 +64,14 @@ class ClientServices {
 			this.services[name] = null;
 			this.connectService(name, agent);
 		});
-		sock.on("message", (stream) => {
-			socketPool.sendRaw(this.uuid, stream.toString());
-		});
+		sock.on("message", (stream) => this.conn.send(stream.toString()));
 		this.services[name] = sock;
 	}
 	dispatchMessage(data: string): void {
 		let json;
 		try {
 			json = JSON.parse(data);
+			console.log(`[${this.uuid}] incoming:`, json);
 		} catch (error) {
 			console.log(`[${this.uuid}] error: ${error}`);
 			return;
