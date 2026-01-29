@@ -26,7 +26,7 @@ export class MatchMaking implements AppPage {
 		socket.addListener("matchmaking:found", (message) => {
 			socket.removeListener("matchmaking:found");
 			this.inQueue = false;
-	
+			this.queueButton.hidden = true;
 			const matchMsg = message as { match: number, opponent: string };
 			notify("Match found! Playing against " + matchMsg.opponent, "success");
 			setTimeout( () => {
