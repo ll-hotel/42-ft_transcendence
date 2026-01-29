@@ -11,22 +11,14 @@ X Rendre visible l'ami séléctionner
 X Link l'input text, et le button send
 
 */
-import AppPage from "./AppPage.js";
 import { api, Status } from "../api.js";
-import { gotoPage, gotoUserPage } from "../PageLoader.js";
-import { FriendChat } from "./FriendChat.js";
-import { notify } from "../utils/notifs.js";
+import { gotoUserPage } from "../PageLoader.js";
 import socket from "../socket.js";
+import { notify } from "../utils/notifs.js";
+import AppPage from "./AppPage.js";
+import { FriendChat } from "./FriendChat.js";
 
-type Message = {
-	source: string;
-	target: string;
-	content: string
-};
-
-
-export class FriendPage implements AppPage
-{
+export class FriendPage implements AppPage {
 	content: HTMLElement;
 	listContainer: HTMLElement;
 	chatContainer: HTMLElement;
@@ -34,38 +26,34 @@ export class FriendPage implements AppPage
 	renderInterval: number | null = null;
 	chat: FriendChat;
 
-	constructor(content: HTMLElement)
-	{
-		this.content= content;
+	constructor(content: HTMLElement) {
+		this.content = content;
 		this.listContainer = content.querySelector("#friend-list-content")!;
 		this.chatContainer = content.querySelector("#friend-chat")!;
 		this.selectedCard = null;
 		this.chat = new FriendChat();
-		if (!this.listContainer || !this.chatContainer)
-					console.log("Error in html");
+		if (!this.listContainer || !this.chatContainer) {
+			console.log("Error in html");
+		}
 	}
 
-	static async new(content:HTMLElement): Promise<AppPage | null>
-	{
-		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#friend-chat"))
-		{
+	static async new(content: HTMLElement): Promise<AppPage | null> {
+		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#friend-chat")) {
 			console.log("Missing Friend list or Friend chat in html");
 			return null;
 		}
 		return new FriendPage(content);
 	}
 
-	async loadInto(container: HTMLElement)
-	{
+	async loadInto(container: HTMLElement) {
+		this.bindSend();
 		container.appendChild(this.content);
-		await this.chat.connect(`/api/chat/connect`);
+		await this.chat.connect();
 		await this.loadFriends();
 	}
 
-	unload(): void
-	{
-		if (this.renderInterval)
-		{
+	unload(): void {
+		if (this.renderInterval) {
 			clearInterval(this.renderInterval);
 			this.renderInterval = null;
 		}
@@ -75,11 +63,12 @@ export class FriendPage implements AppPage
 		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content");
 		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name");
 		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block");
-		const removeBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-remove-friend");
+		// const removeBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-remove-friend");
 		const vsBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-1vs1");
-		if (!chatList || !chatName || !blockBtn || !vsBtn)
+		if (!chatList || !chatName || !blockBtn || !vsBtn) {
 			return;
-		chatList.innerHTML= "";
+		}
+		chatList.innerHTML = "";
 		chatName.textContent = chatName.dataset.default!;
 		chatName.classList.remove("hover:text-[#04809F]");
 		chatName.classList.remove("cursor-pointer");
@@ -89,41 +78,35 @@ export class FriendPage implements AppPage
 		vsBtn.disabled = true;
 	}
 
-
-	async loadFriends()
-	{
+	async loadFriends() {
 		this.listContainer.innerHTML = "<div>Finding friends...</div>";
 
 		const friendRes = await api.get("/api/friend");
-		const requestRes = await api.get("/api/friend/requests")
+		const requestRes = await api.get("/api/friend/requests");
 
-		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success ) {
+		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success) {
 			this.listContainer.innerHTML = "<div>Error while charging...</div>";
 			return;
 		}
 
-		const friends = friendRes.payload.friends
-		const requests = requestRes.payload.requests
+		const friends = friendRes.payload.friends;
+		const requests = requestRes.payload.requests;
 		this.listContainer.innerHTML = "";
 
-		if ((!friends || friends.length === 0) && (!requests || requests.length === 0))
-		{
+		if ((!friends || friends.length === 0) && (!requests || requests.length === 0)) {
 			this.listContainer.innerHTML = `<div class="no-friend" >Go get some friends dude :)</div>`;
 			return;
 		}
 
 		requests.forEach((request: any) => {
-			const card:HTMLElement = this.createRequestCard(request)
+			const card: HTMLElement = this.createRequestCard(request);
 			this.listContainer.appendChild(card);
-		}
-	)
+		});
 
 		friends.forEach((friend: any) => {
-			const card :HTMLElement = FriendPage.createFriendCard(friend);
+			const card: HTMLElement = FriendPage.createFriendCard(friend);
 			card.onclick = async () => {
-
-				if(this.selectedCard)
-				{
+				if (this.selectedCard) {
 					this.selectedCard.classList.remove("friend-card-select");
 					this.selectedCard.classList.add("friend-card-unselect");
 				}
@@ -133,15 +116,14 @@ export class FriendPage implements AppPage
 
 				this.selectedCard = card;
 				this.loadChat(friend.displayName, friend.username, friend.uuid);
-			}
+			};
 			this.listContainer.appendChild(card);
 		});
 	}
 
 	// GESTION CARTES FRIENDS
 
-	static createFriendCard(friend: any): HTMLElement
-	{
+	static createFriendCard(friend: any): HTMLElement {
 		const card = document.createElement("div");
 		card.className = "friend-card";
 
@@ -159,12 +141,10 @@ export class FriendPage implements AppPage
 				</div>
 		`;
 
-	return card;
+		return card;
 	}
 
-
-	createRequestCard(request: any): HTMLElement
-	{
+	createRequestCard(request: any): HTMLElement {
 		const card = document.createElement("div");
 		card.className = "request-card";
 
@@ -177,63 +157,60 @@ export class FriendPage implements AppPage
 				</div>
 		`;
 
-		const requestsBtn = card.querySelector(".request-buttons")
+		const requestsBtn = card.querySelector(".request-buttons");
 
-		const accept = document.createElement("button")
+		const accept = document.createElement("button");
 		accept.className = "request-accept";
 		accept.textContent = "Yes";
 
 		accept.onclick = async () => {
-			const acceptRes = await api.patch("/api/friend/accept", {displayName : request.requestFrom});
+			const acceptRes = await api.patch("/api/friend/accept", { displayName: request.requestFrom });
 
-			if (acceptRes && acceptRes.status == Status.success)
-			{
+			if (acceptRes && acceptRes.status == Status.success) {
 				notify(`You are now friend with ${request.requestFrom}`, "success");
 				card.remove();
 				this.loadFriends();
-			}
-			else
+			} else {
 				console.error("AcceptRes didn't work");
-		}
+			}
+		};
 
-		const decline = document.createElement("button")
+		const decline = document.createElement("button");
 		decline.className = "request-decline";
 		decline.textContent = "No";
 
 		decline.onclick = async () => {
-			const declineRes = await api.patch("/api/friend/decline", {displayName : request.requestFrom});
+			const declineRes = await api.patch("/api/friend/decline", { displayName: request.requestFrom });
 
-			if (declineRes && declineRes.status == Status.success)
-			{
+			if (declineRes && declineRes.status == Status.success) {
 				notify(`You declined friend request from ${request.requestFrom}`, "info");
 				card.remove();
-			}
-			else
+			} else {
 				console.error("declineRes didn't work");
-		}
+			}
+		};
 
 		requestsBtn?.appendChild(accept);
 		requestsBtn?.appendChild(decline);
-	return card;
+		return card;
 	}
 
-	//Gestion Chargement du chat
+	// Gestion Chargement du chat
 
-	async loadChat(targetDisplayname : string, targetUsername: string, targetUuid : string)
-	{
-		if (targetUsername == this.chat.targetUsername)
+	async loadChat(targetDisplayname: string, targetUsername: string, targetUuid: string) {
+		if (targetUsername == this.chat.targetUsername) {
 			return;
+		}
 
 		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name")!;
 		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
 
-		if (!chatName || !chatList)
-		{
+		if (!chatName || !chatList) {
 			console.log("Missing chatName or chatList in html");
 			return;
 		}
 
-		chatList.innerHTML= "";
+		chatList.innerHTML = "";
 		this.chat.cleanRoomState();
 		await this.chat.openRoom(targetUsername);
 		await this.chat.loadHistory();
@@ -243,29 +220,30 @@ export class FriendPage implements AppPage
 		chatName.classList.add("cursor-pointer");
 		chatName.onclick = async () => {
 			await gotoUserPage(targetDisplayname);
-		}
+		};
 		await this.setRemoveFriendButton(chatName, chatList, targetDisplayname);
 		await this.setBlockButton(chatName, chatList, targetDisplayname);
-		await this.setVsButton(targetDisplayname, targetUuid);
+		this.setVsButton(targetDisplayname, targetUuid);
 		this.renderMessages(chatList);
-		this.bindSend();
 
-		if (this.renderInterval)
+		if (this.renderInterval) {
 			clearInterval(this.renderInterval);
+		}
 
-	this.renderInterval = window.setInterval(() => {
-	this.renderMessages(chatList);
-	}, 	300);
+		this.renderInterval = window.setInterval(() => {
+			this.renderMessages(chatList);
+		}, 300);
 	}
 
-	async setBlockButton(chatName : HTMLSpanElement, chatList : HTMLDivElement, targetDisplayname : string) {
+	async setBlockButton(chatName: HTMLSpanElement, chatList: HTMLDivElement, targetDisplayname: string) {
 		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block")!;
 
 		blockBtn.disabled = !this.selectedCard;
 		blockBtn.onclick = async () => {
 			const confirmBlock = confirm(`Do you want to block ${targetDisplayname} ?`);
-			if (!confirmBlock)
+			if (!confirmBlock) {
 				return;
+			}
 
 			const res = await api.post("/api/friend/block", { displayName: targetDisplayname });
 			if (res && res.status === Status.success) {
@@ -281,21 +259,21 @@ export class FriendPage implements AppPage
 				this.selectedCard = null;
 				this.chat.cleanRoomState();
 				blockBtn.disabled = true;
-			}
-			else {
+			} else {
 				notify(res?.payload.message, "error");
 			}
 		};
 	}
 
-	async setRemoveFriendButton(chatName : HTMLSpanElement, chatList : HTMLDivElement, targetDisplayname : string) {
+	async setRemoveFriendButton(chatName: HTMLSpanElement, chatList: HTMLDivElement, targetDisplayname: string) {
 		const removeBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-remove-friend")!;
 
 		removeBtn.disabled = !this.selectedCard;
 		removeBtn.onclick = async () => {
 			const confirmBlock = confirm(`Do you want to remove ${targetDisplayname} from friend's list ?`);
-			if (!confirmBlock)
+			if (!confirmBlock) {
 				return;
+			}
 
 			const res = await api.delete("/api/friend/remove", { displayName: targetDisplayname });
 			if (res && res.status === Status.success) {
@@ -311,54 +289,53 @@ export class FriendPage implements AppPage
 				this.selectedCard = null;
 				this.chat.cleanRoomState();
 				removeBtn.disabled = true;
-			}
-			else {
+			} else {
 				notify("Error while deleting this friend.", "error");
 			}
 		};
 	}
 
-	setVsButton(targetDisplayname : string, targetUuid : string)
-	{
+	setVsButton(targetDisplayname: string, targetUuid: string) {
 		const vsBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-1vs1")!;
 
 		vsBtn.disabled = !this.selectedCard;
-		vsBtn.onclick = async () =>{
-			const confirmVs = confirm(`Do you want to play with ${targetDisplayname} ?`)
-			if (!confirmVs)
+		vsBtn.onclick = async () => {
+			const confirmVs = confirm(`Do you want to play with ${targetDisplayname} ?`);
+			if (!confirmVs) {
 				return;
+			}
 
 			const me = await api.get("/api/user/me");
-			if (!me || !me.payload)
+			if (!me || !me.payload) {
 				return;
-			if (me.status !== Status.success)
+			}
+			if (me.status !== Status.success) {
 				return notify("Error when getting user info: " + me.payload.message, "error");
+			}
 			socket.send({
 				source: me.payload.uuid,
-				service:"chat",
+				service: "chat",
 				topic: "vs:invite",
-				content : targetUuid,
+				content: targetUuid,
 			});
-		}
+		};
 	}
 
-
-	bindSend()
-	{
+	bindSend(): void {
 		const form = this.chatContainer.querySelector<HTMLFormElement>("#chat-footer");
 		const input = this.chatContainer.querySelector<HTMLInputElement>("#chat-input");
 
-		if (!form || !input)
-		{
-			console.log("Missing chat input or form in html");
+		if (!form || !input) {
+			notify("Missing chat input", "error");
 			return;
 		}
 		form.onsubmit = (e) => {
-			e.preventDefault()
-			if (!input.value || !this.chat.currentRoomId )
-				return ;
-			this.chat.send(input.value);
-			input.value = "";
+			e.preventDefault();
+			if (input.value && this.chat.currentRoomId) {
+				this.chat.send(input.value);
+				input.value = "";
+			}
+			return false;
 		};
 	}
 
@@ -367,19 +344,19 @@ export class FriendPage implements AppPage
 
 		const newMsgs = msgs.slice(this.chat.lastMessage);
 
-		if (!newMsgs.length)
+		if (!newMsgs.length) {
 			return;
+		}
 
-		for (let msg of newMsgs)
-		{
+		for (let msg of newMsgs) {
 			const divMsg = document.createElement("div");
-			msg.source === `@${this.chat.username}` ?
-				divMsg.classList.add("msg-me") : divMsg.classList.add("msg-target") ;
+			msg.source === `@${this.chat.username}`
+				? divMsg.classList.add("msg-me")
+				: divMsg.classList.add("msg-target");
 			divMsg.textContent = msg.content;
 			chatList.appendChild(divMsg);
 		}
-		this.chat.lastMessage = msgs.length
+		this.chat.lastMessage = msgs.length;
 		chatList.scrollTop = chatList.scrollHeight;
 	}
-
 }
