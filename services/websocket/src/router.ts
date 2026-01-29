@@ -22,10 +22,12 @@ export default function(user: tables.User, ws: WebSocket.WebSocket) {
 	services.set(user.uuid, new ClientServices(user.uuid, ws));
 }
 
-const serviceList = ["tournament", "chat", "queue", "game"].map(name => {
+const agent = new https.Agent({ ca: fs.readFileSync(`/run/secrets/certificate.pem`), rejectUnauthorized: false });
+
+const serviceList = ["auth", "tournament", "chat", "queue", "game"].map(name => {
 	return {
 		name: name,
-		agent: new https.Agent({ ca: fs.readFileSync(`/run/cert/${name}/certificate.pem`), rejectUnauthorized: false }),
+		agent
 	};
 });
 
