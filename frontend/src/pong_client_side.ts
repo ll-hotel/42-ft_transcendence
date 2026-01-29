@@ -1,7 +1,5 @@
-import { api, Status } from "./api.js";
-import socket, { InputMessage, LocalMessage, Message, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
-// import {notify} from "./pages/utils/notifs.js";
-import { notify } from "./utils/notifs.js";
+import { api } from "./api.js";
+import socket, { LocalMessage, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
 
 type Position = { x: number, y: number };
 type Score = { p1: number, p2: number };
