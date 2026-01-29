@@ -53,7 +53,6 @@ export default class PlayMatch implements AppPage {
 			this.game.deinit();
 			this.game = null;
 		}
-		
 
 		container.innerHTML = "";
 		container.appendChild(this.html);
@@ -67,7 +66,11 @@ export default class PlayMatch implements AppPage {
 		if (!matchResponse || matchResponse.status != Status.success) {
 			return history.back();
 		}
-		await api.post("/api/game/launch", { matchId: this.matchId });
+		const res = await api.post("/api/game/launch", { matchId: this.matchId });
+		if (res?.status !== Status.success) {
+			gotoPage("home");
+		}
+
 		const match = matchResponse.payload;
 
 		this.p1_DisplayName!.innerText = match.p1.name;
@@ -90,10 +93,6 @@ export default class PlayMatch implements AppPage {
 			this.onEnded();
 		};
 		this.game.init();
-		
-
-		container.innerHTML = "";
-		container.appendChild(this.html);
 	}
 
 	unload(): void {
@@ -112,7 +111,7 @@ export default class PlayMatch implements AppPage {
 	async onEnded() {
 		this.matchCanvas!.hidden = true;
 		const result = document.createElement("div");
-		const me = await api.get("/api/me");
+		const me = await api.get("/api/user/me");
 
 		if (!me || me.status != Status.success)
 			return;
@@ -123,24 +122,24 @@ export default class PlayMatch implements AppPage {
 		{
 			if (this.game!.score.p1 > this.game!.score.p2)
 			{
-				result.innerText =`You win in front of ${this.p2_DisplayName!.innerText}! Nice !`;
+				result.innerText =`You won vs ${this.p2_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			}
 			else
 			{
-				result.innerText =`You lose in front of ${this.p2_DisplayName!.innerText}! Boo !`;
+				result.innerText =`You lost vs ${this.p2_DisplayName!.innerText}! Boo !`;
 				result.classList.add("loose");
 			}
 		}
 		else {
 			if (this.game!.score.p1 < this.game!.score.p2)
 			{
-				result.innerText =`You win in front of ${this.p1_DisplayName!.innerText}! Nice !`;
+				result.innerText =`You won vs ${this.p1_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			}
 			else
 			{
-				result.innerText =`You lose in front of ${this.p1_DisplayName!.innerText}! Boo !`;
+				result.innerText =`You lost vs ${this.p1_DisplayName!.innerText}! Boo !`;
 				result.classList.add("loose");
 			}
 		}

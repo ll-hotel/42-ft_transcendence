@@ -137,7 +137,7 @@ export default class PlayLocal implements AppPage {
 	async onEnded() {
 		this.matchCanvas!.hidden = true;
 		const result = document.createElement("div");
-		const me = await api.get("/api/me");
+		const me = await api.get("/api/user/me");
 
 		if (!me || me.status != Status.success)
 			return;
@@ -148,24 +148,24 @@ export default class PlayLocal implements AppPage {
 		{
 			if (this.game!.score.p1 > this.game!.score.p2)
 			{
-				result.innerText =`You win in front of ${this.p2_DisplayName!.innerText}! Nice !`;
+				result.innerText =`You won vs ${this.p2_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			}
 			else
 			{
-				result.innerText =`You lose in front of ${this.p2_DisplayName!.innerText}! Boo !`;
+				result.innerText =`You won vs ${this.p2_DisplayName!.innerText}! Boo !`;
 				result.classList.add("loose");
 			}
 		}
 		else {
 			if (this.game!.score.p1 < this.game!.score.p2)
 			{
-				result.innerText =`You win in front of ${this.p1_DisplayName!.innerText}! Nice !`;
+				result.innerText =`You won vs ${this.p1_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			}
 			else
 			{
-				result.innerText =`You lose in front of ${this.p1_DisplayName!.innerText}! Boo !`;
+				result.innerText =`You lost vs ${this.p1_DisplayName!.innerText}! Boo !`;
 				result.classList.add("loose");
 			}
 		}
