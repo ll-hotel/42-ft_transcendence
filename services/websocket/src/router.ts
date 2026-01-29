@@ -10,13 +10,13 @@ export default function(user: tables.User, ws: WebSocket.WebSocket) {
 	if (services.has(user.uuid)) {
 		return;
 	}
-	db.update(tables.users).set({ isOnline: 1 }).where(orm.eq(tables.users.id, user.id)).prepare().execute();
+	db.update(tables.users).set({ isOnline: 1 }).where(orm.eq(tables.users.id, user.id)).prepare().execute().sync();
 	ws.on("close", () => {
-		setTimeout(() => {
+		setTimeout(async () => {
 			if (services.has(user.uuid)) {
 				return;
 			}
-			dbM.setUserOffline(user.uuid);
+			await dbM.setUserOffline(user.uuid);
 		}, 1000);
 	});
 	services.set(user.uuid, new ClientServices(user.uuid, ws));
