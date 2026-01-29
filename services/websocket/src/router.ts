@@ -25,7 +25,7 @@ export default function(user: tables.User, ws: WebSocket.WebSocket) {
 			dbM.setUserOffline(user.uuid);
 		}, 1000);
 	});
-	services.set(user.uuid, new ClientServices(user.uuid));
+	services.set(user.uuid, new ClientServices(user.uuid, ws));
 }
 
 const serviceList = ["tournament", "chat", "queue", "game"].map(name => {
@@ -37,21 +37,19 @@ const serviceList = ["tournament", "chat", "queue", "game"].map(name => {
 
 class ClientServices {
 	uuid: string;
+	conn: WebSocket.WebSocket;
 	services: { [key: string]: WebSocket.WebSocket | null } = {};
 
-	constructor(uuid: string) {
+	constructor(uuid: string, conn: WebSocket.WebSocket) {
 		this.uuid = uuid;
+		this.conn = conn;
 		this.connectServices();
 	}
 
 	connectServices(): void {
-		socketPool.addListener(this.uuid, "message", (json) => this.dispatchMessage(json));
-		socketPool.addListener(this.uuid, "disconnect", () => {
-			for (const name in this.services) {
-				this.services[name]?.close();
-			}
-			services.delete(this.uuid);
-		});
+		this.conn.on("message", (stream) => this.dispatchMessage(stream.toString()));
+		this.conn.on("close", () => this.disconnect());
+		this.conn.on("error", () => this.disconnect());
 		for (const service of serviceList) {
 			this.connectService(service.name, service.agent);
 		}
@@ -63,6 +61,7 @@ class ClientServices {
 		} catch (error) {
 			return console.log(error);
 		}
+		sock.on("open", () => console.log(`[${this.uuid}] ${name} connected`));
 		sock.on("error", (error) => {
 			console.log(error);
 		});
@@ -71,16 +70,17 @@ class ClientServices {
 			this.services[name] = null;
 			this.connectService(name, agent);
 		});
-		sock.on("message", (data) => {
-			socketPool.sendRaw(this.uuid, data.toString());
+		sock.on("message", (stream) => {
+			socketPool.sendRaw(this.uuid, stream.toString());
 		});
 		this.services[name] = sock;
 	}
-	dispatchMessage(message: MessageEvent): void {
+	dispatchMessage(data: string): void {
 		let json;
 		try {
-			json = JSON.parse(message.data);
-		} catch {
+			json = JSON.parse(data);
+		} catch (error) {
+			console.log(`[${this.uuid}] error: ${error}`);
 			return;
 		}
 		let service: WebSocket.WebSocket | null = null;
@@ -91,11 +91,20 @@ class ClientServices {
 			}
 		}
 		if (service) {
-			service.send(message.data);
+			service.send(data);
 		} else {
 			const message = { topic: "unavailable", service: json.service };
 			socketPool.send(this.uuid, message);
 		}
+	}
+	disconnect(): void {
+		for (const name in this.services) {
+			this.services[name]?.close();
+		}
+		if (this.conn.readyState == this.conn.OPEN) {
+			this.conn.close();
+		}
+		services.delete(this.uuid);
 	}
 }
 

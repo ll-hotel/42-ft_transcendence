@@ -1,16 +1,24 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import * as Ws from "ws";
-import Chat from "./chat";
+import { chat } from "./chat";
 import { getUserIdByUsername } from "./utils/db/methods";
 import { STATUS } from "./utils/http-reply";
 import { authGuard } from "./utils/security/authGuard";
 
 export function chatRoute(fastify: FastifyInstance) {
-	fastify.get(
+	fastify.get("/api/chat/ping", { preHandler: authGuard }, (_req, rep) => {
+		rep.code(STATUS.success).send({ message: "pong" });
+	});
+
+	fastify.post(
 		"/api/chat/connect",
-		{ websocket: true, preHandler: authGuard },
-		(ws: Ws.WebSocket, req: FastifyRequest) => {
-			chat.newWebsocketConnection(ws, req);
+		{ preHandler: authGuard },
+		(req, rep) => {
+			const user = req.user!;
+			if (chat.users.has("@" + user.username)) {
+				rep.code(STATUS.bad_request).send({ message: "Already connected" });
+			} else {
+				rep.code(STATUS.success).send({});
+			}
 		},
 	);
 
@@ -68,5 +76,3 @@ export function chatRoute(fastify: FastifyInstance) {
 		},
 	);
 }
-
-const chat = new Chat.Instance();
