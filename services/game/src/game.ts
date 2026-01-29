@@ -25,10 +25,16 @@ class Match {
 		.where(drizzle.eq(tables.matches.id, matchId));
 		if (!matchExists)
 			return rep.code(STATUS.bad_request).send({ message: "Match not found"});
-		
-		if (matchExists.status !== "ongoing")
+
+		const [isTmMatch] = await db.select().from(tables.tournamentMatches)
+		.where(drizzle.eq(tables.tournamentMatches.matchId, matchId));
+
+		if (matchExists.status !== "ongoing" && !isTmMatch)
 			return rep.code(STATUS.bad_request).send({ message: "Match already started or ended"});
 		
+		if (matchExists.status === "ended")
+			return rep.code(STATUS.bad_request).send({ message: "Match already ended" });
+
 		let opponentId = matchExists.player1Id;
 		if(matchExists.player1Id === usr.id)
 			opponentId = matchExists.player2Id;
