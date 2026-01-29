@@ -64,7 +64,7 @@ class ClientServices {
 			this.services[name] = null;
 			this.connectService(name, agent);
 		});
-		sock.on("message", (stream) => this.conn.send(stream.toString()));
+		sock.on("message", (stream) => safeSend(this.conn, stream.toString()));
 		this.services[name] = sock;
 	}
 	dispatchMessage(data: string): void {
@@ -84,10 +84,10 @@ class ClientServices {
 			}
 		}
 		if (service) {
-			service.send(data);
+			safeSend(service, data);
 		} else {
 			const message = { topic: "unavailable", service: json.service };
-			socketPool.send(this.uuid, message);
+			safeSend(this.conn, JSON.stringify(message));
 		}
 	}
 	disconnect(): void {
@@ -98,6 +98,14 @@ class ClientServices {
 			this.conn.close();
 		}
 		services.delete(this.uuid);
+	}
+}
+
+function safeSend(conn: WebSocket.WebSocket, data: string): void {
+	if (conn.readyState == conn.OPEN) {
+		conn.send(data, (err) => {
+			if (err) console.log(err);
+		});
 	}
 }
 
