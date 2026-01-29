@@ -351,10 +351,12 @@ export class FriendPage implements AppPage {
 		}
 		form.onsubmit = (e) => {
 			e.preventDefault();
-			if (input.value && this.chat.currentRoomId) {
-				this.chat.send(input.value);
-				input.value = "";
-			}
+			this.chat.connect().then((connected) => {
+				if (connected && input.value && this.chat.currentRoomId) {
+					this.chat.send(input.value);
+					input.value = "";
+				}
+			});
 			return false;
 		};
 	}

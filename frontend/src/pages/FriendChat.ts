@@ -15,6 +15,7 @@ export class FriendChat {
 	targetUsername: string = "";
 	currentRoomId: string | null = null;
 	lastMessage = 0;
+	setListeners: boolean = false;
 
 	async connect(): Promise<boolean> {
 		const ping = await api.get("/api/chat/ping");
@@ -33,11 +34,14 @@ export class FriendChat {
 				this.disconnect();
 			}
 			this.ws = socket.conn!;
-			socket.addListener("chat", (msg) => {
-				this.messages.push(msg as unknown as Message);
-			});
-			this.ws.addEventListener("close", () => this.disconnect());
-			this.ws.addEventListener("error", () => this.disconnect());
+			if (!this.setListeners) {
+				this.setListeners = true;
+				socket.addListener("chat", (msg) => {
+					this.messages.push(msg as unknown as Message);
+				});
+				this.ws.addEventListener("close", () => this.disconnect());
+				this.ws.addEventListener("error", () => this.disconnect());
+			}
 			resolve(true);
 		});
 		this.username = "Unknown";
@@ -50,11 +54,12 @@ export class FriendChat {
 		return true;
 	}
 
-	send(msg: string): void {
-		if (!this.ws || !this.currentRoomId) {
-			return;
+	async send(msg: string): Promise<void> {
+		if (!this.currentRoomId) return;
+		if (!this.ws) {
+			await this.connect();
 		}
-		this.ws.send(JSON.stringify({ service: "chat", target: this.currentRoomId, content: msg }));
+		this.ws?.send(JSON.stringify({ service: "chat", target: this.currentRoomId, content: msg }));
 	}
 
 	reset(): void {
@@ -69,6 +74,7 @@ export class FriendChat {
 		this.currentRoomId = null;
 		this.lastMessage = 0;
 		socket.removeListener("chat");
+		this.setListeners = false;
 	}
 
 	async openRoom(username: string): Promise<string | null> {
