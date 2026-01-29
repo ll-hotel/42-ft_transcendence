@@ -15,24 +15,18 @@ export class FriendChat {
 	targetUsername: string = "";
 	currentRoomId: string | null = null;
 	lastMessage = 0;
-	isActive = false;
 
-	async connect(): Promise<WebSocket | null> {
-		this.isActive = true;
-		if (this.ws) {
-			return this.ws;
-		}
-		const me = await api.get("/api/user/me");
-		if (!me || !me.payload || me.status !== Status.success) {
+	async connect(): Promise<boolean> {
+		const ping = await api.get("/api/chat/ping");
+		if (!ping || !ping.payload || ping.status !== Status.success) {
 			notify("API error", "error");
-			return null;
+			return false;
 		}
-		this.username = me.payload.username;
-		return new Promise<WebSocket | null>(async (resolve) => {
+		await new Promise<boolean>(async (resolve) => {
 			const ping = await api.get("/api/chat/ping");
 			if (!ping || !ping.payload || ping.status !== Status.success) {
 				notify("API error", "error");
-				return null;
+				return resolve(false);
 			}
 			const connected = await socket.connect();
 			if (!connected) {
@@ -44,8 +38,16 @@ export class FriendChat {
 			});
 			this.ws.addEventListener("close", () => this.disconnect());
 			this.ws.addEventListener("error", () => this.disconnect());
-			resolve(this.ws);
+			resolve(true);
 		});
+		this.username = "Unknown";
+		const me = await api.get("/api/user/me");
+		if (!me || !me.payload || me.status !== Status.success) {
+			notify("API error", "error");
+		} else {
+			this.username = me.payload.username;
+		}
+		return true;
 	}
 
 	send(msg: string): void {
@@ -59,7 +61,6 @@ export class FriendChat {
 		this.disconnect();
 		this.messages = [];
 		this.targetUsername = "";
-		this.isActive = false;
 	}
 
 	disconnect(): void {
@@ -67,6 +68,7 @@ export class FriendChat {
 		this.username = "";
 		this.currentRoomId = null;
 		this.lastMessage = 0;
+		socket.removeListener("chat");
 	}
 
 	async openRoom(username: string): Promise<string | null> {

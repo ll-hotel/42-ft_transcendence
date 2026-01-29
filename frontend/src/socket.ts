@@ -62,7 +62,7 @@ namespace Socket {
 	export let conn: WebSocket | null = null;
 	const hooks = new Map<string, ((m: Message) => void)[]>();
 	// Used to reconnect on socket unwanted disconnection.
-	let wasConnected = false;
+	let reconnection: number | null = null;
 
 	export async function connect(): Promise<boolean> {
 		if (conn) {
@@ -74,18 +74,27 @@ namespace Socket {
 			}
 		}
 		conn = new WebSocket("/api/websocket");
-		conn.onopen = () => console.log("[socket]", "Connected.");
+		conn.onopen = () => {
+			console.log("[socket]", "Connected.");
+			if (reconnection) {
+				notify("Reconnected", "success");
+				clearInterval(reconnection);
+			}
+			reconnection = null;
+		};
 		conn.onclose = (ev) => {
-			console.log("[socket]", "Disconnected.");
+			console.log("[socket]", "Disconnected.", ev.code);
 			conn = null;
-			// 4001 means server disconnected us manually.
-			if (wasConnected && ev.code != 4001) {
-				setTimeout(connect, 500);
+			// 1005 means server properly closed connection, and wanted us to be disconnected.
+			if (!reconnection && ev.code != 1005) {
+				notify("Disconnected. Reconnecting...", "info");
+				reconnection = setInterval(connect, 1000);
 			}
 		};
 		conn.onmessage = (event) => {
 			try {
 				const message = JSON.parse(event.data) as Message;
+				console.log("[socket]", message);
 				if (hooks.has(message.topic)) {
 					hooks.get(message.topic)!.forEach(hook => hook(message));
 				}
@@ -93,7 +102,6 @@ namespace Socket {
 				console.log(err);
 			}
 		};
-		wasConnected = true;
 		pingLoop();
 		return true;
 	}
@@ -113,7 +121,6 @@ namespace Socket {
 		return true;
 	}
 	export function disconnect() {
-		wasConnected = false;
 		conn?.close();
 	}
 	export function addListener(topic: string, hook: (m: Message) => void) {

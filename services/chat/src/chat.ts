@@ -28,6 +28,7 @@ function privateRoomId(UserAId: string, UserBId: string): string {
 
 namespace Chat {
 	export type Message = {
+		topic: "chat",
 		source: string,
 		target: string,
 		content: string,
@@ -140,13 +141,13 @@ namespace Chat {
 		connect(user: User) {
 			if (!this.users.has(user)) {
 				this.users.add(user);
-				this.send({ source: user.id, target: this.id, content: "Joined room", system: true });
+				this.send({ topic: "chat", source: user.id, target: this.id, content: "Joined room", system: true });
 				user.rooms.add(this.id);
 			}
 		}
 
 		disconnect(userId: string) {
-			this.send({ source: userId, target: this.id, content: "Left Room", system: true });
+			this.send({ topic: "chat", source: userId, target: this.id, content: "Left Room", system: true });
 			for (const user of this.users) {
 				if (user.id === userId) {
 					this.users.delete(user);
@@ -260,6 +261,7 @@ namespace Chat {
 			}
 
 			const finalMess: Message = {
+				topic: "chat",
 				source: sender.id,
 				target: room.id,
 				content,
