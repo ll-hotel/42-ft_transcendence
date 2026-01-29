@@ -7,6 +7,7 @@ import { schema, STATUS } from "./utils/http-reply";
 import { authGuard } from "./utils/security/authGuard";
 import socket from "./utils/socket";
 
+
 export class Tournament {
 	static setup(app: FastifyInstance) {
 		app.post("/api/tournament/create", {
@@ -38,7 +39,7 @@ export class Tournament {
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
 		const user = req.user!;
-		const { name, size } = req.body as { name: string, size: number };
+		const { name, size} = req.body as { name: string, size: number};
 
 		// Sanitization.
 		if (name.length > 16 || /(?:[a-zA-Z].*)\w+/.test(name) == false) {
@@ -57,6 +58,24 @@ export class Tournament {
 				tournamentId: alreadyInTournament.tournamentId,
 			});
 		}
+
+		const [alreadyInMatch] = await db.select().from(tables.matches).where(orm.and(
+			orm.or(orm.eq(tables.matches.player1Id, user.id), orm.eq(tables.matches.player2Id, user.id)),
+			orm.or(orm.eq(tables.matches.status, "pending"), orm.eq(tables.matches.status, "ongoing")),
+		));
+
+		if (alreadyInMatch) {
+			return rep.code(STATUS.bad_request).send({ message: "You are already in a match"});
+		}
+
+		const alreadyInQueue = db.select().from(tables.matchmakingQueue).where(
+			orm.eq(tables.matchmakingQueue.userId, user.id)
+		).prepare();
+
+		if (alreadyInQueue.all().length) {
+			return rep.code(STATUS.bad_request).send({ message: "You are in a Queue"});
+		}
+
 		const [tournament] = await db.insert(tables.tournaments).values({
 			name,
 			createdBy: user.uuid,
@@ -100,6 +119,15 @@ export class Tournament {
 		if (alreadyInMatch) {
 			return rep.code(STATUS.bad_request).send({ message: "You are already in a match", playing: true });
 		}
+
+		const alreadyInQueue = db.select().from(tables.matchmakingQueue).where(
+			orm.eq(tables.matchmakingQueue.userId, user.id)
+		).prepare();
+
+		if (alreadyInQueue.all().length) {
+			return rep.code(STATUS.bad_request).send({ message: "You are in a Queue"});
+		}
+		
 		const players = await db.select().from(tables.tournamentPlayers).where(
 			orm.eq(tables.tournamentPlayers.tournamentId, tournament.id),
 		);
@@ -303,8 +331,8 @@ async function notifyTournamentStart(tournamentId: number) {
 	for (const match of matchs) {
 		const player1 = players.find((player) => player.id == match.player1Id)!;
 		const player2 = players.find((player) => player.id == match.player2Id)!;
-		const message1 = { topic: "match", id: match.id };
-		const message2 = { topic: "match", id: match.id };
+		const message1 = { service:"tournament", topic: "vs:start", match: match.id, opponent : player2.displayName};
+		const message2 = { service:"tournament", topic: "vs:start", match: match.id, opponent : player1.displayName };
 		socket.send(player1.uuid, message1);
 		socket.send(player2.uuid, message2);
 	}

@@ -190,7 +190,8 @@ class AuthService {
 			const pass = await hashPassword(randomKey);
 			const res = await fetch(userData.image.versions.medium);
 			const buffer = Buffer.from(await res.arrayBuffer());
-			const filename = `avatar___${uuid}.png`;
+			const randomKey2 = randomBytes(32).toString("hex");
+			const filename = `avatar___${randomKey2}.png`;
 			let avatarPath = "default_pp.png";
 			try {
 				avatarPath = `./uploads/${filename}`;
@@ -263,7 +264,8 @@ class AuthService {
 			const pass = await hashPassword(randomKey);
 			const res = await fetch(userData.picture);
 			const buffer = Buffer.from(await res.arrayBuffer());
-			const filename = `avatar___${uuid}.png`;
+			const randomKey2 = randomBytes(32).toString("hex");
+			const filename = `avatar___${randomKey2}.png`;
 			let avatarPath = "default_pp.png";
 			try {
 				avatarPath = `./uploads/${filename}`;

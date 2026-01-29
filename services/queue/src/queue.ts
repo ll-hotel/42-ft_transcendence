@@ -29,10 +29,21 @@ class Queue {
 
 		const [isPlaying] = await db.select().from(tables.matches).where(orm.and(
 			orm.or(orm.eq(tables.matches.player1Id, usr.id), orm.eq(tables.matches.player2Id, usr.id)),
-			orm.eq(tables.matches.status, "ongoing"),
+			orm.or(orm.eq(tables.matches.status, "ongoing"), orm.eq(tables.matches.status, "pending"))
 		));
 		if (isPlaying) {
 			return rep.code(STATUS.bad_request).send({ message: "Already in game" });
+		}
+
+		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(orm.and(
+			orm.eq(tables.tournamentPlayers.userId, usr.id),
+			orm.eq(tables.tournamentPlayers.eliminated, 0),
+		));
+		if (alreadyInTournament) {
+			return rep.code(STATUS.bad_request).send({
+				message: "Already in tournament",
+				tournamentId: alreadyInTournament.tournamentId,
+			});
 		}
 
 		await db.insert(tables.matchmakingQueue).values({ userId: usr.id });
@@ -84,8 +95,8 @@ export default function(fastify: FastifyInstance) {
 
 function notifyUser(uuid: string, match: number, opponent: string) {
 	const message = {
+		service: "queue",
 		topic: "matchmaking:found",
-		type: "",
 		match,
 		opponent,
 	};

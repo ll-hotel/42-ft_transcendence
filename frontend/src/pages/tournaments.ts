@@ -8,7 +8,7 @@ export class Tournaments implements AppPage {
 	private constructor(html: HTMLElement) {
 		this.html = html;
 	}
-	static new(html: HTMLElement): AppPage | null {
+	static async new(html: HTMLElement): Promise<AppPage | null> {
 		const page = new Tournaments(html);
 
 		const createForm = html.querySelector("form") as HTMLFormElement | null;

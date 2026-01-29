@@ -1,9 +1,10 @@
 import { and, eq, or } from "drizzle-orm";
+import { FastifyRequest } from "fastify";
 import * as Ws from "ws";
 import { db } from "./utils/db/database";
 import { friends } from "./utils/db/tables";
 
-async function tcheckFriends(user_1: number, user_2: number): Promise<boolean> {
+async function areFriends(user_1: number, user_2: number): Promise<boolean> {
 	const res = await db.select({ id: friends.id }).from(friends).where(and(
 		eq(friends.status, "accepted"),
 		or(
@@ -27,6 +28,7 @@ function privateRoomId(UserAId: string, UserBId: string): string {
 
 namespace Chat {
 	export type Message = {
+		topic: "chat",
 		source: string,
 		target: string,
 		content: string,
@@ -139,13 +141,13 @@ namespace Chat {
 		connect(user: User) {
 			if (!this.users.has(user)) {
 				this.users.add(user);
-				this.send({ source: user.id, target: this.id, content: "Joined room", system: true });
+				this.send({ topic: "chat", source: user.id, target: this.id, content: "Joined room", system: true });
 				user.rooms.add(this.id);
 			}
 		}
 
 		disconnect(userId: string) {
-			this.send({ source: userId, target: this.id, content: "Left Room", system: true });
+			this.send({ topic: "chat", source: userId, target: this.id, content: "Left Room", system: true });
 			for (const user of this.users) {
 				if (user.id === userId) {
 					this.users.delete(user);
@@ -197,8 +199,8 @@ namespace Chat {
 		}
 
 		async createPrivateRoom(userA: User, userB: User): Promise<Room> {
-			const areFriends = await tcheckFriends(userA.userId, userB.userId);
-			if (!areFriends) {
+			const friends = await areFriends(userA.userId, userB.userId);
+			if (!friends) {
 				throw new Error("Cannot create private room: not friends");
 			}
 
@@ -213,7 +215,7 @@ namespace Chat {
 			return room;
 		}
 
-		async newWebsocketConnection(ws: Ws.WebSocket, req: any) {
+		async newWebsocketConnection(ws: Ws.WebSocket, req: FastifyRequest) {
 			const userInfo = req.user!;
 			const user = this.getOrCreateUser(userInfo.id, userInfo.username);
 			user.connect(ws, this);
@@ -240,36 +242,34 @@ namespace Chat {
 			});
 		}
 
-		handleMessage(sender: User, message: any) {
+		handleMessage(sender: User, message: unknown) {
+			console.log(message);
 			if (!message || typeof message !== "object") {
 				return;
 			}
-
-			const { target, content } = message;
-
+			const { target, content } = message as Message;
 			if (!target || typeof content !== "string") {
 				return;
 			}
 
-			const room = this.rooms.get(target);
-
-			if (!room) {
+			if (!this.rooms.has(target)) {
 				return;
 			}
-
+			const room = this.rooms.get(target)!;
 			if (!room.users.has(sender)) {
 				return;
 			}
 
 			const finalMess: Message = {
+				topic: "chat",
 				source: sender.id,
 				target: room.id,
 				content,
 			};
-
 			room.send(finalMess);
 		}
 	}
 }
 
 export default Chat;
+export const chat = new Chat.Instance();
