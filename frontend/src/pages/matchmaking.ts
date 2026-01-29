@@ -23,7 +23,6 @@ export class MatchMaking implements AppPage {
 		return new MatchMaking(html, queueButton);
 	}
 	loadInto(container: HTMLElement): void {
-		this.queueButton.hidden = false;
 		container.appendChild(this.html);
 		socket.addListener("matchmaking:found", (message) => {
 			socket.removeListener("matchmaking:found");
