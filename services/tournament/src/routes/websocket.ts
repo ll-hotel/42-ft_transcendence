@@ -5,7 +5,7 @@ import { db } from "../utils/db/database";
 import * as dbM from "../utils/db/methods";
 import * as tables from "../utils/db/tables";
 import { schema, STATUS } from "../utils/http-reply";
-import socket from "../utils/socket";
+import socket, { isOnline } from "../utils/socket";
 
 export default function(fastify: FastifyInstance): void {
 	fastify.get("/websocket", {
@@ -20,12 +20,13 @@ function route(ws: WebSocket.WebSocket, req: FastifyRequest): void {
 
 	socket.connect(req.user!.uuid, ws);
 	socket.addListener(req.user!.uuid, "disconnect", () => {
-		setTimeout(() => {
-			if (socket.isOnline(req.user!.uuid)) {
+		setTimeout(async () => {
+			if (req.user!.isOnline) {
 				return;
 			}
-			dbM.removeUserFromTournaments(req.user!.uuid);
-		}, 1000);
+
+			await dbM.removeUserFromTournaments(req.user!.uuid);
+		}, 2000);
 	});
 }
 
