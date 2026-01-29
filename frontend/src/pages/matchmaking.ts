@@ -6,20 +6,21 @@ import {gotoPage} from "../PageLoader.js";
 
 export class MatchMaking implements AppPage {
 	html: HTMLElement;
-	queueButton : HTMLButtonElement | null;
+	queueButton: HTMLButtonElement;
 	inQueue: boolean = false;
-	constructor(html: HTMLElement) {
+
+	constructor(html: HTMLElement, queueButton: HTMLButtonElement) {
 		this.html = html;
-		this.queueButton = html.querySelector<HTMLButtonElement>("#leave-queue");
-		if (!this.queueButton)
-		{
-			notify("Missing HTML elements in matchmaking.html", "error");
-			return;
-		}
+		this.queueButton = queueButton;
 	}
 	
 	static async new(html: HTMLElement): Promise<AppPage | null>{
-		return new MatchMaking(html);
+		const queueButton = html.querySelector<HTMLButtonElement>("#leave-queue");
+		if (!queueButton) {
+			notify("Missing HTML elements in matchmaking.html", "error");
+			return null;
+		}
+		return new MatchMaking(html, queueButton);
 	}
 	loadInto(container: HTMLElement): void {
 		container.appendChild(this.html);

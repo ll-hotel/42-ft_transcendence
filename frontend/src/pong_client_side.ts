@@ -114,7 +114,7 @@ export class Game {
 	//private score_viewer_p2: HTMLElement;
 	//private content_window: HTMLDivElement;
 
-	private current_interval_id: NodeJS.Timeout | null = null;
+	private current_interval_id: number | null = null;
 	private canvas_ratio: Size;
 	private speed_ratio: number;
 	private sendInputs: () => void;

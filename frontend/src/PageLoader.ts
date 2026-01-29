@@ -6,7 +6,6 @@ import { Login } from "./pages/login.js";
 import Play from "./pages/play.js";
 import PlayLocal from "./pages/play/local.js";
 import PlayMatch from "./pages/play/match.js";
-import { PongPage } from "./pages/PongPage.js";
 import { OtherProfilePage } from "./pages/otherProfile.js";
 import { ProfilePage } from "./pages/profile.js";
 import { RegisterPage } from "./pages/register.js";
@@ -28,7 +27,6 @@ const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
 	{ name: "friends", new: FriendPage.new},
-	{ name: "pong", new: PongPage.new },
 	{ name: "tournament", new: Tournament.new },
 	{ name: "tournaments", new: Tournaments.new },
 	{ name: "matchmaking", new: MatchMaking.new}

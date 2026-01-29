@@ -3,6 +3,7 @@ import { gotoPage } from "../PageLoader.js";
 import AppPage from "./AppPage.js"
 import { MatchInfo } from "./profile/matches.js";
 import { notify } from "../utils/notifs.js";
+import socket from "../socket.js";
 
 export class ProfilePage implements AppPage {
 	content: HTMLElement;
