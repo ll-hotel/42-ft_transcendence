@@ -66,7 +66,7 @@ async function connect(): Promise<boolean> {
 	if (socket) {
 		return true;
 	} else {
-		const me = await api.get("/api/user/me");
+		const me = await api.get("/api/websocket/ping");
 		if (!me || me.status == Status.unauthorized) {
 			return false;
 		}
