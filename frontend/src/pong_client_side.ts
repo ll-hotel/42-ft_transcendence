@@ -1,7 +1,5 @@
-import socket, { InputMessage, LocalMessage, Message, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
-import {api, Status} from "./api.js";
-// import {notify} from "./pages/utils/notifs.js";
-import { notify } from "./utils/notifs.js";
+import socket, { LocalMessage, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
+import {api} from "./api.js";
 
 type Position = { x: number, y: number };
 type Score = { p1: number, p2: number };
@@ -114,7 +112,7 @@ export class Game {
 	//private score_viewer_p2: HTMLElement;
 	//private content_window: HTMLDivElement;
 
-	private current_interval_id: NodeJS.Timeout | null = null;
+	private current_interval_id: number | null = null;
 	private canvas_ratio: Size;
 	private speed_ratio: number;
 	private sendInputs: () => void;
@@ -388,8 +386,6 @@ export class PongPaddle extends PhysicObject {
 }
 
 export class PongBall extends PhysicObject {
-	private canvas: HTMLCanvasElement;
-	private context: CanvasRenderingContext2D;
 	private texture: HTMLImageElement;
 
 	constructor(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, texture: HTMLImageElement) {
@@ -398,8 +394,6 @@ export class PongBall extends PhysicObject {
 			{ w: canvas.height * 0.1 * 2.15, h: canvas.height * 0.1 },
 			new Vector2D(0, 0),
 		);
-		this.canvas = canvas;
-		this.context = context;
 		this.texture = texture;
 	}
 

@@ -9,7 +9,6 @@ services:
       - "8443:443"
     volumes:
       - frontend-static:/srv/app/static
-      - frontend-src:/srv/app/src:ro
       - cert:/run/secrets:ro
 
   auth-service:
@@ -180,12 +179,6 @@ volumes:
     driver: local
     driver_opts:
       device: ./frontend/static
-      type: none
-      o: bind
-  frontend-src:
-    driver: local
-    driver_opts:
-      device: ./frontend/src
       type: none
       o: bind
   auth-service-src:
