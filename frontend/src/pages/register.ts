@@ -16,7 +16,7 @@ export class RegisterPage implements AppPage {
 			return false;
 		});
 	}
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement): Promise<AppPage | null> {
 		if (!content.querySelector("form")) {
 			return null;
 		}
@@ -31,8 +31,10 @@ export class RegisterPage implements AppPage {
 			return;
 		}
 		container.appendChild(this.content);
+		document.querySelector("#navbar")?.setAttribute("hidden", "");
 	}
 	unload(): void {
+		document.querySelector("#navbar")?.removeAttribute("hidden");
 		this.content.remove();
 		(this.form.querySelector("[name=username]")! as HTMLInputElement).value = "";
 		(this.form.querySelector("[name=password]")! as HTMLInputElement).value = "";

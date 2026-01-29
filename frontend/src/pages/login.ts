@@ -35,7 +35,7 @@ export class Login implements AppPage {
 			location.assign(res.payload.redirect);
 		};
 	}
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement): Promise<AppPage | null> {
 		if (
 			!content.querySelector("form")
 			|| !content.querySelector("button#button-intra")

@@ -5,3 +5,5 @@ cert/
 *.lock
 *.sqlite
 uploads/
+.idea/
+tmp/

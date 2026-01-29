@@ -71,7 +71,7 @@ export class editProfile implements AppPage {
 		});
 	}
 
-	static new(content: HTMLElement) {
+	static async new(content: HTMLElement) {
 		if (
 			!content.querySelector("#profile-form") || !content.querySelector("#password-form")
 			|| !content.querySelector("#user-info")

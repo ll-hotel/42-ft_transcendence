@@ -3,11 +3,11 @@
 }
 
 .friend-card-home {
-	@apply hover:cursor-pointer bg-white border-white text-black hover:bg-[#04809F] hover:cursor-pointer hover:scale-101 transition;
+	@apply hover:cursor-pointer bg-white border-white text-black hover:bg-slate-600 hover:scale-101 transition;
 }
 
 .request-card {
-	@apply w-full h-20 text-white bg-neutral-500 border-white flex justify-between items-center px-4 hover:bg-neutral-400 hover:cursor-pointer hover:scale-101 transition;
+	@apply w-full h-20 text-white bg-slate-600 border-white flex justify-between items-center px-4 hover:bg-neutral-400 hover:cursor-pointer hover:scale-101 transition;
 }
 
 .request-buttons {
@@ -23,12 +23,12 @@
 }
 
 .friend-card-select {
-	@apply bg-[#04809F] scale-105 transition;
+	@apply bg-slate-600 scale-105 transition text-white;
 }
 
 .friend-card-unselect 
 {
-	@apply bg-white;
+	@apply bg-white text-black;
 }
 
 .friend-avatar {
@@ -72,9 +72,22 @@
 }
 
 .msg-me {
-  @apply self-end bg-[#04809F] text-white rounded-lg px-3 py-1 max-w-xs wrap-break-word;
+  @apply self-end bg-slate-600 text-white rounded-lg px-3 py-1 max-w-xs wrap-break-word;
 }
 
 .msg-target {
   @apply self-start bg-red-500 text-white rounded-lg px-3 py-1 max-w-xs wrap-break-word;
 }
+
+.ended-match-mess {
+	@apply flex w-[60vw] h-[30vw] text-2xl text-white justify-center items-center rounded-lg 
+}
+
+.win {
+	@apply bg-slate-600;
+}
+
+.loose {
+	@apply bg-red-500;
+}
+

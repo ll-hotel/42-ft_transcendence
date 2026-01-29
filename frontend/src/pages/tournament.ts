@@ -14,7 +14,7 @@ export class Tournament implements AppPage {
 		this.html = html;
 		this.leaveButton = html.querySelector<HTMLButtonElement>("#tournament-leave")!;
 	}
-	static new(html: HTMLElement) {
+	static async new(html: HTMLElement) {
 		const leaveButton = html.querySelector<HTMLButtonElement>("#tournament-leave");
 		if (leaveButton == null) {
 			notify("Missing button", "error");

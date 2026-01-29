@@ -186,11 +186,11 @@ export class FriendButton {
 			return notify("Error when getting user or friend info", "error");
 		if (me.status !== Status.success || friend.status !== Status.success)
 			return notify("Error when getting user or friend info: " + me.payload.message, "error");
-		console.log(me.payload.uuid, friend.payload.user.uuid);
 		socket.send({
 			source: me.payload.uuid,
+			service:"chat",
 			topic: "vs:invite",
-			target : friend.payload.user.uuid,
+			content : friend.payload.user.uuid,
 		});
 	}
 
