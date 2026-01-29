@@ -17,7 +17,6 @@ services:
     build:
       context: ./services/auth
     volumes:
-      - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
       - uploads:/srv/app/uploads
       - cert:/run/secrets:ro
@@ -179,12 +178,6 @@ volumes:
     driver: local
     driver_opts:
       device: ./frontend/static
-      type: none
-      o: bind
-  auth-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/auth/src
       type: none
       o: bind
 
