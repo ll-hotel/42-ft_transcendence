@@ -105,6 +105,7 @@ export class ProfilePage implements AppPage {
 			// Unauthorized = not logged in or wrong user.
 		}
 		notify("Logged out", "info");
+		socket.disconnect();
 		await gotoPage("login");
 	}
 
