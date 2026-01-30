@@ -1,123 +1,104 @@
-import WebSocket, { MessageEvent } from "ws";
+import * as Ws from "ws";
 
-namespace SocketPool {
-	type Event = "message" | "disconnect";
-	type Handler = (data?: any) => void;
+type UUID = string;
+export type Callback = {
+	topic?: string,
+	fn: Socket.TopicFn,
+};
+export type Client = {
+	conn: Ws.WebSocket,
+	onmessage: Callback[],
+};
+export type BaseMessage = {
+	service: string,
+	topic: string,
+};
+export type Message = BaseMessage;
 
-	type ClientId = string;
-	type Client = {
-		sockets: WebSocket.WebSocket[],
-		onMessage: Handler[],
-		onDisconnect: (() => void)[],
-		lastOnlineTime: number,
-	};
-	type BaseMessage = {
-		topic: string,
-	};
-	type MatchMessage = BaseMessage & {
-		source: string,
-		match: number,
-		opponent: string,
-	};
+namespace Socket {
+	export const clients: Map<UUID, Client> = new Map();
 
-	type VersusMessage = BaseMessage & {
-		source: string,
-		target: string,
-	};
-	type Message = BaseMessage | MatchMessage | VersusMessage;
-
-	export const clients: Map<ClientId, Client> = new Map();
-
-	export function isOnline(id: ClientId): boolean {
+	export function isOpen(id: UUID): boolean {
 		const client = clients.get(id);
-		if (!client) return false;
-		for (const socket of client.sockets) {
-			if (socket.readyState === WebSocket.WebSocket.OPEN) {
-				client.lastOnlineTime = Date.now();
-				return true;
-			}
+		if (client && client.conn.readyState == Ws.OPEN) {
+			return true;
 		}
 		return false;
 	}
+	export const isOnline = isOpen;
 
-	export async function connect(uuid: ClientId, socket: WebSocket.WebSocket) {
+	export function register(uuid: UUID, conn: Ws.WebSocket): void {
 		if (!clients.has(uuid)) {
-			clients.set(uuid, {
-				sockets: [],
-				onMessage: [],
-				onDisconnect: [],
-				lastOnlineTime: 0,
-			});
+			clients.set(uuid, { conn: conn, onmessage: [] });
 		}
 		const client = clients.get(uuid)!;
-		client.sockets.push(socket);
-		client.lastOnlineTime = Date.now();
-
-		socket.addEventListener("message", (event) => onMessage(client, event));
-		socket.addEventListener("close", () => disconnect(uuid, socket));
+		conn.on("message", (stream) => dispatch(client, stream.toString()));
+		conn.on("close", () => disconnect(uuid));
 	}
+	export const connect = register;
 
-	function updateOnlineTime(client: Client) {
-		client.lastOnlineTime = Date.now();
-	}
-
-	function onMessage(client: Client, event: MessageEvent) {
-		updateOnlineTime(client);
+	function dispatch(client: Client, data: string): void {
 		try {
-			const msg = JSON.parse(event.data.toString());
-			if (msg.source === "ping") return;
-			client.onMessage.forEach((handler) => handler(msg));
+			const msg = JSON.parse(data);
+			if (!msg.topic || msg.topic === "ping") {
+				return;
+			}
+			client.onmessage.filter(cb => (!cb.topic) || cb.topic == msg.topic).forEach(cb => cb.fn(msg));
 		} catch {}
 	}
 
-	export function send(target: ClientId, message: Message) {
-		if (isOnline(target)) {
+	export function send(uuid: UUID, message: Message): void {
+		if (isOpen(uuid)) {
 			try {
 				const data = JSON.stringify(message);
-				clients.get(target)!.sockets.forEach(socket => socket.send(data));
-			} catch (err) {}
+				clients.get(uuid)!.conn.send(data);
+			} catch {}
+		}
+	}
+	export function sendRaw(uuid: UUID, data: string): void {
+		const client = clients.get(uuid);
+		if (client) {
+			client.conn.send(data);
 		}
 	}
 
-	export function sendRaw(target: ClientId, data: string) {
-		clients.get(target)!.sockets.forEach(socket => socket.send(data));
+	/** For compatibility */
+	export function disconnect(uuid: UUID, _?: any): void {
+		close(uuid);
 	}
-
-	export function addListener(clientId: ClientId, event: Event, handler: Handler) {
-		const client = clients.get(clientId);
-		if (!client) return;
-
-		if (event == "message") {
-			client.onMessage.push(handler);
-		} else if (event == "disconnect") {
-			client.onDisconnect.push(handler);
-		}
-	}
-
-	/**
-	 * Closes all of client websockets, or the one specified.
-	 * Uses the error code 4001 to manifest a voluntary disconnection.
-	 */
-	export function disconnect(target: ClientId, socket?: WebSocket.WebSocket) {
-		const client = clients.get(target);
-		if (!client) return;
-		if (socket && socket.readyState === WebSocket.WebSocket.OPEN) {
-			client.sockets = client.sockets.filter(e => e != socket);
-			if (client.sockets.length == 0) {
-				client.lastOnlineTime = Date.now();
+	export function close(uuid: UUID): void {
+		const client = clients.get(uuid);
+		if (client) {
+			if (client.conn.readyState == Ws.WebSocket.OPEN) {
+				client.conn.close();
 			}
-			socket.close(4001);
-		} else {
-			client.sockets.forEach(socket => socket.close(4001));
-			client.sockets = [];
+			clients.delete(uuid);
 		}
-		if (!isOnline(target)) {
-			client.onDisconnect.forEach((handler) => handler());
-			client.onDisconnect = [];
-			client.onMessage = [];
-			clients.delete(target);
+	}
+
+	export type MessageFn = (event: Ws.MessageEvent) => void;
+	export type CloseFn = (code?: number, reason?: any) => void;
+	export type TopicFn = (json: Message) => void;
+	export function addListener(uuid: UUID, topic: string, fn: MessageFn | CloseFn | TopicFn): void {
+		const client = clients.get(uuid);
+		if (client) {
+			if (topic == "message") client.conn.addEventListener("message", fn as MessageFn);
+			else if (topic == "close" || topic == "disconnect") client.conn.on("close", fn as CloseFn);
+			else client.onmessage.push({ topic, fn: fn as TopicFn });
+		}
+	}
+	export function onmessage(uuid: UUID, fn: TopicFn): void {
+		const client = clients.get(uuid);
+		if (client) {
+			client.onmessage.push({ fn });
+		}
+	}
+
+	export function removeListener(uuid: UUID, topic: string): void {
+		const client = clients.get(uuid);
+		if (client) {
+			client.onmessage = client.onmessage.filter(cb => cb.topic != topic);
 		}
 	}
 }
-
-export default SocketPool;
+export default Socket;

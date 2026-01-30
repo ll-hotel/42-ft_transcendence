@@ -1,21 +1,20 @@
 import * as Ws from "ws";
 
 type UUID = string;
+export type Callback = {
+	topic?: string,
+	fn: Socket.TopicFn,
+};
+export type Client = {
+	conn: Ws.WebSocket,
+	onmessage: Callback[],
+};
+export type BaseMessage = {
+	topic: string,
+};
+export type Message = BaseMessage;
 
 namespace Socket {
-	export type Callback = {
-		topic?: string,
-		fn: Socket.TopicFn,
-	};
-	export type Client = {
-		conn: Ws.WebSocket,
-		onmessage: Callback[],
-	};
-	export type BaseMessage = {
-		topic: string,
-	};
-	export type Message = BaseMessage;
-
 	export const clients: Map<UUID, Client> = new Map();
 
 	export function isOpen(id: UUID): boolean {
@@ -25,8 +24,9 @@ namespace Socket {
 		}
 		return false;
 	}
+	export const isOnline = isOpen;
 
-	export async function register(uuid: UUID, conn: Ws.WebSocket) {
+	export function register(uuid: UUID, conn: Ws.WebSocket): void {
 		if (!clients.has(uuid)) {
 			clients.set(uuid, { conn: conn, onmessage: [] });
 		}
@@ -34,8 +34,9 @@ namespace Socket {
 		conn.on("message", (stream) => dispatch(client, stream.toString()));
 		conn.on("close", () => disconnect(uuid));
 	}
+	export const connect = register;
 
-	function dispatch(client: Client, data: string) {
+	function dispatch(client: Client, data: string): void {
 		try {
 			const msg = JSON.parse(data);
 			if (!msg.topic || msg.topic === "ping") {
@@ -45,7 +46,7 @@ namespace Socket {
 		} catch {}
 	}
 
-	export function send(uuid: UUID, message: Message) {
+	export function send(uuid: UUID, message: Message): void {
 		if (isOpen(uuid)) {
 			try {
 				const data = JSON.stringify(message);
@@ -53,9 +54,15 @@ namespace Socket {
 			} catch {}
 		}
 	}
+	export function sendRaw(uuid: UUID, data: string): void {
+		const client = clients.get(uuid);
+		if (client) {
+			client.conn.send(data);
+		}
+	}
 
 	/** For compatibility */
-	export function disconnect(uuid: UUID, _?: any) {
+	export function disconnect(uuid: UUID, _?: any): void {
 		close(uuid);
 	}
 	export function close(uuid: UUID): void {
@@ -71,7 +78,7 @@ namespace Socket {
 	export type MessageFn = (event: Ws.MessageEvent) => void;
 	export type CloseFn = (code?: number, reason?: any) => void;
 	export type TopicFn = (json: Message) => void;
-	export function addListener(uuid: UUID, topic: string, fn: MessageFn | CloseFn | TopicFn) {
+	export function addListener(uuid: UUID, topic: string, fn: MessageFn | CloseFn | TopicFn): void {
 		const client = clients.get(uuid);
 		if (client) {
 			if (topic == "message") client.conn.addEventListener("message", fn as MessageFn);
@@ -79,10 +86,17 @@ namespace Socket {
 			else client.onmessage.push({ topic, fn: fn as TopicFn });
 		}
 	}
-	export function onmessage(uuid: UUID, fn: TopicFn) {
+	export function onmessage(uuid: UUID, fn: TopicFn): void {
 		const client = clients.get(uuid);
 		if (client) {
 			client.onmessage.push({ fn });
+		}
+	}
+
+	export function removeListener(uuid: UUID, topic: string): void {
+		const client = clients.get(uuid);
+		if (client) {
+			client.onmessage = client.onmessage.filter(cb => cb.topic != topic);
 		}
 	}
 }

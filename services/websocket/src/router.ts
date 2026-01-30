@@ -65,6 +65,7 @@ class ClientServices {
 				if (code == 1006) {
 					console.log(`[${this.uuid}] ${name} closed unexpectedly`);
 					this.connectService(name, agent);
+					return;
 				} else if (name == "auth") this.disconnect();
 				console.log(`[${this.uuid}] ${name} closed`);
 			});
