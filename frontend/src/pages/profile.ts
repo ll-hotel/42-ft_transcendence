@@ -42,6 +42,7 @@ export class ProfilePage implements AppPage {
 	async loadUserInfo() {
 		const res = await api.get("/api/user/me");
 		if (!res || res.status != Status.success) {
+			notify(res?.payload.message, "error");
 			return gotoPage("login");
 		}
 		const userInfo = res.payload as { displayName: string, username:string, id:number, avatar: string };
@@ -106,7 +107,8 @@ export class ProfilePage implements AppPage {
 			// Unauthorized = not logged in or wrong user.
 		}
 		notify("Logged out", "info");
-		socket.disconnect();
+		this.unload();
+		await socket.disconnect();
 		await gotoPage("login");
 	}
 
