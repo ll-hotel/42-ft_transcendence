@@ -1,6 +1,6 @@
 import { clearInterval, setInterval } from "node:timers";
 import * as dbM from "./utils/db/methods";
-import socket from "./utils/socket";
+import socket, { send } from "./utils/socket";
 import {
 	InputMessage,
 	LocalMessage,
@@ -31,7 +31,7 @@ type MatchId = number;
 
 export const games: Map<MatchId, GameInstance> = new Map();
 
-export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, mode: Mode) {
+export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string) {
 	if (games.has(matchId))
 		return;
 
@@ -43,10 +43,33 @@ export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, 
 	// }
 	// else {
 	let discard = dbM.startMatch(matchId).then(() => {
-		let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
+		let game = new GameInstance(matchId, p1_uuid, p2_uuid, Mode.remote);
 		games.set(matchId, game);
 		game.start();
 	});
+}
+
+export function kill_game(matchId: MatchId)
+{
+	if (games.has(matchId)) {
+		let game = games.get(matchId);
+		game?.end();
+		return true;
+	}
+	else
+		return false;
+	
+}
+
+export function create_local_game(p1_uuid : string)
+{
+	let localGame = -1;
+	while (games.has(localGame))
+		localGame--;
+	let game = new GameInstance(localGame, p1_uuid, null, Mode.local)
+	games.set(localGame, game);
+	game.start();
+	return (localGame);
 }
 
 const server_tickrate: number = 10;
@@ -92,7 +115,7 @@ export class GameInstance {
 		p2: { up: boolean, down: boolean },
 	};
 	p1_uuid: string;
-	p2_uuid: string;
+	p2_uuid: string | null;
 	tick_interval: number;
 	tick_rate: number;
 	game_id: number;
@@ -101,7 +124,7 @@ export class GameInstance {
 	status: Status = Status.started;
 	mode: Mode;
 
-	constructor(game_id: number, p1_uuid: string, p2_uuid: string, mode: Mode) {
+	constructor(game_id: number, p1_uuid: string, p2_uuid: string | null, mode: Mode) {
 		this.game_id = game_id;
 		this.score = { p1: 0, p2: 0 };
 		this.paddle_p1 = new PongPaddle({ x: 0 + paddleWidth, y: table.height / 2 });
@@ -134,11 +157,11 @@ export class GameInstance {
 			socket.addListener(this.p1_uuid, "pong", (msg) => {
 				this.p1_event_listener(msg);
 			});
-			socket.addListener(this.p2_uuid, "pong", (msg) => {
+			socket.addListener(this.p2_uuid!, "pong", (msg) => {
 				this.p2_event_listener(msg);
 			});
 			socket.addListener(this.p1_uuid, "pong", console.log);
-			socket.addListener(this.p2_uuid, "pong", console.log);
+			socket.addListener(this.p2_uuid!, "pong", console.log);
 		}
 	}
 
@@ -184,8 +207,9 @@ export class GameInstance {
 			type : TypeMsg.state,
 			...state
 		} as StateMessage;
-		socket.send(this.p1_uuid, message);			
-		socket.send(this.p2_uuid, message);
+		socket.send(this.p1_uuid, message);
+		if (this.p2_uuid)
+			socket.send(this.p2_uuid, message);
 	}
 
 	state(): GameState {
@@ -251,7 +275,8 @@ export class GameInstance {
 		this.is_running = false;
 		let discard = dbM.endMatch(this.game_id);
 		socket.removeListener(this.p1_uuid, "pong");
-		socket.removeListener(this.p2_uuid, "pong");
+		if (this.p2_uuid)
+			socket.removeListener(this.p2_uuid, "pong");
 		games.delete(this.game_id);
 	}
 }
@@ -271,7 +296,7 @@ export class PongBall extends PhysicObject {
 	readonly left_normal: Vector2D;
 	readonly right_normal: Vector2D;
 	private p1_ws: string;
-	private p2_ws: string;
+	private p2_ws: string | null;
 	private game_id: number;
 
 	constructor(
@@ -279,7 +304,7 @@ export class PongBall extends PhysicObject {
 		paddle_p1: PongPaddle,
 		paddle_p2: PongPaddle,
 		p1_ws: string,
-		p2_ws: string,
+		p2_ws: string | null,
 		game_id: number,
 	) {
 		super(
@@ -311,7 +336,8 @@ export class PongBall extends PhysicObject {
 		} as ScoreMessage;
 
 		socket.send(this.p1_ws, init_msg);
-		socket.send(this.p2_ws, init_msg);
+		if (this.p2_ws)
+			socket.send(this.p2_ws, init_msg);
 	}
 
 	test_collide(line_position: Position, normal: Vector2D) {

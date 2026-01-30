@@ -57,7 +57,13 @@ export class HomePage implements AppPage {
 		}*/
 
 		buttonLocalVs.onclick = () => {
-			gotoPage("play/local");
+			api.get("/api/game/current").then((res) => {
+				if (!res) return;
+				if (res.status == Status.not_found)
+					gotoPage("play/local");
+				else
+					notify("You are already on a match", "info");
+			});
 		}
 
 		buttonOnlineVs.onclick =  () => {
