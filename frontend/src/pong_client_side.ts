@@ -226,12 +226,6 @@ export class Game {
 	}
 
 	update_state(msg: StateMessage) {
-		// const test = api.get(`/api/state/game?matchId=${this.matchId}`).then((test) => {
-		// 	if (!test || !test.payload)
-		// 		return;
-		// 	if (test.status != Status.success)
-		// 		return notify("Error: " + test.payload.message, "error");
-		// 	msg = test.payload;
 		this.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
 		this.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
 		scale_vec(this.ball.speed, this.speed_ratio);
@@ -249,7 +243,6 @@ export class Game {
 		this.paddle_p1.render(this.context!);
 		this.paddle_p2.render(this.context!);
 		this.ball.render(this.context!);
-		// draw_hit_box(this.context!, this.ball as PhysicObject);
 	}
 
 	deinit(): void {

@@ -1,6 +1,6 @@
 import { clearInterval, setInterval } from "node:timers";
 import * as dbM from "./utils/db/methods";
-import socket, { send } from "./utils/socket";
+import socket from "./utils/socket";
 import {
 	InputMessage,
 	LocalMessage,
@@ -40,9 +40,6 @@ type GameState = {
 	score: Score,
 };
 
-type MatchId = number;
-
-export const games: Map<MatchId, GameInstance> = new Map();
 
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string) {
 	if (games.has(matchId))
@@ -142,15 +139,15 @@ export class GameInstance {
 		this.mode = mode;
 
 		if (mode == Mode.local) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
+			socket.addListener(this.p1_uuid, "pong", (msg : any) => {
 				this.local_input_listener(msg);
 			});
 			socket.addListener(this.p1_uuid, "disconnect", () => this.end());
 		} else if (mode == Mode.remote) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
+			socket.addListener(this.p1_uuid, "pong", (msg: any) => {
 				this.p1_event_listener(msg);
 			});
-			socket.addListener(this.p2_uuid!, "pong", (msg) => {
+			socket.addListener(this.p2_uuid!, "pong", (msg: any) => {
 				this.p2_event_listener(msg);
 			});
 			socket.addListener(this.p1_uuid, "pong", console.log);
@@ -360,9 +357,9 @@ export class PongBall extends PhysicObject {
 	respawn(side: number) {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
-		let new_dir = 45 + Math.random() * 90;
+		let new_dir = Math.random() * 90;
 		this.speed.setX = 5 * side;
-		this.speed.setY = Math.sin(new_dir) * 5;
+		this.speed.setY = Math.sin(new_dir);
 		this.speed.scale(4);
 	}
 
