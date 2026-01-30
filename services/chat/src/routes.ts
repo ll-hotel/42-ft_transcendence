@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { chat } from "./chat";
-import { getUserIdByUsername } from "./utils/db/methods";
+import { userIdByUsername } from "./utils/db/methods";
 import { STATUS } from "./utils/http-reply";
 import { authGuard } from "./utils/security/authGuard";
 
@@ -80,11 +80,11 @@ export function chatRoute(fastify: FastifyInstance) {
 			const me = chat.getOrCreateUser(req.user!.id, req.user!.username);
 			const targetName = (req.params as { username: string }).username;
 			try {
-				const targetId = await getUserIdByUsername(targetName);
-				if (!targetId) {
+				const targetUser = userIdByUsername.get({username: targetName});
+				if (!targetUser) {
 					throw new Error("Username not found");
 				}
-				const target = chat.getOrCreateUser(targetId, targetName);
+				const target = chat.getOrCreateUser(targetUser.id, targetName);
 				const room = await chat.createPrivateRoom(me, target);
 				return rep.send({ roomId: room.id });
 			} catch (err) {
