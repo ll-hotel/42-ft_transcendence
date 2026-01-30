@@ -92,7 +92,7 @@ export class Login implements AppPage {
 			this.form.reset();
 			notify(res.payload.message, "success");
 			await socket.connect();
-			await gotoPage("home");
+			return await gotoPage("home");
 		}
 		if (res.payload.twoFAEnabled) {
 			return this.showTwofa();
