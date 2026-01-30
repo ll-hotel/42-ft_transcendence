@@ -38,8 +38,8 @@ class Match {
 		if (matchExists.status === "ended")
 			return rep.code(STATUS.bad_request).send({ message: "Match already ended" });
 
-        if (matchExists.status !== "pending" && !isTmMatch)
-            return rep.code(STATUS.created).send({ message: MESSAGE.match_started});
+		if (matchExists.status !== "pending" && !isTmMatch)
+			return rep.code(STATUS.created).send({ message: MESSAGE.match_started});
 
 		let opponentId = matchExists.player1Id;
 		if(matchExists.player1Id === usr.id)
