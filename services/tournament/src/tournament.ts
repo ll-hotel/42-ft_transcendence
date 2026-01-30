@@ -296,6 +296,9 @@ export class Tournament {
 			rep.code(STATUS.not_found).send({ message: "No such tournament" });
 			return;
 		}
+		if (tournament.status === "ended"){
+			rep.code(STATUS.success).send({status: tournament.status});
+		}
 		const [creator] = await db.select({ name: tables.users.displayName }).from(tables.users).where(
 			orm.eq(tables.users.uuid, tournament.createdBy),
 		);
@@ -303,6 +306,7 @@ export class Tournament {
 		if (!info) {
 			return rep.code(STATUS.not_found).send({ message: "No such tournament" });
 		}
+		
 		rep.code(STATUS.success).send({ creator, ...info });
 	}
 
@@ -319,7 +323,6 @@ export class Tournament {
 		const [tm] = await db.select()
 			.from(tables.tournaments)
 			.where(orm.eq(tables.tournaments.id,isTmMatch.tournamentId));
-
 
 		return rep.code(STATUS.success).send({name: tm.name});
 	}

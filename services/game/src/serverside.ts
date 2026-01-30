@@ -31,7 +31,7 @@ type MatchId = number;
 
 export const games: Map<MatchId, GameInstance> = new Map();
 
-export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, mode: Mode) {
+export async function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, mode: Mode) {
 	if (games.has(matchId))
 		return;
 
@@ -42,7 +42,7 @@ export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, 
 	// 	game.start();
 	// }
 	// else {
-	let discard = dbM.startMatch(matchId).then(() => {
+	let discard = await dbM.startMatch(matchId).then(() => {
 		let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
 		games.set(matchId, game);
 		game.start();

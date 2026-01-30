@@ -157,7 +157,7 @@ export default class PlayMatch implements AppPage {
 
 		setTimeout( () => {
 			gotoPage(nextPage, search);
-		}, 4000);
+		}, 2000);
 	}
 };
 async function fetchImage(url: string): Promise<HTMLImageElement | null> {

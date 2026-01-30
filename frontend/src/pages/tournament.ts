@@ -54,7 +54,7 @@ export class Tournament implements AppPage {
 	}
 	async retrieveTournamentInfo(name: string) {
 		let res = await api.get("/api/tournament?name=" + name);
-		if (!res || res.status == Status.not_found) {
+		if (!res || res.status == Status.not_found || res.payload.status === "ended") {
 			if (res && res.payload.message) notify(res.payload.message, "error");
 			return null;
 		}
@@ -127,7 +127,7 @@ export class Tournament implements AppPage {
 			const round = info.rounds[roundI];
 			const roundElement = htmlItems[roundI];
 			for (const match of round) {
-				this.addMatch(match, roundElement);
+				await this.addMatch(match, roundElement);
 			}
 		}
 		if (round0.children.length > 0) {
@@ -141,6 +141,8 @@ export class Tournament implements AppPage {
 		}
 	}
 	async addMatch(match: TournamentMatch, round: HTMLElement) {
+		if (!match?.p1 || !match?.p2)
+			return;
 		const avatar1: string = await getUserAvatar(match.p1.name);
 		const avatar2: string = await getUserAvatar(match.p2.name);
 		const matchDiv = createElement(`
@@ -191,10 +193,10 @@ export class Tournament implements AppPage {
 	leaveTournament(name: string) {
 		api.post("/api/tournament/leave", { name }).then((res) => {
 			if (!res) return;
-			if (res.status != Status.success) {
+			if (res.status !== Status.success && res.status !== Status.bad_request) {
 				notify(res.payload.message, "error");
 			}
-			else {
+			else if (res.status === Status.success) {
 				notify(res.payload.message, "success");
 			}
 			gotoPage("tournaments");

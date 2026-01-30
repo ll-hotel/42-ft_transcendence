@@ -2,6 +2,7 @@ import * as orm from "drizzle-orm";
 import socket from "../socket";
 import { db } from "./database";
 import * as tables from "./tables";
+import { randomBytes } from "crypto";
 
 export async function updateMatchInfo(matchId: number, score_p1: number, score_p2: number) {
 	const [match] = await db.select().from(tables.matches).where(orm.eq(tables.matches.id, matchId));
@@ -94,15 +95,17 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 				orm.eq(tables.tournamentPlayers.userId, loserId),
 			));
 		}
-
-		const winners = finished.map(x => x.winnerId); //null check
+		const randomKey = randomBytes(32).toString("hex"); 
+		const winners = finished.map(x => x.winnerId).filter(x => x !== null && x !== undefined);
 		if (winners.length === 1) {
 			const winnerId = winners[0];
 			if (winnerId !== null) {
 				/* await db.update(tables.tournamentPlayers).set({ eliminated: 1 }).where(orm.eq(tables.tournamentPlayers.userId, winnerId)); */
-				await db.update(tables.tournaments).set({ status: "ended", winnerId: winnerId}).where(orm.eq(tables.tournaments.id, tournamentId));
+				
+				await db.update(tables.tournaments).set({ status: "ended", winnerId: winnerId, name: randomKey}).where(orm.eq(tables.tournaments.id, tournamentId));
 				await db.delete(tables.tournamentPlayers)
-					.where(orm.eq(tables.tournamentPlayers.tournamentId, tournamentId)); // clear TMplayers when finished
+					.where(orm.eq(tables.tournamentPlayers.tournamentId, tournamentId));
+				
 
 			}
 
@@ -129,6 +132,8 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 			const [p2] = await db.select().from(tables.users)
 				.where(orm.eq(tables.users.id, match.player2Id));
 
+			if (!p1 || !p2)
+				continue;
 			const message1 = { service:"tournament", topic: "vs:start", match: match.id, opponent : p2.displayName};
 			const message2 = { service:"tournament", topic: "vs:start", match: match.id, opponent : p1.displayName };
 			socket.send(p1.uuid, message1);
@@ -193,3 +198,4 @@ export async function deleteTournament(id: number) {
 		orm.eq(tables.tournamentPlayers.tournamentId, id),
 	);
 }
+

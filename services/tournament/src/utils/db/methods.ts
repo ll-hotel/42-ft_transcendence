@@ -20,7 +20,7 @@ export async function setUserOffline(uuid: string) {
 
 export async function addTournamentPlayer(tournamentId: number, user: TournamentPlayer) {
 	const [player] = await db.select({ id: tables.tournamentPlayers.userId }).from(tables.tournamentPlayers).where(
-		orm.eq(tables.tournamentPlayers.userId, user.id),
+		orm.eq(tables.tournamentPlayers.userId, user.id)
 	);
 	if (player) return;
 	await db.insert(tables.tournamentPlayers).values({
@@ -36,6 +36,7 @@ export async function addTournamentPlayer(tournamentId: number, user: Tournament
 }
 
 export async function removeUserFromTournaments(userUUID: string) {
+	
 	const tournaments = await db.select({ id: tables.tournamentPlayers.tournamentId }).from(tables.tournamentPlayers)
 		.where(orm.eq(tables.tournamentPlayers.userUuid, userUUID));
 	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status }).from(
