@@ -3,7 +3,6 @@ import { notify } from "../../utils/notifs.js";
 import AppPage from "../AppPage.js";
 import { Game, Mode } from "../../pong_client_side.js";
 import { gotoPage } from "../../PageLoader.js";
-import { Tournament } from "../tournament.js";
 
 export default class PlayMatch implements AppPage {
 	html: HTMLElement;
