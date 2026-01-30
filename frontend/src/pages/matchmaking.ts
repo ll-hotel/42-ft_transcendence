@@ -3,6 +3,7 @@ import socket, { Message } from "../socket.js";
 import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js"
 import {gotoPage} from "../PageLoader.js";
+import { Tournaments } from "./tournaments.js";
 
 export class MatchMaking implements AppPage {
 	html: HTMLElement;
@@ -39,7 +40,11 @@ export class MatchMaking implements AppPage {
 		{
 			if (!join || join.status != Status.success) {
 				notify(join ? join.payload.message : "Can not join queue.", "error");
-				return gotoPage("home");
+				if (join?.payload.message === "Already in tournament"){
+					this.joinTournament(join.payload.name);
+				}
+				if (join?.payload.message !== "Already in queue")
+					return gotoPage("home");
 			} else {
 				this.inQueue = true;
 				notify(join.payload.message, "success");
@@ -67,4 +72,13 @@ export class MatchMaking implements AppPage {
     	const { match, opponent } = m as any as { match: number, opponent: string };
     	notify("Match found!\n" + `Match id: ${match}\nOpponent: ${opponent}`, "success");
     }
+
+	async joinTournament(name: string) {
+		const joinRep = await api.post("/api/tournament/join", { name });
+		if (!joinRep) return;
+		if (joinRep.status == Status.success) {
+			return gotoPage("tournament", "?name=" + name);
+		}
+		notify("Can not join tournament : " + joinRep.payload.message, "error");
+	}
 };
