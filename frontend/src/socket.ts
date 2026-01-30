@@ -120,8 +120,12 @@ namespace Socket {
 		conn!.send(JSON.stringify(message));
 		return true;
 	}
-	export function disconnect() {
-		conn?.close();
+	export function disconnect(): Promise<void> {
+		return new Promise(resolve => {
+			if (!conn) return resolve();
+			conn.addEventListener("close", () => resolve());
+			conn.close();
+		});
 	}
 	export function addListener(topic: string, hook: (m: Message) => void) {
 		if (!hooks.has(topic)) {

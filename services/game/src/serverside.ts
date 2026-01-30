@@ -15,6 +15,18 @@ import {
 	Vector2D,
 } from "./types";
 
+type MatchId = number;
+const server_tickrate: number = 10;
+const table_width = 500;
+const table_ratio = 1/2;
+const table = {
+	width: table_width,
+	height: table_width * table_ratio,
+};
+const paddleWidth = table.width * 0.03;
+const paddleHeight = table.height * 0.2;
+export const games: Map<MatchId, GameInstance> = new Map();
+
 type GameState = {
 	ball: { x: number, y: number, speed: Vector2D },
 	paddles: {
@@ -27,14 +39,9 @@ type GameState = {
 	score: Score,
 };
 
-type MatchId = number;
-
-export const games: Map<MatchId, GameInstance> = new Map();
-
 export async function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, mode: Mode) {
 	if (games.has(matchId))
 		return;
-
 	// if (mode == Mode.local)
 	// {
 	// 	let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
@@ -49,7 +56,6 @@ export async function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: st
 	});
 }
 
-const server_tickrate: number = 10;
 
 function dot_product(x1: number, y1: number, x2: number, y2: number): number {
 	return ((x1 * x2) + (y1 * y2));
@@ -71,16 +77,6 @@ abstract class PhysicObject {
 		this.pos.y += this.speed.getY();
 	}
 }
-
-const table_width = 500;
-const table_ratio = 1/2;
-const table = {
-	width: table_width,
-	height: table_width * table_ratio,
-};
-
-const paddleWidth = table.width * 0.03;
-const paddleHeight = table.height * 0.2;
 
 export class GameInstance {
 	ball: PongBall;
@@ -131,14 +127,14 @@ export class GameInstance {
 			// 	this.local_input_listener(msg);
 			// });
 		} else if (mode == Mode.remote) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
-				this.p1_event_listener(msg);
-			});
-			socket.addListener(this.p2_uuid, "pong", (msg) => {
-				this.p2_event_listener(msg);
-			});
-			socket.addListener(this.p1_uuid, "pong", console.log);
-			socket.addListener(this.p2_uuid, "pong", console.log);
+			// socket.addListener(this.p1_uuid, "pong", (msg) => {
+			// 	this.p1_event_listener(msg);
+			// });
+			// socket.addListener(this.p2_uuid, "pong", (msg) => {
+			// 	this.p2_event_listener(msg);
+			// });
+			// socket.addListener(this.p1_uuid, "pong", console.log);
+			// socket.addListener(this.p2_uuid, "pong", console.log);
 		}
 	}
 
@@ -154,16 +150,6 @@ export class GameInstance {
 			this.input.p2.up = msg.up;
 		}
 	}
-
-	 p1_event_listener(msg: InputMessage) {
-	 	this.input.p1.up = msg.up;
-	 	this.input.p1.down = msg.down;
-	 }
-
-	 p2_event_listener(msg: InputMessage) {
-	 	this.input.p2.up = msg.up;
-	 	this.input.p2.down = msg.down;
-	 }
 
 	local_input_listener(msg: LocalMessage) {
 		if (msg.topic !== "pong" || msg.type !== "input") {
@@ -340,8 +326,8 @@ export class PongBall extends PhysicObject {
 		this.pos.y = table.height / 2;
 		// TODO remettre l'angle aleatoire
 		let new_dir = 45 + Math.random() * 90;
-		this.speed.setX = Math.cos(new_dir) * 5;
-		this.speed.setY = Math.sin(new_dir) * 5;
+		this.speed.setX = 5 * side;
+		this.speed.setY = Math.sin(new_dir);
 		this.speed.scale(4);
 	}
 
