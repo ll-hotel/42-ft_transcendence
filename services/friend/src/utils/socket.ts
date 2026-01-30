@@ -1,142 +1,142 @@
-
-import { matches, users, friends } from './db/tables';
-import { db } from './db/database';
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, or } from "drizzle-orm";
+import { db } from "./db/database";
+import { friends, matches, users } from "./db/tables";
 
 export async function tcheckFriends(user_1: number, user_2: number): Promise<boolean> {
 	const res = await db.select({ id: friends.id }).from(friends).where(and(
-		eq(friends.status, "accepted"), or(and(
-			eq(friends.senderId, user_1), eq(friends.receiverId, user_2)), and(
-				eq(friends.senderId, user_2), eq(friends.receiverId, user_1))))).limit(1);
+		eq(friends.status, "accepted"),
+		or(
+			and(
+				eq(friends.senderId, user_1),
+				eq(friends.receiverId, user_2),
+			),
+			and(
+				eq(friends.senderId, user_2),
+				eq(friends.receiverId, user_1),
+			),
+		),
+	)).limit(1);
 	return res.length > 0;
 }
 
-type Event = "message" | "disconnect";
-type Handler = (data?: any) => void;
+import * as Ws from "ws";
 
-type ClientId = string;
-type Client = {
-	sockets: WebSocket[],
-	onMessage: Handler[],
-	onDisconnect: (() => void)[],
-	lastOnlineTime: number,
-};
-type BaseMessage = {
-	topic: string,
-};
-type MatchMessage = BaseMessage & {
-	source: string,
-	match: number,
-	opponent: string,
-};
+type UUID = string;
 
-type VersusMessage = BaseMessage & {
-	source: string,
-	target: string,
-};
-type Message = BaseMessage | MatchMessage | VersusMessage;
+namespace Socket {
+	export type Callback = {
+		topic?: string,
+		fn: Socket.TopicFn,
+	};
+	export type Client = {
+		conn: Ws.WebSocket,
+		onmessage: Callback[],
+	};
+	export type BaseMessage = {
+		topic: string,
+	};
+	export type ChatMessage = BaseMessage & {
+		source: string,
+		target: string,
+		content: string,
+	};
+	export type Message = BaseMessage | ChatMessage;
 
-export const clients: Map<ClientId, Client> = new Map();
+	export const clients: Map<UUID, Client> = new Map();
 
-export function isOnline(id: ClientId): boolean {
-	const client = clients.get(id);
-	if (!client) return false;
-	for (const socket of client.sockets) {
-		if (socket.readyState === WebSocket.OPEN) {
-			client.lastOnlineTime = Date.now();
+	export function isOpen(id: UUID): boolean {
+		const client = clients.get(id);
+		if (client && client.conn.readyState == Ws.OPEN) {
 			return true;
 		}
+		return false;
 	}
-	return false;
-}
+	export const isOnline = isOpen;
 
-export async function connect(uuid: ClientId, socket: WebSocket) {
-	if (!clients.has(uuid)) {
-		clients.set(uuid, {
-			sockets: [],
-			onMessage: [],
-			onDisconnect: [],
-			lastOnlineTime: 0,
+	export function register(uuid: UUID, conn: Ws.WebSocket): void {
+		if (!clients.has(uuid)) {
+			clients.set(uuid, { conn: conn, onmessage: [] });
+		}
+		const client = clients.get(uuid)!;
+		conn.on("message", (stream) => dispatch(client, stream.toString()));
+		conn.on("close", () => disconnect(uuid));
+		addListener(uuid, "vs:invite", (m: any) => {
+			const msg = m as ChatMessage;
+			if (!isOnline(msg.target)) {
+				return;
+			}
+			send(msg.target, { source: uuid, topic: "vs:invite", target: msg.target });
+		});
+		addListener(uuid, "vs:accept", (m: any) => {
+			const msg = m as ChatMessage;
+			createMatchBetween(uuid, msg.target);
+		});
+
+		addListener(uuid, "vs:decline", (m: any) => {
+			const msg = m as ChatMessage;
+			send(msg.target, { source: uuid, topic: "vs:decline", target: msg.target });
 		});
 	}
-	const client = clients.get(uuid)!;
-	client.sockets.push(socket);
-	client.lastOnlineTime = Date.now();
+	export const connect = register;
 
-	socket.addEventListener("message", (event) => onMessage(client, uuid, event));
-	socket.addEventListener("close", () => disconnect(uuid, socket));
-}
-
-function updateOnlineTime(client: Client) {
-	client.lastOnlineTime = Date.now();
-}
-
-function onMessage(client: Client, clientId: ClientId, event: MessageEvent) {
-	updateOnlineTime(client);
-	try {
-		const msg = JSON.parse(event.data);
-		if (msg.source === "ping") return;
-		client.onMessage.forEach((handler) => handler(msg));
-		switch (msg.topic) {
-			case ("vs:invite"):
-				if (!isOnline(msg.target)) {
-					return;
-				}
-				send(msg.target, { source: clientId, topic: "vs:invite", target: msg.target });
-				break;
-			case ("vs:accept"):
-				createMatchBetween(clientId, msg.target);
-				break;
-
-			case ("vs:decline"):
-				send(msg.target, { source: clientId, topic: "vs:decline", target: msg.target });
-				break;
-		}
-	} catch (_) {
-	}
-}
-
-export function send(target: ClientId, message: Message) {
-	if (isOnline(target)) {
+	function dispatch(client: Client, data: string): void {
 		try {
-			const data = JSON.stringify(message);
-			clients.get(target)!.sockets.forEach(socket => socket.send(data));
-		} catch (err) { }
+			const msg = JSON.parse(data);
+			if (!msg.topic || msg.topic === "ping") {
+				return;
+			}
+			client.onmessage.filter(cb => (!cb.topic) || cb.topic == msg.topic).forEach(cb => cb.fn(msg));
+		} catch {}
 	}
-}
 
-export function addListener(clientId: ClientId, event: Event, handler: Handler) {
-	const client = clients.get(clientId);
-	if (!client) return;
-
-	if (event == "message") {
-		client.onMessage.push(handler);
-	} else if (event == "disconnect") {
-		client.onDisconnect.push(handler);
-	}
-}
-
-/**
- * Closes all of client websockets, or the one specified.
- * Uses the error code 4001 to manifest a voluntary disconnection.
- */
-export function disconnect(target: ClientId, socket?: WebSocket) {
-	const client = clients.get(target);
-	if (!client) return;
-	if (socket && socket.readyState === WebSocket.OPEN) {
-		client.sockets = client.sockets.filter(e => e != socket);
-		if (client.sockets.length == 0) {
-			client.lastOnlineTime = Date.now();
+	export function send(uuid: UUID, message: Message): void {
+		if (isOpen(uuid)) {
+			try {
+				const data = JSON.stringify(message);
+				clients.get(uuid)!.conn.send(data);
+			} catch {}
 		}
-		socket.close(4001);
-	} else {
-		client.sockets.forEach(socket => socket.close(4001));
-		client.sockets = [];
 	}
-	if (!isOnline(target)) {
-		client.onDisconnect.forEach((handler) => handler());
+	export function sendRaw(uuid: UUID, data: string): void {
+		const client = clients.get(uuid);
+		if (client) {
+			client.conn.send(data);
+		}
+	}
+
+	/** For compatibility */
+	export function disconnect(uuid: UUID, _?: any): void {
+		close(uuid);
+	}
+	export function close(uuid: UUID): void {
+		const client = clients.get(uuid);
+		if (client) {
+			if (client.conn.readyState == Ws.WebSocket.OPEN) {
+				client.conn.close();
+			}
+			clients.delete(uuid);
+		}
+	}
+
+	export type MessageFn = (event: Ws.MessageEvent) => void;
+	export type CloseFn = (code?: number, reason?: any) => void;
+	export type TopicFn = (json: Message) => void;
+	export function addListener(uuid: UUID, topic: string, fn: MessageFn | CloseFn | TopicFn): void {
+		const client = clients.get(uuid);
+		if (client) {
+			if (topic == "message") client.conn.addEventListener("message", fn as MessageFn);
+			else if (topic == "close" || topic == "disconnect") client.conn.on("close", fn as CloseFn);
+			else client.onmessage.push({ topic, fn: fn as TopicFn });
+		}
+	}
+	export function onmessage(uuid: UUID, fn: TopicFn): void {
+		const client = clients.get(uuid);
+		if (client) {
+			client.onmessage.push({ fn });
+		}
 	}
 }
+export default Socket;
 
 async function createMatchBetween(uuid1: string, uuid2: string) {
 	const [p1] = await db.select().from(users).where(eq(users.uuid, uuid1));
@@ -146,7 +146,7 @@ async function createMatchBetween(uuid1: string, uuid2: string) {
 		return;
 	}
 
-	if (await !tcheckFriends(p1.id, p2.id)) {
+	if (!tcheckFriends(p1.id, p2.id)) {
 		console.log("They aren't friend anymore, so we can't create a game, sorry :(");
 		return;
 	}
@@ -172,15 +172,8 @@ async function createMatchBetween(uuid1: string, uuid2: string) {
 		status: "ongoing",
 	}).returning();
 
-	send(uuid1, { source: "server", topic: "vs:start", match: match.id, opponent: p2.username });
-	send(uuid2, { source: "server", topic: "vs:start", match: match.id, opponent: p1.username });
+	const msg1 = { source: "server", topic: "vs:start", match: match.id, opponent: p2.username };
+	Socket.send(uuid1, msg1);
+	const msg2 = { source: "server", topic: "vs:start", match: match.id, opponent: p1.username };
+	Socket.send(uuid2, msg2);
 }
-
-export default {
-	clients,
-	isOnline,
-	send,
-	connect,
-	disconnect,
-	addListener,
-};

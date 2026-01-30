@@ -1,6 +1,4 @@
 import { clearInterval, setInterval } from "node:timers";
-import * as dbM from "./utils/db/methods";
-import socket from "./utils/socket";
 import {
 	InputMessage,
 	LocalMessage,
@@ -14,6 +12,8 @@ import {
 	TypeMsg,
 	Vector2D,
 } from "./types";
+import * as dbM from "./utils/db/methods";
+import socket from "./utils/socket";
 
 type GameState = {
 	ball: { x: number, y: number, speed: Vector2D },
@@ -32,8 +32,9 @@ type MatchId = number;
 export const games: Map<MatchId, GameInstance> = new Map();
 
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string, mode: Mode) {
-	if (games.has(matchId))
+	if (games.has(matchId)) {
 		return;
+	}
 
 	// if (mode == Mode.local)
 	// {
@@ -73,7 +74,7 @@ abstract class PhysicObject {
 }
 
 const table_width = 500;
-const table_ratio = 1/2;
+const table_ratio = 1 / 2;
 const table = {
 	width: table_width,
 	height: table_width * table_ratio,
@@ -131,10 +132,10 @@ export class GameInstance {
 			// 	this.local_input_listener(msg);
 			// });
 		} else if (mode == Mode.remote) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
+			socket.addListener(this.p1_uuid, "pong", (msg: any) => {
 				this.p1_event_listener(msg);
 			});
-			socket.addListener(this.p2_uuid, "pong", (msg) => {
+			socket.addListener(this.p2_uuid, "pong", (msg: any) => {
 				this.p2_event_listener(msg);
 			});
 			socket.addListener(this.p1_uuid, "pong", console.log);
@@ -143,27 +144,24 @@ export class GameInstance {
 	}
 
 	remote_input_listener(msg: InputMessage) {
-		if (msg.clientId == this.p1_uuid)
-		{
+		if (msg.clientId == this.p1_uuid) {
 			this.input.p1.up = msg.up;
 			this.input.p1.down = msg.down;
-		}
-		else if (msg.clientId == this.p2_uuid)
-		{
+		} else if (msg.clientId == this.p2_uuid) {
 			this.input.p2.down = msg.down;
 			this.input.p2.up = msg.up;
 		}
 	}
 
-	 p1_event_listener(msg: InputMessage) {
-	 	this.input.p1.up = msg.up;
-	 	this.input.p1.down = msg.down;
-	 }
+	p1_event_listener(msg: InputMessage) {
+		this.input.p1.up = msg.up;
+		this.input.p1.down = msg.down;
+	}
 
-	 p2_event_listener(msg: InputMessage) {
-	 	this.input.p2.up = msg.up;
-	 	this.input.p2.down = msg.down;
-	 }
+	p2_event_listener(msg: InputMessage) {
+		this.input.p2.up = msg.up;
+		this.input.p2.down = msg.down;
+	}
 
 	local_input_listener(msg: LocalMessage) {
 		if (msg.topic !== "pong" || msg.type !== "input") {
@@ -181,10 +179,10 @@ export class GameInstance {
 		let message: StateMessage = {
 			service: "game",
 			topic: "pong",
-			type : TypeMsg.state,
-			...state
+			type: TypeMsg.state,
+			...state,
 		} as StateMessage;
-		socket.send(this.p1_uuid, message);			
+		socket.send(this.p1_uuid, message);
 		socket.send(this.p2_uuid, message);
 	}
 
@@ -303,7 +301,7 @@ export class PongBall extends PhysicObject {
 
 	sendScore() {
 		let init_msg: ScoreMessage = {
-			service : "game",
+			service: "game",
 			topic: "pong",
 			type: TypeMsg.score,
 			p1_score: this.score.p1,
