@@ -94,7 +94,7 @@ namespace Socket {
 		conn.onmessage = (event) => {
 			try {
 				const message = JSON.parse(event.data) as Message;
-				console.log("[socket]", message);
+				// console.log("[socket]", message);
 				if (hooks.has(message.topic)) {
 					hooks.get(message.topic)!.forEach(hook => hook(message));
 				}
