@@ -70,7 +70,7 @@ export function kill_game(matchId: MatchId)
 	}
 	else
 		return false;
-
+	
 }
 
 export function create_local_game(p1_uuid : string)
@@ -81,7 +81,6 @@ export function create_local_game(p1_uuid : string)
 	let game = new GameInstance(localGame, p1_uuid, null, Mode.local)
 	games.set(localGame, game);
 	game.start();
-
 	return (localGame);
 }
 
@@ -155,6 +154,7 @@ export class GameInstance {
 			socket.addListener(this.p1_uuid, "pong", (msg) => {
 				this.local_input_listener(msg);
 			});
+			socket.addListener(this.p1_uuid, "disconnect", () => this.end());
 		} else if (mode == Mode.remote) {
 			socket.addListener(this.p1_uuid, "pong", (msg) => {
 				this.p1_event_listener(msg);

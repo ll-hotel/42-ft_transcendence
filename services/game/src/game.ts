@@ -73,7 +73,6 @@ class Match {
 		if (kill_game(matchId))
 			return rep.code(STATUS.success).send({ message: "Local game killed"});
 		return rep.code(STATUS.not_found).send({message : "Local Game not found"})
-
 	}
 
 	static async getCurrent(req: FastifyRequest, rep: FastifyReply) {
