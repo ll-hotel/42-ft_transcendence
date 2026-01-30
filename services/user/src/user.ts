@@ -570,21 +570,21 @@ class User {
 
 			let tempRank = 0;
 			switch (t.round) {
-				case (1):
+				case (0):
 					if (t.size == 4) {
 						tempRank = 2;
 					} else if (t.size == 8) {
 						tempRank = 1;
 					}
 					break;
-				case (2):
+				case (1):
 					if (t.size == 4) {
 						tempRank = 3;
 					} else if (t.size == 8) {
 						tempRank = 2;
 					}
 					break;
-				case (3):
+				case (2):
 					tempRank = 3;
 					break;
 			}
@@ -597,23 +597,17 @@ class User {
 
 		const finalList = {
 			matchPlayed: matchesList.length,
-			victoryRate: matchesList.length ? (nbMatchVictory / matchesList.length) * 100 : matchesList.length,
-			pointScored: matchesList.length ? pointScored / matchesList.length : matchesList.length,
-			pointConceded: matchesList.length ? pointConceded / matchesList.length : matchesList.length,
+			victoryRate: matchesList.length ? ((nbMatchVictory / matchesList.length) * 100).toFixed(2) : matchesList.length,
+			pointScored: matchesList.length ? (pointScored / matchesList.length).toFixed(2) : matchesList.length,
+			pointConceded: matchesList.length ? (pointConceded / matchesList.length).toFixed(2) : matchesList.length,
 			nbTournament: nbTournament,
 			nbTournamentVictory: nbTournamentVictory,
 			Placement: rankingPlacement.get(bestRank),
 		};
+		
 
 		return rep.code(STATUS.success).send(finalList);
 	}
-}
-
-export async function getUserIdByUsername(username: string): Promise<number | null> {
-	const [user] = await db.select({ id: tables.users.id }).from(tables.users).where(
-		orm.eq(tables.users.username, username),
-	);
-	return user ? user.id : null;
 }
 
 export default async function(fastify: FastifyInstance) {

@@ -2,11 +2,6 @@ import * as orm from "drizzle-orm";
 import { db } from "./database";
 import * as tables from "./tables";
 
-export type TournamentPlayer = {
-	id: number,
-	uuid: string,
-	displayName: string,
-};
 
 /** { username: string } */
 export const userIdByUsername = db.select({ id: tables.users.id }).from(tables.users).where(

@@ -3,6 +3,7 @@ import { notify } from "../../utils/notifs.js";
 import AppPage from "../AppPage.js";
 import { Game, Mode } from "../../pong_client_side.js";
 import { gotoPage } from "../../PageLoader.js";
+import { Tournament } from "../tournament.js";
 
 export default class PlayMatch implements AppPage {
 	html: HTMLElement;
@@ -53,7 +54,6 @@ export default class PlayMatch implements AppPage {
 			this.game.deinit();
 			this.game = null;
 		}
-		
 
 		container.innerHTML = "";
 		container.appendChild(this.html);
@@ -67,7 +67,11 @@ export default class PlayMatch implements AppPage {
 		if (!matchResponse || matchResponse.status != Status.success) {
 			return history.back();
 		}
-		await api.post("/api/game/launch", { matchId: this.matchId });
+		const res = await api.post("/api/game/launch", { matchId: this.matchId });
+		if (res?.status !== Status.success && res?.status !== Status.created) {
+			gotoPage("home");
+		}
+
 		const match = matchResponse.payload;
 
 		this.p1_DisplayName!.innerText = match.p1.name;
@@ -90,10 +94,6 @@ export default class PlayMatch implements AppPage {
 			this.onEnded();
 		};
 		this.game.init();
-		
-
-		container.innerHTML = "";
-		container.appendChild(this.html);
 	}
 
 	unload(): void {
@@ -112,7 +112,7 @@ export default class PlayMatch implements AppPage {
 	async onEnded() {
 		this.matchCanvas!.hidden = true;
 		const result = document.createElement("div");
-		const me = await api.get("/api/me");
+		const me = await api.get("/api/user/me");
 
 		if (!me || me.status != Status.success)
 			return;
@@ -123,33 +123,41 @@ export default class PlayMatch implements AppPage {
 		{
 			if (this.game!.score.p1 > this.game!.score.p2)
 			{
-				result.innerText =`You win in front of ${this.p2_DisplayName!.innerText}! Nice !`;
+				result.innerText =`You won vs ${this.p2_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			}
 			else
 			{
-				result.innerText =`You lose in front of ${this.p2_DisplayName!.innerText}! Boo !`;
+				result.innerText =`You lost vs ${this.p2_DisplayName!.innerText}! Boo !`;
 				result.classList.add("loose");
 			}
 		}
 		else {
 			if (this.game!.score.p1 < this.game!.score.p2)
 			{
-				result.innerText =`You win in front of ${this.p1_DisplayName!.innerText}! Nice !`;
+				result.innerText =`You won vs ${this.p1_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			}
 			else
 			{
-				result.innerText =`You lose in front of ${this.p1_DisplayName!.innerText}! Boo !`;
+				result.innerText =`You lost vs ${this.p1_DisplayName!.innerText}! Boo !`;
 				result.classList.add("loose");
 			}
 		}
 
 		this.matchWindow!.appendChild(result);
-		notify(`The match n°${this.matchId} is finished`, "success");
+		notify(`Match is finished`, "success");
+		
+		let nextPage = "home", search = "";
+		const res = await api.get(`/api/tournament/isTmMatch?matchId=${this.matchId}`);
+		if (res?.status === Status.success) {
+			nextPage = "tournament";
+			search = "?name=" + res.payload.name;
+		}
+
 		setTimeout( () => {
-			gotoPage("home");
-		}, 4000);
+			gotoPage(nextPage, search);
+		}, 2000);
 	}
 };
 async function fetchImage(url: string): Promise<HTMLImageElement | null> {

@@ -33,6 +33,7 @@ export const MESSAGE = {
 	database_error: "Database error",
 	missing_fields: "Missing fields",
 	oauth_service_is_unavailable: "OAuth service is unavailable",
+	match_started: ""
 };
 
 export const catch_errors = (fn: any) => async (req: FastifyRequest, rep: FastifyReply) => {

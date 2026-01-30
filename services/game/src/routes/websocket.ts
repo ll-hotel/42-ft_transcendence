@@ -19,14 +19,6 @@ function route(ws: WebSocket.WebSocket, req: FastifyRequest): void {
 	ws.on("error", (error) => console.log(error));
 
 	socket.connect(req.user!.uuid, ws);
-	socket.addListener(req.user!.uuid, "disconnect", () => {
-		setTimeout(() => {
-			if (socket.isOnline(req.user!.uuid)) {
-				return;
-			}
-			dbM.removeUserFromTournaments(req.user!.uuid);
-		}, 1000);
-	});
 }
 
 async function userByUUID(req: FastifyRequest, rep: FastifyReply) {
