@@ -13,10 +13,11 @@ import {
 	Status,
 	TypeMsg,
 	Vector2D,
+	Side,
 } from "./types";
 
 type MatchId = number;
-const server_tickrate: number = 10;
+const server_tickrate: number = 20;
 const table_width = 500;
 const table_ratio = 1/2;
 const table = {
@@ -46,14 +47,6 @@ export const games: Map<MatchId, GameInstance> = new Map();
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string) {
 	if (games.has(matchId))
 		return;
-
-	// if (mode == Mode.local)
-	// {
-	// 	let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
-	// 	games.set(matchId, game);
-	// 	game.start();
-	// }
-	// else {
 	let discard = dbM.startMatch(matchId).then(() => {
 		let game = new GameInstance(matchId, p1_uuid, p2_uuid, Mode.remote);
 		games.set(matchId, game);
@@ -70,7 +63,6 @@ export function kill_game(matchId: MatchId)
 	}
 	else
 		return false;
-	
 }
 
 export function create_local_game(p1_uuid : string)
@@ -83,7 +75,6 @@ export function create_local_game(p1_uuid : string)
 	game.start();
 	return (localGame);
 }
-
 
 function dot_product(x1: number, y1: number, x2: number, y2: number): number {
 	return ((x1 * x2) + (y1 * y2));
@@ -122,7 +113,7 @@ export class GameInstance {
 	game_id: number;
 	move_offset: number;
 	is_running: boolean;
-	status: Status = Status.started;
+	status: Status = Status.initialised;
 	mode: Mode;
 
 	constructor(game_id: number, p1_uuid: string, p2_uuid: string | null, mode: Mode) {
@@ -137,7 +128,7 @@ export class GameInstance {
 			p1: { up: false, down: false },
 			p2: { up: false, down: false },
 		};
-		this.move_offset = table.height * 0.1;
+		this.move_offset = table.height * 0.05;
 		this.p1_uuid = p1_uuid;
 		this.p2_uuid = p2_uuid;
 		this.ball = new PongBall(
@@ -168,13 +159,10 @@ export class GameInstance {
 	}
 
 	remote_input_listener(msg: InputMessage) {
-		if (msg.clientId == this.p1_uuid) {
-			this.input.p1.up = msg.up;
-			this.input.p1.down = msg.down;
-		} else if (msg.clientId == this.p2_uuid) {
-			this.input.p2.down = msg.down;
-			this.input.p2.up = msg.up;
-		}
+		if (msg.clientId == this.p1_uuid)
+			this.p1_event_listener(msg);
+		else if (msg.clientId == this.p2_uuid)
+			this.p2_event_listener(msg);
 	}
 
 	 p1_event_listener(msg: InputMessage) {
@@ -203,12 +191,22 @@ export class GameInstance {
 		let message: StateMessage = {
 			service: "game",
 			topic: "pong",
-			type: TypeMsg.state,
+			type : TypeMsg.state,
+			side: Side.left,
 			...state,
 		} as StateMessage;
 		socket.send(this.p1_uuid, message);
 		if (this.p2_uuid)
+		{
+			let message: StateMessage = {
+				service: "game",
+				topic: "pong",
+				type : TypeMsg.state,
+				side: Side.right,
+				...state
+			} as StateMessage;
 			socket.send(this.p2_uuid, message);
+		}
 	}
 
 	state(): GameState {
@@ -229,10 +227,9 @@ export class GameInstance {
 		this.score.p1 = 0;
 		this.score.p2 = 0;
 		this.ball.respawn(Math.random() < 0.5 ? -1 : 1);
-		this.sendState(Status.started);
+		this.sendState(Status.initialised);
 		this.is_running = true;
-		this.status = Status.started;
-
+		this.status = Status.initialised;
 		let id_interval = setInterval(() => {
 			this.update();
 			if (!this.is_running) {
@@ -363,10 +360,9 @@ export class PongBall extends PhysicObject {
 	respawn(side: number) {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
-		// TODO remettre l'angle aleatoire
 		let new_dir = 45 + Math.random() * 90;
 		this.speed.setX = 5 * side;
-		this.speed.setY = Math.sin(new_dir);
+		this.speed.setY = Math.sin(new_dir) * 5;
 		this.speed.scale(4);
 	}
 
