@@ -1,25 +1,5 @@
-import { and, eq, or } from "drizzle-orm";
 import { FastifyRequest } from "fastify";
 import * as Ws from "ws";
-import { db } from "./utils/db/database";
-import { friends } from "./utils/db/tables";
-
-async function areFriends(user_1: number, user_2: number): Promise<boolean> {
-	const res = await db.select({ id: friends.id }).from(friends).where(and(
-		eq(friends.status, "accepted"),
-		or(
-			and(
-				eq(friends.senderId, user_1),
-				eq(friends.receiverId, user_2),
-			),
-			and(
-				eq(friends.senderId, user_2),
-				eq(friends.receiverId, user_1),
-			),
-		),
-	)).limit(1);
-	return res.length > 0;
-}
 
 function privateRoomId(UserAId: string, UserBId: string): string {
 	const [a, b] = UserAId < UserBId ? [UserAId, UserBId] : [UserBId, UserAId];
@@ -199,10 +179,13 @@ namespace Chat {
 		}
 
 		async createPrivateRoom(userA: User, userB: User): Promise<Room> {
-			const friends = await areFriends(userA.userId, userB.userId);
-			if (!friends) {
-				throw new Error("Cannot create private room: not friends");
+			if (userA.userId == userB.userId) {
+				throw new Error("You can not talk to yourself");
 			}
+			// const friends = await areFriends(userA.userId, userB.userId);
+			// if (!friends) {
+			// 	throw new Error("Cannot create private room: not friends");
+			// }
 
 			const id = privateRoomId(userA.id, userB.id);
 			let room = this.rooms.get(id);

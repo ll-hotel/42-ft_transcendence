@@ -32,6 +32,23 @@ export function chatRoute(fastify: FastifyInstance) {
 		return rep.code(STATUS.success).send({ roomId: room.id });
 	});
 
+	fastify.get("/api/chat/rooms", { preHandler: authGuard }, (req, rep) => {
+		const roomsNames: string[] = [];
+		for (const [name, _room] of chat.rooms) {
+			roomsNames.push(name);
+		}
+		const rooms = roomsNames.map((name) => {
+			// Remove "private:"
+			name = name.substring(8);
+			// 1 -> "@"
+			const user1 = name.slice(1, name.search(/:@/));
+			// 3 -> "@" + ":@"
+			const user2 = name.slice(3 + user1.length);
+			return user1 == req.user!.username ? user2 : user1;
+		});
+		rep.code(STATUS.success).send({ rooms });
+	});
+
 	fastify.get(
 		"/api/chat/room/:id/message",
 		{
