@@ -1,13 +1,13 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import jwt from 'jsonwebtoken';
-import { eq } from 'drizzle-orm';
 import { randomBytes } from "crypto";
+import { eq } from "drizzle-orm";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import jwt from "jsonwebtoken";
 import sharp from "sharp";
 import { v4 as uiidv4 } from "uuid";
 import { db } from "./utils/db/database";
 import { OAuth, TwofaState, users } from "./utils/db/tables";
 import { MESSAGE, schema, STATUS } from "./utils/http-reply";
-import { generate2FASecret, generateQRCode, verify2FAToken } from "./utils/security/2fa";
+import { verify2FAToken } from "./utils/security/2fa";
 import { authGuard } from "./utils/security/authGuard";
 import { comparePassword, hashPassword } from "./utils/security/hash";
 import socket from "./utils/socket";
@@ -116,7 +116,7 @@ class AuthService {
 					loggedIn: true,
 					accessToken: tokenCookie,
 				});
-			} catch { }
+			} catch {}
 		}
 		const accessToken = jwt.sign({ uuid: user.uuid }, jwtSecret, { expiresIn: "1h" });
 		rep.setCookie("accessToken", accessToken, {
@@ -136,8 +136,6 @@ class AuthService {
 		if (!user) {
 			return rep.code(STATUS.unauthorized).send({ message: MESSAGE.unauthorized });
 		}
-
-		// websocket "disconnect" handler takes care of the user offline status.
 		socket.disconnect(user.uuid);
 
 		rep.clearCookie("accessToken", { path: "/api" });
@@ -145,8 +143,9 @@ class AuthService {
 	}
 
 	async auth42Redirect(_req: FastifyRequest, rep: FastifyReply) {
-		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${oauthKeys.s42.clientId}&redirect_uri=${encodeURI(redirect42)
-			}&response_type=code`;
+		const redirectURL = `https://api.intra.42.fr/oauth/authorize?client_id=${oauthKeys.s42.clientId}&redirect_uri=${
+			encodeURI(redirect42)
+		}&response_type=code`;
 		rep.send({ redirect: redirectURL });
 	}
 
@@ -219,7 +218,8 @@ class AuthService {
 
 	async googleRedirect(_req: FastifyRequest, rep: FastifyReply) {
 		const redirectURL =
-			`https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthKeys.google.clientId}&redirect_uri=${encodeURIComponent(redirectGoogle)
+			`https://accounts.google.com/o/oauth2/v2/auth?client_id=${oauthKeys.google.clientId}&redirect_uri=${
+				encodeURIComponent(redirectGoogle)
 			}&response_type=code&scope=openid email profile`;
 		rep.send({ redirect: redirectURL });
 	}
@@ -300,6 +300,6 @@ class AuthService {
 
 const service = new AuthService();
 
-export default function (fastify: FastifyInstance) {
+export default function(fastify: FastifyInstance) {
 	service.setup(fastify);
 }
