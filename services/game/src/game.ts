@@ -4,7 +4,7 @@ import { db } from "./utils/db/database";
 import * as tables from "./utils/db/tables";
 import { authGuard } from "./utils/security/authGuard";
 import { MESSAGE, schema, STATUS } from "./utils/http-reply";
-import { create_game } from "./serverside";
+import { create_game, create_local_game, kill_game } from "./serverside";
 import { Mode } from "./types";
 
 class Match {
@@ -16,6 +16,9 @@ class Match {
 		app.post("/api/game/create", { preHandler: authGuard, schema: schema.body({p1Id: "number", p2Id: "number"}, ["p1Id", "p2Id"])}, Match.create);
 
 		app.post("/api/game/launch", {preHandler: authGuard, schema: schema.body({matchId: "number"}, ["matchId"])}, Match.LaunchGame);
+		app.post("/api/game/launch/local", {preHandler: authGuard}, Match.LaunchLocalGame);
+
+		app.post("/api/game/kill/local", {preHandler: authGuard, schema: schema.body({matchId: "number"}, ["matchId"])}, Match.killLocalGame)
 	}
 	static async LaunchGame(req: FastifyRequest, rep: FastifyReply){
 		const { matchId } = req.body as { matchId: number };
@@ -36,15 +39,33 @@ class Match {
 			return rep.code(STATUS.created).send({ message: MESSAGE.match_started});
 
 		const [p1] = await db.select().from(tables.users)
-			.where(drizzle.eq(tables.users.id, matchExists.player1Id));
+		.where(drizzle.eq(tables.users.id, matchExists.player1Id));
 		const [p2] = await db.select().from(tables.users)
-			.where(drizzle.eq(tables.users.id, matchExists.player2Id));
+		.where(drizzle.eq(tables.users.id, matchExists.player2Id));
 		if (!p1 || !p2)
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
 
-		await create_game(matchId, p1.uuid, p2.uuid, Mode.remote);
+		create_game(matchId, p1.uuid, p2.uuid);
 
-		return rep.code(STATUS.success).send({ message: "Game Launched"});
+		return rep.code(STATUS.success).send({ message: "Game launched"});
+	}
+
+	static LaunchLocalGame(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+
+		const matchId = create_local_game(usr.uuid);
+
+		return rep.code(STATUS.success).send({ message: "Local game launched", matchId: matchId});
+	}
+
+	static async killLocalGame(req: FastifyRequest, rep: FastifyReply) {
+		const usr = req.user!;
+		const { matchId } = req.body as { matchId: number };
+
+		if (kill_game(matchId))
+			return rep.code(STATUS.success).send({ message: "Local game killed"});
+		return rep.code(STATUS.not_found).send({message : "Local Game not found"})
+
 	}
 
 	static async getCurrent(req: FastifyRequest, rep: FastifyReply) {

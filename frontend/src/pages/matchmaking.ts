@@ -52,16 +52,13 @@ export class MatchMaking implements AppPage {
 			if (leave.status != Status.success)
 				notify("Error : " + leave.payload.message, "error");
 			notify("Left queue", "info");
-			if (history.length > 1)
-				history.back();
-			else
-				gotoPage("home");
+			gotoPage("home");
 		});
-    }
+	}
 
-    unload(): void {
-    	this.html.remove();
-    }
+	unload(): void {
+		this.html.remove();
+	}
 
     onQueueNotification(m: Message) {
     	const message = m as any as { type: string }

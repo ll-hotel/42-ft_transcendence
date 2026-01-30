@@ -16,12 +16,6 @@ export async function updateMatchInfo(matchId: number, score_p1: number, score_p
 		scoreP1: score_p1,
 		scoreP2: score_p2,
 	}).where(orm.eq(tables.matches.id, matchId));
-	/*const [tm] = await db.select().from(tables.tournamentMatches).where(
-		drizzle.eq(tables.tournamentMatches.matchId, matchId),
-	);*/
-	// if (tm) {
-	// 	await tournamentEndMatch(matchId, winnerId);
-	// }
 	return true;
 }
 
