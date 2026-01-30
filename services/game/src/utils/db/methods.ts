@@ -32,7 +32,6 @@ export async function startMatch(matchId: number): Promise<boolean> {
 }
 
 export async function endMatch(matchId: number) {
-	// TODO Verif score dans la DB a la fin du match
 
 	const [match] = await db.select().from(tables.matches).where(orm.eq(tables.matches.id, matchId));
 	if (!match) {

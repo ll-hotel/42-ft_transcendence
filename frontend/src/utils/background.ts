@@ -27,7 +27,7 @@ export function initStarfield() {
 		speed: number;
 	};
 
-	const STAR_COUNT = Math.floor((w * h) / 8000); // screen (check if mobile is alright)
+	const STAR_COUNT = Math.floor((w * h) / 8000); // screen
 	const stars: Star[] = [];
 
 	function createStar(): Star {

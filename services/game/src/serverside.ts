@@ -351,7 +351,7 @@ export class PongBall extends PhysicObject {
 	respawn(side: number) {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
-		// TODO remettre l'angle aleatoire
+		
 		let new_dir = 45 + Math.random() * 90;
 		this.speed.setX = 5 * side;
 		this.speed.setY = Math.sin(new_dir);
