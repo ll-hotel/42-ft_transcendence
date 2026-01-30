@@ -26,7 +26,7 @@ build:
 	$(COMPOSE) build
 
 down:
-	$(COMPOSE) down
+	$(COMPOSE) down --timeout 2
 
 ps:
 	$(COMPOSE) ps
