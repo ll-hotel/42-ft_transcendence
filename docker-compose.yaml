@@ -9,6 +9,11 @@ services:
       - "8443:443"
     volumes:
       - certificate:/run/secrets:ro
+      - uploads:/srv/app/static/uploads:ro
+    depends_on:
+      auth-service:
+        condition: service_started
+        restart: true
 
   auth-service:
     container_name: auth-service
@@ -91,6 +96,10 @@ services:
       - backend-db:/srv/app/db
       - certificate:/run/secrets:ro
     env_file: .env
+    depends_on:
+      auth-service:
+        condition: service_started
+        restart: true
 
   # grafana:
   #   image: grafana/grafana
@@ -178,6 +187,6 @@ volumes:
   uploads:
     driver: local
     driver_opts:
-      device: ./frontend/static/uploads
+      device: ./uploads
       type: none
       o: bind
