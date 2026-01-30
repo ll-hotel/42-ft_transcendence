@@ -95,68 +95,64 @@ export class FriendPage implements AppPage {
 	}
 
 	async loadRooms() {
-		this.listContainer.innerHTML = "<div>Finding friends...</div>";
-
-		const friendRes = await api.get("/api/friend");
-		const requestRes = await api.get("/api/friend/requests");
-
-		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success) {
-			this.listContainer.innerHTML = "<div>Error while charging...</div>";
-			return;
-		}
-
-		const friends = friendRes.payload.friends as any[];
-		const requests = requestRes.payload.requests as any[];
 		this.listContainer.innerHTML = "";
 
-		if ((!friends || friends.length === 0) && (!requests || requests.length === 0)) {
-			this.listContainer.innerHTML = `<div class="no-friend" >Go get some friends dude :)</div>`;
-			return;
+		const requestRes = await api.get("/api/friend/requests");
+		if (requestRes) {
+			const requests = requestRes.payload.requests as any[];
+			requests.forEach((request: any) => {
+				const card: HTMLElement = this.createRequestCard(request);
+				this.listContainer.appendChild(card);
+			});
 		}
-
-		requests.forEach((request: any) => {
-			const card: HTMLElement = this.createRequestCard(request);
-			this.listContainer.appendChild(card);
-		});
 
 		this.cardsDisplayNames = [];
 
-		friends.forEach((friend) => {
-			const card: HTMLElement = FriendPage.createFriendCard(friend.displayName, friend.avatar, friend.isOnline);
-			card.onclick = () => {
-				this.switchRoomCard(card);
-				this.loadChat(friend.displayName);
-			};
-			this.cardsDisplayNames.push(friend.displayName);
-			this.listContainer.appendChild(card);
-		});
+		const friendRes = await api.get("/api/friend");
+		if (friendRes) {
+			const friends = friendRes.payload.friends as any[];
+			friends.forEach((friend) => {
+				const card: HTMLElement = FriendPage.createFriendCard(
+					friend.displayName,
+					friend.avatar,
+					friend.isOnline,
+				);
+				card.onclick = () => {
+					this.switchRoomCard(card);
+					this.loadChat(friend.displayName);
+				};
+				this.cardsDisplayNames.push(friend.displayName);
+				this.listContainer.appendChild(card);
+			});
+		}
 
 		const roomsRes = await api.get("/api/chat/rooms");
-		if (!roomsRes) return;
-		if (roomsRes.status != Status.success) {
-			notify(roomsRes.payload.message, "error");
-			return;
-		}
-		const rooms = roomsRes.payload.rooms as string[];
-		rooms.forEach(async (username) => {
-			const userRes = await api.get("/api/user?username=" + username);
-			if (!userRes) return;
-			if (userRes.status != Status.success) return;
-			const { displayName, avatar, isOnline } = userRes.payload.user as {
-				displayName: string,
-				avatar: string,
-				isOnline: boolean,
-			};
-			const card = FriendPage.createFriendCard(displayName, avatar, isOnline);
-			card.onclick = () => {
-				this.switchRoomCard(card);
-				this.loadChat(displayName);
-			};
-			if (this.cardsDisplayNames.find((value) => value == displayName) == undefined) {
-				this.cardsDisplayNames.push(displayName);
-				this.listContainer.appendChild(card);
+		if (roomsRes) {
+			if (roomsRes.status != Status.success) {
+				notify(roomsRes.payload.message, "error");
+				return;
 			}
-		});
+			const rooms = roomsRes.payload.rooms as string[];
+			rooms.forEach(async (username) => {
+				const userRes = await api.get("/api/user?username=" + username);
+				if (!userRes) return;
+				if (userRes.status != Status.success) return;
+				const { displayName, avatar, isOnline } = userRes.payload.user as {
+					displayName: string,
+					avatar: string,
+					isOnline: boolean,
+				};
+				const card = FriendPage.createFriendCard(displayName, avatar, isOnline);
+				card.onclick = () => {
+					this.switchRoomCard(card);
+					this.loadChat(displayName);
+				};
+				if (this.cardsDisplayNames.find((value) => value == displayName) == undefined) {
+					this.cardsDisplayNames.push(displayName);
+					this.listContainer.appendChild(card);
+				}
+			});
+		}
 	}
 
 	switchRoomCard(card: HTMLElement): void {
