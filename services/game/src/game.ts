@@ -38,16 +38,14 @@ class Match {
 		if (matchExists.status !== "pending" && !isTmMatch)
 			return rep.code(STATUS.created).send({ message: MESSAGE.match_started});
 
-		let opponentId = matchExists.player1Id;
-		if(matchExists.player1Id === usr.id)
-			opponentId = matchExists.player2Id;
-
-		const [opponent] = await db.select().from(tables.users)
-		.where(drizzle.eq(tables.users.id, opponentId));
-		if (!opponent)
+		const [p1] = await db.select().from(tables.users)
+		.where(drizzle.eq(tables.users.id, matchExists.player1Id));
+		const [p2] = await db.select().from(tables.users)
+		.where(drizzle.eq(tables.users.id, matchExists.player2Id));
+		if (!p1 || !p2)
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
 
-		create_game(matchId, usr.uuid, opponent.uuid);
+		create_game(matchId, p1.uuid, p2.uuid);
 
 		return rep.code(STATUS.success).send({ message: "Game launched"});
 	}
@@ -67,6 +65,7 @@ class Match {
 		if (kill_game(matchId))
 			return rep.code(STATUS.success).send({ message: "Local game killed"});
 		return rep.code(STATUS.not_found).send({message : "Local Game not found"})
+
 	}
 
 	static async getCurrent(req: FastifyRequest, rep: FastifyReply) {

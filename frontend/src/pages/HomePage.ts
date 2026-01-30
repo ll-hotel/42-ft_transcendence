@@ -41,21 +41,6 @@ export class HomePage implements AppPage {
 			return;
 		}
 
-/*		buttonOnlineVs.onclick = () => {
-				api.get("/api/game/current").then((res) => {
-					if (!res)
-						return;
-					if (res.status == Status.not_found)
-					{
-						gotoPage("matchmaking");
-					}
-					else if (res.status == Status.success)
-						gotoPage("pong", "?matchId=" + res.payload.id);
-					else
-						notify("Error " + res.status, "error");
-				});
-		}*/
-
 		buttonLocalVs.onclick = () => {
 			api.get("/api/game/current").then((res) => {
 				if (!res) return;

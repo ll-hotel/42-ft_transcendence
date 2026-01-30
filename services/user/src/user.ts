@@ -546,21 +546,21 @@ class User {
 
 			let tempRank = 0;
 			switch (t.round) {
-				case (1):
+				case (0):
 					if (t.size == 4) {
 						tempRank = 2;
 					} else if (t.size == 8) {
 						tempRank = 1;
 					}
 					break;
-				case (2):
+				case (1):
 					if (t.size == 4) {
 						tempRank = 3;
 					} else if (t.size == 8) {
 						tempRank = 2;
 					}
 					break;
-				case (3):
+				case (2):
 					tempRank = 3;
 					break;
 			}
