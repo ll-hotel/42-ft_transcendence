@@ -1,0 +1,5 @@
+elasticsearch.hosts: "http://elasticsearch:9200"
+server.host: "0.0.0.0"
+server.basePath: "/log-management"
+server.publicBaseUrl: "https://transcendence:8443/log-management"
+server.rewriteBasePath: false
