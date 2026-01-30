@@ -23,6 +23,7 @@ export class MatchMaking implements AppPage {
 		return new MatchMaking(html, queueButton);
 	}
 	loadInto(container: HTMLElement): void {
+		this.queueButton.hidden = false;
 		container.appendChild(this.html);
 		socket.addListener("matchmaking:found", (message) => {
 			socket.removeListener("matchmaking:found");
@@ -50,16 +51,14 @@ export class MatchMaking implements AppPage {
 				return;
 			if (leave.status != Status.success)
 				notify("Error : " + leave.payload.message, "error");
-			if (history.length > 1)
-				history.back();
-			else
-				gotoPage("home");
+			notify("Left queue", "info");
+			gotoPage("home");
 		});
-    }
+	}
 
-    unload(): void {
-    	this.html.remove();
-    }
+	unload(): void {
+		this.html.remove();
+	}
 
     onQueueNotification(m: Message) {
     	const message = m as any as { type: string }

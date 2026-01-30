@@ -25,7 +25,7 @@ export default class PlayLocal implements AppPage {
 	p2_Avatar : HTMLImageElement | null;
 	p1_Score : HTMLDivElement | null;
 	p2_Score : HTMLDivElement | null;
-	matchId: string | null;
+	matchId: number | null;
 	matchWindow : HTMLElement | null;
 	matchCanvas : HTMLElement | null;
 	matchElement : HTMLElement | null;
@@ -64,21 +64,18 @@ export default class PlayLocal implements AppPage {
 		return new PlayLocal(html, ball, paddle);
 	}
 	async loadInto(container: HTMLElement): Promise<void> {
-		container.innerHTML = "";
-		container.appendChild(this.html);
 		if (this.game)
 		{
 			this.game.deinit();
 			this.game = null;
 		}
-		const prevMess = this.matchWindow!.querySelector(".ended-match-mess")
-		if (prevMess)
-		{
-			prevMess.remove();
-			this.matchCanvas!.hidden = false;
-		}
+		container.innerHTML = "";
+		container.appendChild(this.html);
 
-				const resMe = await api.get("api/me");
+		this.html.querySelectorAll(".ended-match-mess").forEach(el => el.remove());
+		this.matchCanvas!.hidden = false;
+
+		const resMe = await api.get("api/user/me");
 		if (!resMe || resMe.status != Status.success) {
 			return history.back();
 		}
@@ -96,18 +93,30 @@ export default class PlayLocal implements AppPage {
 			this.setMatchInfo(container);
 	}
 
-	setMatchInfo(container : HTMLElement){
+	async setMatchInfo(container : HTMLElement){
 		this.p1_DisplayName!.innerText = this.player1!.displayName;
 		this.p2_DisplayName!.innerText = this.player2!.displayName;
 		this.p1_Avatar!.src = this.player1!.avatar.startsWith("/") ? this.player1!.avatar : `/${this.player1!.avatar}`;
 		this.p2_Avatar!.src = this.player2!.avatar.startsWith("/") ? this.player2!.avatar : `/${this.player2!.avatar}`;
+		this.p1_Score!.innerText = "0";
+		this.p2_Score!.innerText = "0";
 
 		const canvas = this.html.querySelector("canvas")!;
 		const table_ratio = 9 / 16;
 		canvas.width = 1920;
 		canvas.height = canvas.width * table_ratio;
 
-		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.local, -1);
+		const resLocal = await api.post("/api/game/launch/local");
+		if (resLocal?.status !== Status.success) {
+			gotoPage("home");
+		}
+
+		this.matchId = resLocal?.payload.matchId;
+
+		if (!this.matchId)
+			return;
+
+		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.local, this.matchId);
 		this.game.onScore = () => {
 			this.onScore();
 		};
@@ -121,6 +130,10 @@ export default class PlayLocal implements AppPage {
 	};
 
 	unload(): void {
+		this.html.querySelectorAll(".ended-match-mess").forEach(el => el.remove());
+		const resKill = api.post("/api/game/kill/local", { matchId: this.matchId });
+		if (!resKill) return;
+
 		this.game?.deinit();
 		this.player1 = null;
 		this.player2 = null;
@@ -137,7 +150,7 @@ export default class PlayLocal implements AppPage {
 	async onEnded() {
 		this.matchCanvas!.hidden = true;
 		const result = document.createElement("div");
-		const me = await api.get("/api/me");
+		const me = await api.get("/api/user/me");
 
 		if (!me || me.status != Status.success)
 			return;
@@ -148,30 +161,30 @@ export default class PlayLocal implements AppPage {
 		{
 			if (this.game!.score.p1 > this.game!.score.p2)
 			{
-				result.innerText =`You win in front of ${this.p2_DisplayName!.innerText}! Nice !`;
+				result.innerText =`You won vs ${this.p2_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			}
 			else
 			{
-				result.innerText =`You lose in front of ${this.p2_DisplayName!.innerText}! Boo !`;
+				result.innerText =`You won vs ${this.p2_DisplayName!.innerText}! Boo !`;
 				result.classList.add("loose");
 			}
 		}
 		else {
 			if (this.game!.score.p1 < this.game!.score.p2)
 			{
-				result.innerText =`You win in front of ${this.p1_DisplayName!.innerText}! Nice !`;
+				result.innerText =`You won vs ${this.p1_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			}
 			else
 			{
-				result.innerText =`You lose in front of ${this.p1_DisplayName!.innerText}! Boo !`;
+				result.innerText =`You lost vs ${this.p1_DisplayName!.innerText}! Boo !`;
 				result.classList.add("loose");
 			}
 		}
 
 		this.matchWindow!.appendChild(result);
-		notify(`The match n°${this.matchId} is finished`, "success");
+		notify(`Match is finished`, "success");
 		setTimeout( () => {
 			gotoPage("home");
 		}, 4000);
@@ -195,7 +208,7 @@ export default class PlayLocal implements AppPage {
 			return;
 		}
 
-		const allUsers = await api.get("/api/users/all");
+		const allUsers = await api.get("/api/user/all");
 
 		if (!allUsers || !allUsers.payload || !allUsers.payload.users) {
 			result.innerHTML = "<div>Pas d'utilisateurs chargés</div>";

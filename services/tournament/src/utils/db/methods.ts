@@ -9,18 +9,9 @@ export type TournamentPlayer = {
 	displayName: string,
 };
 
-export async function getUserIdByUsername(username: string): Promise<number | null> {
-	const [user] = await db.select({ id: tables.users.id }).from(tables.users).where(orm.eq(tables.users.username, username));
-	return user ? user.id : null;
-}
-
-export async function setUserOffline(uuid: string) {
-	await db.update(tables.users).set({ isOnline: 0 }).where(orm.eq(tables.users.uuid, uuid));
-}
-
 export async function addTournamentPlayer(tournamentId: number, user: TournamentPlayer) {
 	const [player] = await db.select({ id: tables.tournamentPlayers.userId }).from(tables.tournamentPlayers).where(
-		orm.eq(tables.tournamentPlayers.id, user.id),
+		orm.eq(tables.tournamentPlayers.userId, user.id)
 	);
 	if (player) return;
 	await db.insert(tables.tournamentPlayers).values({
@@ -36,26 +27,29 @@ export async function addTournamentPlayer(tournamentId: number, user: Tournament
 }
 
 export async function removeUserFromTournaments(userUUID: string) {
+	
 	const tournaments = await db.select({ id: tables.tournamentPlayers.tournamentId }).from(tables.tournamentPlayers)
 		.where(orm.eq(tables.tournamentPlayers.userUuid, userUUID));
 	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status }).from(
 		tables.tournaments,
 	).where(
-		orm.inArray(tables.tournaments.id, tournaments.map((value) => value.id)),
+		orm.inArray(tables.tournaments.id, tournaments.map((value: { id: number }) => value.id)),
 	);
 	await db.delete(tables.tournamentPlayers).where(
 		orm.and(
 			orm.eq(tables.tournamentPlayers.userUuid, userUUID),
-			orm.inArray(
-				tables.tournamentPlayers.tournamentId,
-				tournamentStates.filter((value) => value.status == "pending").map((value) => value.id),
-			),
+					orm.inArray(
+						tables.tournamentPlayers.tournamentId,
+						tournamentStates
+							.filter((value: { status: string }) => value.status == "pending")
+							.map((value: { id: number }) => value.id),
+					),
 		),
 	);
 	const [user] = await db.select().from(tables.users).where(
 		orm.eq(tables.users.uuid, userUUID),
 	);
-	// Notify every waiting tournament players of the user leave.
+
 	for (const tournament of tournaments) {
 		const players = await selectTournamentPlayers(tournament.id);
 		if (players.length == 0) {
@@ -91,6 +85,7 @@ export type TournamentInfo = {
 	status: string,
 	players: string[],
 	rounds: TournamentMatch[][],
+    winner?: string | null,
 };
 export type TournamentMatch = {
 	matchId: number,
@@ -109,52 +104,77 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 	const playerLinks = await db.select().from(tables.tournamentPlayers).where(
 		orm.eq(tables.tournamentPlayers.tournamentId, tournamentId),
 	);
-	const players = await db.select().from(tables.users).where(
-		orm.inArray(tables.users.id, playerLinks.map(link => link.userId)),
-	);
 	const info: TournamentInfo = {
 		name: tournament.name,
 		status: tournament.status,
-		players: players.map((player) => player.displayName),
+		players: [],
 		rounds: [],
+		winner: null,
 	};
 	const matchLinks = await db.select().from(tables.tournamentMatches).where(
 		orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
 	);
 	if (matchLinks.length === 0) {
+		
+		const waitingUsers = await db.select().from(tables.users).where(
+			orm.inArray(tables.users.id, playerLinks.map((link: { userId: number }) => link.userId)),
+		);
+		info.players = waitingUsers.map((player: { displayName: string }) => player.displayName);
+		if (tournament.winnerId) {
+			const [winnerUser] = await db.select().from(tables.users).where(orm.eq(tables.users.id, tournament.winnerId));
+			info.winner = winnerUser ? winnerUser.displayName : null;
+		}
 		return info;
 	}
 
-	const matchIds = matchLinks.map(x => x.matchId);
+	const matchIds = matchLinks.map((x: { matchId: number }) => x.matchId);
 	const dbMatchs = await db.select().from(tables.matches).where(orm.inArray(tables.matches.id, matchIds));
-	const matchs: TournamentMatch[] = dbMatchs.map((match) => {
-		// Both players exists because the `players` list is made from the tournament players list.
-		const player1 = players.find((player) => player.id == match.player1Id)!;
-		const player2 = players.find((player) => player.id == match.player2Id)!;
-		let winner = null;
+	
+	const uniquePlayerIds = Array.from(new Set(
+		dbMatchs.flatMap((m: { player1Id: number, player2Id: number }) => [m.player1Id, m.player2Id])
+	));
+	const players = await db.select().from(tables.users).where(
+		orm.inArray(tables.users.id, uniquePlayerIds),
+	);
+	info.players = players.map((p: { displayName: string }) => p.displayName);
+
+	const matchs: TournamentMatch[] = dbMatchs.map((match: { id: number, status: string, winnerId: number | null, player1Id: number, player2Id: number, scoreP1: number, scoreP2: number }) => {
+		const player1 = players.find((player: { id: number }) => player.id == match.player1Id);
+		const player2 = players.find((player: { id: number }) => player.id == match.player2Id);
+		let winner: number | null = null;
 		if (match.winnerId) {
-			winner = player1.id == match.winnerId ? 1 : 2;
+			winner = player1 && player1.id == match.winnerId ? 1 : 2;
 		}
 		return {
 			matchId: match.id,
 			status: match.status,
 			winner,
-			p1: { name: player1.displayName, score: match.scoreP1 },
-			p2: { name: player2.displayName, score: match.scoreP2 },
+			p1: { name: (players.find((p: { id: number, displayName: string }) => p.id === match.player1Id) || { displayName: "" }).displayName, score: match.scoreP1 },
+			p2: { name: (players.find((p: { id: number, displayName: string }) => p.id === match.player2Id) || { displayName: "" }).displayName, score: match.scoreP2 },
 		};
 	});
 
 	info.rounds = [];
+	const roundsCount = Math.log2(tournament.size!);
 	if (tournament.size == 4) {
+	
 		info.rounds.push([]);
 	}
-	for (let round = 0; Math.pow(2, round) <= tournament.size!; round += 1) {
-		const roundMatchs = matchLinks.filter((link) => link.round == round)
-			.map((link) => matchs.find((match) => match.matchId == link.matchId)!);
+	for (let round = 0; round < roundsCount; round += 1) {
+		const roundLinks = matchLinks.filter((link: { round: number }) => link.round == round);
+		const roundMatchs = roundLinks
+			.map((link: { matchId: number }) => matchs.find((match: TournamentMatch) => match.matchId == link.matchId))
+			.filter((m: TournamentMatch | undefined): m is TournamentMatch => !!m);
 		info.rounds.push(roundMatchs);
 	}
+
 	if (info.rounds.length == 2) {
 		info.rounds.push([]);
+	}
+
+	if (tournament.status === "ended" && tournament.winnerId) {
+		const [winnerUser] = await db.select().from(tables.users).where(orm.eq(tables.users.id, tournament.winnerId));
+		info.winner = winnerUser ? winnerUser.displayName : null;
 	}
 	return info;
 }

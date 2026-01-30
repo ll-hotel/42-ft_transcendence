@@ -1,17 +1,19 @@
-FROM nginx:alpine
-RUN apk add tini;
-RUN apk add nodejs npm typescript;
-RUN apk add nginx;
+FROM oven/bun:alpine AS builder
 
 WORKDIR /srv/app
+RUN apk add typescript;
+COPY src/ src/
+COPY tsconfig.json .
+RUN tsc;
 
-COPY package.json ./
-RUN npm install;
-COPY tsconfig.json ./
-COPY init.sh ./
-RUN chmod a+x ./init.sh;
+COPY static/ static/
+COPY package.json .
+RUN bun install;
+RUN bunx tailwindcss -i src/input.css -o static/tailwind.css;
 
+FROM nginx:alpine
+
+WORKDIR /srv/app
+COPY --from=builder /srv/app/js js/
+COPY --from=builder /srv/app/static static/
 COPY nginx.conf /etc/nginx
-
-ENTRYPOINT [ "tini", "--" ]
-CMD [ "sh", "./init.sh" ]
