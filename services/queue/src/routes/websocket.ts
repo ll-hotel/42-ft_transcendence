@@ -20,11 +20,11 @@ function route(ws: WebSocket.WebSocket, req: FastifyRequest): void {
 
 	socket.connect(req.user!.uuid, ws);
 	socket.addListener(req.user!.uuid, "disconnect", () => {
-		setTimeout(() => {
-			if (socket.isOnline(req.user!.uuid)) {
+		setTimeout(async () => {
+			if (req.user!.isOnline) {
 				return;
 			}
-			dbM.removeUserFromTournaments(req.user!.uuid);
+			await dbM.removeUserFromQueue(req.user!.id);
 		}, 1000);
 	});
 }
