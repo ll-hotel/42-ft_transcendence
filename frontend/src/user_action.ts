@@ -50,12 +50,6 @@ function displayResultSearch(userAction: HTMLElement, selectedUsers: any, onCard
 	results.innerHTML = "";
 
 	selectedUsers.forEach(async (user: any) => {
-		const displayName = user.displayName;
-		const blocked = await api.post("/api/friend/blockedme", { displayName });
-		if (blocked?.payload.blocked === true) {
-			return;
-		}
-
 		const card = document.createElement("div");
 		card.className = "user-result";
 
