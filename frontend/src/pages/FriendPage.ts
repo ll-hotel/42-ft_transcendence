@@ -27,6 +27,7 @@ export class FriendPage implements AppPage {
 	renderInterval: number | null = null;
 	chat: FriendChat;
 	searchBar: HTMLElement;
+	cardsDisplayNames: string[] = [];
 
 	constructor(content: HTMLElement, searchBar: HTMLElement) {
 		this.content = content;
@@ -63,10 +64,11 @@ export class FriendPage implements AppPage {
 		this.bindSend();
 		container.appendChild(this.content);
 		await this.chat.connect();
-		await this.loadFriends();
+		await this.loadRooms();
 	}
 
 	unload(): void {
+		this.cardsDisplayNames = [];
 		if (this.renderInterval) {
 			clearInterval(this.renderInterval);
 			this.renderInterval = null;
@@ -92,7 +94,7 @@ export class FriendPage implements AppPage {
 		vsBtn.disabled = true;
 	}
 
-	async loadFriends() {
+	async loadRooms() {
 		this.listContainer.innerHTML = "<div>Finding friends...</div>";
 
 		const friendRes = await api.get("/api/friend");
@@ -103,8 +105,8 @@ export class FriendPage implements AppPage {
 			return;
 		}
 
-		const friends = friendRes.payload.friends;
-		const requests = requestRes.payload.requests;
+		const friends = friendRes.payload.friends as any[];
+		const requests = requestRes.payload.requests as any[];
 		this.listContainer.innerHTML = "";
 
 		if ((!friends || friends.length === 0) && (!requests || requests.length === 0)) {
@@ -117,42 +119,74 @@ export class FriendPage implements AppPage {
 			this.listContainer.appendChild(card);
 		});
 
-		friends.forEach((friend: any) => {
-			const card: HTMLElement = FriendPage.createFriendCard(friend);
-			card.onclick = async () => {
-				if (this.selectedCard) {
-					this.selectedCard.classList.remove("friend-card-select");
-					this.selectedCard.classList.add("friend-card-unselect");
-				}
+		this.cardsDisplayNames = [];
 
-				card.classList.remove("friend-card-unselect");
-				card.classList.add("friend-card-select");
-
-				this.selectedCard = card;
+		friends.forEach((friend) => {
+			const card: HTMLElement = FriendPage.createFriendCard(friend.displayName, friend.avatar, friend.isOnline);
+			card.onclick = () => {
+				this.switchRoomCard(card);
 				this.loadChat(friend.displayName);
 			};
+			this.cardsDisplayNames.push(friend.displayName);
 			this.listContainer.appendChild(card);
 		});
+
+		const roomsRes = await api.get("/api/chat/rooms");
+		if (!roomsRes) return;
+		if (roomsRes.status != Status.success) {
+			notify(roomsRes.payload.message, "error");
+			return;
+		}
+		const rooms = roomsRes.payload.rooms as string[];
+		rooms.forEach(async (username) => {
+			const userRes = await api.get("/api/user?username=" + username);
+			if (!userRes) return;
+			if (userRes.status != Status.success) return;
+			const { displayName, avatar, isOnline } = userRes.payload.user as {
+				displayName: string,
+				avatar: string,
+				isOnline: boolean,
+			};
+			const card = FriendPage.createFriendCard(displayName, avatar, isOnline);
+			card.onclick = () => {
+				this.switchRoomCard(card);
+				this.loadChat(displayName);
+			};
+			if (this.cardsDisplayNames.find((value) => value == displayName) == undefined) {
+				this.cardsDisplayNames.push(displayName);
+				this.listContainer.appendChild(card);
+			}
+		});
+	}
+
+	switchRoomCard(card: HTMLElement): void {
+		if (this.selectedCard) {
+			this.selectedCard.classList.remove("friend-card-select");
+			this.selectedCard.classList.add("friend-card-unselect");
+		}
+		card.classList.remove("friend-card-unselect");
+		card.classList.add("friend-card-select");
+		this.selectedCard = card;
 	}
 
 	// GESTION CARTES FRIENDS
 
-	static createFriendCard(friend: any): HTMLElement {
+	static createFriendCard(displayName: string, avatar: string, isOnline: boolean): HTMLElement {
 		const card = document.createElement("div");
 		card.className = "friend-card";
 
 		card.innerHTML = `
-			<img src="${friend.avatar}" alt="${friend.displayName}" class="friend-avatar">
-				<div class="text-m font-semibold">
-					${friend.displayName}
-				</div>
-				<div class="friend-status">
-					<div class="${friend.isOnline ? "friend-round-online" : "friend-round-offline"}">
-				</div>
-				<span class="${friend.isOnline ? "friend-text-online" : "friend-text-offline"}">
-					${friend.isOnline ? "Online" : "Offline"}
-				</span>
-				</div>
+			<img src="${avatar}" alt="${displayName}" class="friend-avatar">
+			<div class="text-m font-semibold">
+				${displayName}
+			</div>
+			<div class="friend-status">
+				<div class="${isOnline ? "friend-round-online" : "friend-round-offline"}">
+			</div>
+			<span class="${isOnline ? "friend-text-online" : "friend-text-offline"}">
+				${isOnline ? "Online" : "Offline"}
+			</span>
+			</div>
 		`;
 
 		return card;
@@ -183,7 +217,7 @@ export class FriendPage implements AppPage {
 			if (acceptRes && acceptRes.status == Status.success) {
 				notify(`You are now friend with ${request.requestFrom}`, "success");
 				card.remove();
-				this.loadFriends();
+				this.loadRooms();
 			} else {
 				console.error("AcceptRes didn't work");
 			}
@@ -269,7 +303,7 @@ export class FriendPage implements AppPage {
 			if (res && res.status === Status.success) {
 				notify(`${targetDisplayname} is now blocked (Go to his profile to unblock)`, "info");
 
-				await this.loadFriends();
+				await this.loadRooms();
 
 				chatList.innerHTML = "";
 				chatName.textContent = chatName.dataset.default!;
@@ -299,7 +333,7 @@ export class FriendPage implements AppPage {
 			if (res && res.status === Status.success) {
 				notify(`${targetDisplayname} isn't your friend anymore.`, "info");
 
-				await this.loadFriends();
+				await this.loadRooms();
 
 				chatList.innerHTML = "";
 				chatName.textContent = chatName.dataset.default!;
