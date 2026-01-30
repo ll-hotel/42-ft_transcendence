@@ -62,6 +62,7 @@ export class FriendPage implements AppPage {
 
 	async loadInto(container: HTMLElement) {
 		this.bindSend();
+		this.hideButtons();
 		container.appendChild(this.content);
 		await this.chat.connect();
 		await this.loadRooms();
@@ -241,6 +242,7 @@ export class FriendPage implements AppPage {
 
 	/** Creates or join a chat room and load it on the page. */
 	async loadChat(displayName: string, targetUuid?: string): Promise<void> {
+		this.hideButtons();
 		const userResponse = await api.get("/api/user?displayName=" + displayName);
 		if (!userResponse) return;
 		if (userResponse.status != Status.success) {
@@ -283,36 +285,58 @@ export class FriendPage implements AppPage {
 		this.renderInterval = window.setInterval(() => {
 			this.renderMessages(chatList);
 		}, 300);
+
+		this.showButtons();
 	}
 
-	async setBlockButton(chatName: HTMLSpanElement, chatList: HTMLDivElement, targetDisplayname: string) {
+	hideButtons(): void {
+		const buttons = this.chatContainer.querySelector<HTMLElement>("#chat-friend-buttons");
+		if (buttons) {
+			buttons.setAttribute("hidden", "");
+		}
+	}
+	showButtons(): void {
+		const buttons = this.chatContainer.querySelector<HTMLElement>("#chat-friend-buttons");
+		if (buttons) {
+			buttons.removeAttribute("hidden");
+		}
+	}
+
+	async setBlockButton(chatName: HTMLSpanElement, chatList: HTMLDivElement, displayName: string) {
 		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block")!;
+		blockBtn.disabled = true;
 
-		blockBtn.disabled = !this.selectedCard;
-		blockBtn.onclick = async () => {
-			const confirmBlock = confirm(`Do you want to block ${targetDisplayname} ?`);
-			if (!confirmBlock) {
-				return;
-			}
-
-			const res = await api.post("/api/friend/block", { displayName: targetDisplayname });
-			if (res && res.status === Status.success) {
-				notify(`${targetDisplayname} is now blocked (Go to his profile to unblock)`, "info");
-
-				await this.loadRooms();
-
-				chatList.innerHTML = "";
-				chatName.textContent = chatName.dataset.default!;
-				chatName.classList.remove("hover:text-[#04809F]");
-				chatName.classList.remove("cursor-pointer");
-				chatName.onclick = null;
-				this.selectedCard = null;
-				this.chat.cleanRoomState();
-				blockBtn.disabled = true;
-			} else {
-				notify(res?.payload.message, "error");
-			}
-		};
+		const isBlockedRes = await api.post("/api/friend/isblocked", { displayName });
+		if (!isBlockedRes || isBlockedRes.status != Status.success) {
+			return;
+		}
+		if (isBlockedRes.payload.blocked) {
+			blockBtn.disabled = false;
+			blockBtn.innerText = "Unblock";
+			blockBtn.onclick = async () => {
+				const unblockRes = await api.post("/api/friend/unblock", { displayName: displayName });
+				if (unblockRes && unblockRes.status === Status.success) {
+					notify(`${displayName} unblocked`, "success");
+					this.chat.cleanRoomState();
+					await this.loadRooms();
+				} else {
+					notify(unblockRes?.payload.message, "error");
+				}
+			};
+		} else {
+			blockBtn.disabled = false;
+			blockBtn.innerText = "Block";
+			blockBtn.onclick = async () => {
+				const blockRes = await api.post("/api/friend/block", { displayName: displayName });
+				if (blockRes && blockRes.status === Status.success) {
+					notify(`${displayName} is blocked`, "info");
+					this.chat.cleanRoomState();
+					await this.loadRooms();
+				} else {
+					notify(blockRes?.payload.message, "error");
+				}
+			};
+		}
 	}
 
 	async setRemoveFriendButton(chatName: HTMLSpanElement, chatList: HTMLDivElement, targetDisplayname: string) {
@@ -320,11 +344,6 @@ export class FriendPage implements AppPage {
 
 		removeBtn.disabled = !this.selectedCard;
 		removeBtn.onclick = async () => {
-			const confirmBlock = confirm(`Do you want to remove ${targetDisplayname} from friend's list ?`);
-			if (!confirmBlock) {
-				return;
-			}
-
 			const res = await api.delete("/api/friend/remove", { displayName: targetDisplayname });
 			if (res && res.status === Status.success) {
 				notify(`${targetDisplayname} isn't your friend anymore.`, "info");

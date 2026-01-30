@@ -1,5 +1,6 @@
 import { FastifyRequest } from "fastify";
 import * as Ws from "ws";
+import * as db from "./utils/db/methods";
 
 function privateRoomId(UserAId: string, UserBId: string): string {
 	const [a, b] = UserAId < UserBId ? [UserAId, UserBId] : [UserBId, UserAId];
@@ -143,9 +144,18 @@ namespace Chat {
 					this.messages.shift();
 				}
 			}
-
-			for (const user of this.users) {
-				user.send({ ...message, target: this.id });
+			const senderId = message.source;
+			const senderUser = db.userIdByUsername.get({ username: senderId.slice(1) });
+			if (!senderUser) {
+				return;
+			}
+			for (const chatUser of this.users) {
+				const otherUser = db.userIdByUsername.get({ username: chatUser.id.slice(1) });
+				if (!otherUser) continue;
+				const isBlocked = db.userBlocked.get({ userId: senderUser.id, otherId: otherUser.id });
+				if (!isBlocked) {
+					chatUser.send({ ...message, target: this.id });
+				}
 			}
 		}
 	}
@@ -234,7 +244,6 @@ namespace Chat {
 			if (!target || typeof content !== "string") {
 				return;
 			}
-
 			if (!this.rooms.has(target)) {
 				return;
 			}
@@ -242,7 +251,6 @@ namespace Chat {
 			if (!room.users.has(sender)) {
 				return;
 			}
-
 			const finalMess: Message = {
 				topic: "chat",
 				source: sender.id,
