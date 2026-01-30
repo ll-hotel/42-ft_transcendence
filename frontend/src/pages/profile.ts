@@ -1,9 +1,9 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
-import AppPage from "./AppPage.js"
-import { MatchInfo } from "./profile/matches.js";
-import { notify } from "../utils/notifs.js";
 import socket from "../socket.js";
+import { notify } from "../utils/notifs.js";
+import AppPage from "./AppPage.js";
+import { MatchInfo } from "./profile/matches.js";
 
 export class ProfilePage implements AppPage {
 	content: HTMLElement;
@@ -45,14 +45,15 @@ export class ProfilePage implements AppPage {
 			notify(res?.payload.message, "error");
 			return gotoPage("login");
 		}
-		const userInfo = res.payload as { displayName: string, username:string, id:number, avatar: string };
+		const userInfo = res.payload as { displayName: string, username: string, id: number, avatar: string };
 		const contMatchList = this.content.querySelector("#match-list");
 		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
-		if (avatarImg)
+		if (avatarImg) {
 			avatarImg.src = userInfo.avatar == "DEFAULT_AVATAR" ? "default_pp.png" : userInfo.avatar;
+		}
 		this.displayname.innerText = userInfo.displayName;
 		this.username.innerText = userInfo.username;
-		
+
 		const resMatch = await api.get("/api/user/me/history");
 		if (!resMatch || resMatch.status != Status.success) {
 			notify("Can't load matchs info", "error");
@@ -60,20 +61,23 @@ export class ProfilePage implements AppPage {
 		}
 		const MatchList = resMatch.payload;
 		if (contMatchList && contMatchList.children.length == 0) {
-		// L'user est toujours le player1 (voir api)
-			for (let i = 0; i < MatchList.length ; i++) {
+			// L'user est toujours le player1 (voir api)
+			for (let i = 0; i < MatchList.length; i++) {
 				let matchInfo = MatchList[i];
 				let date = new Date(matchInfo.match.endedAt);
-				contMatchList.append(MatchInfo.new(
-					date.toLocaleDateString("fr-FR"),
-					date.toLocaleTimeString("fr-FR"),
-					{ name: this.displayname.innerText, score: matchInfo.match.scoreP1 },
-					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
-					userInfo.displayName || "Display name"
-				).toHTML());
+				contMatchList.append(
+					MatchInfo.new(
+						date.toLocaleDateString("fr-FR"),
+						date.toLocaleTimeString("fr-FR"),
+						{ name: this.displayname.innerText, score: matchInfo.match.scoreP1 },
+						{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
+						userInfo.displayName || "Display name",
+					).toHTML(),
+				);
 			}
-			if (!MatchList.length)
+			if (!MatchList.length) {
 				contMatchList.append(MatchInfo.noMatchHtml());
+			}
 		}
 
 		const infoPlayedMatch = this.content.querySelector("#played-match");
@@ -83,13 +87,18 @@ export class ProfilePage implements AppPage {
 		const infoTourPlayed = this.content.querySelector("#tournaments-played");
 		const infoTourPlacement = this.content.querySelector("#tournament-best");
 
-		if (!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed || !infoTourPlacement)
+		if (
+			!infoPlayedMatch || !infoVictoryRate || !infoPointsScored || !infoPointsTanked || !infoTourPlayed ||
+			!infoTourPlacement
+		) {
 			return notify("Missing info in Profile.html", "error");
+		}
 
 		const resStat = await api.get("/api/user/me/stats");
 
-		if (!resStat || resStat.status != Status.success)
+		if (!resStat || resStat.status != Status.success) {
 			return notify("Can't load my stats", "error");
+		}
 
 		const Stat = resStat.payload;
 
@@ -115,4 +124,4 @@ export class ProfilePage implements AppPage {
 	async editClick() {
 		await gotoPage("profile/edit");
 	}
-};
+}

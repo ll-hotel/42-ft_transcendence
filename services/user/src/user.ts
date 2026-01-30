@@ -19,7 +19,7 @@ class User {
 		app.get("/api/user/me", { preHandler }, User.getMe);
 		app.get(
 			"/api/user",
-			{ preHandler, schema: schema.query({ displayName: "string" }, ["displayName"]) },
+			{ preHandler, schema: schema.query({ displayName: "string", username: "string" }) },
 			User.getUser,
 		);
 		app.get("/api/user/all", { preHandler }, User.getallUsers);
@@ -115,25 +115,47 @@ class User {
 	}
 
 	static async getUser(req: FastifyRequest, rep: FastifyReply) {
-		const { displayName } = req.query as { displayName?: string };
+		const { displayName, username } = req.query as { displayName?: string, username?: string };
 
-		if (!displayName || REGEX_USERNAME.test(displayName) === false) {
-			return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName }));
+		if (displayName) {
+			if (REGEX_USERNAME.test(displayName) === false) {
+				return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName }));
+			}
+
+			const [user] = await db.select({
+				uuid: tables.users.uuid,
+				username: tables.users.username,
+				displayName: tables.users.displayName,
+				avatar: tables.users.avatar,
+				isOnline: tables.users.isOnline,
+			}).from(tables.users).where(orm.eq(tables.users.displayName, displayName));
+
+			if (user == undefined) {
+				return rep.code(STATUS.not_found).send({ message: MESSAGE.user_notfound });
+			}
+
+			return rep.code(STATUS.success).send({ user });
 		}
+		if (username) {
+			if (REGEX_USERNAME.test(username) === false) {
+				return (rep.code(STATUS.bad_request).send({ message: MESSAGE.invalid_displayName }));
+			}
 
-		const [user] = await db.select({
-			uuid: tables.users.uuid,
-			username : tables.users.username,
-			displayName: tables.users.displayName,
-			avatar: tables.users.avatar,
-			isOnline: tables.users.isOnline,
-		}).from(tables.users).where(orm.eq(tables.users.displayName, displayName));
+			const [user] = await db.select({
+				uuid: tables.users.uuid,
+				username: tables.users.username,
+				displayName: tables.users.displayName,
+				avatar: tables.users.avatar,
+				isOnline: tables.users.isOnline,
+			}).from(tables.users).where(orm.eq(tables.users.username, username));
 
-		if (user == undefined) {
-			return rep.code(STATUS.not_found).send({ message: MESSAGE.user_notfound });
+			if (user == undefined) {
+				return rep.code(STATUS.not_found).send({ message: MESSAGE.user_notfound });
+			}
+
+			return rep.code(STATUS.success).send({ user });
 		}
-
-		return rep.code(STATUS.success).send({ user });
+		return rep.code(STATUS.bad_request).send({ message: "Missing displayName or username" });
 	}
 
 	static async getallUsers(_req: FastifyRequest, rep: FastifyReply) {
@@ -440,7 +462,9 @@ class User {
 
 		const finalList = {
 			matchPlayed: matchesList.length,
-			victoryRate: matchesList.length ? ((nbMatchVictory / matchesList.length) * 100).toFixed(2) : matchesList.length,
+			victoryRate: matchesList.length
+				? ((nbMatchVictory / matchesList.length) * 100).toFixed(2)
+				: matchesList.length,
 			pointScored: matchesList.length ? (pointScored / matchesList.length).toFixed(2) : matchesList.length,
 			pointConceded: matchesList.length ? (pointConceded / matchesList.length).toFixed(2) : matchesList.length,
 			nbTournament: nbTournament,

@@ -164,13 +164,10 @@ export class GameInstance {
 	}
 
 	remote_input_listener(msg: InputMessage) {
-		if (msg.clientId == this.p1_uuid)
-		{
+		if (msg.clientId == this.p1_uuid) {
 			this.input.p1.up = msg.up;
 			this.input.p1.down = msg.down;
-		}
-		else if (msg.clientId == this.p2_uuid)
-		{
+		} else if (msg.clientId == this.p2_uuid) {
 			this.input.p2.down = msg.down;
 			this.input.p2.up = msg.up;
 		}
@@ -192,8 +189,8 @@ export class GameInstance {
 		let message: StateMessage = {
 			service: "game",
 			topic: "pong",
-			type : TypeMsg.state,
-			...state
+			type: TypeMsg.state,
+			...state,
 		} as StateMessage;
 		socket.send(this.p1_uuid, message);
 		if (this.p2_uuid)
@@ -318,7 +315,7 @@ export class PongBall extends PhysicObject {
 
 	sendScore() {
 		let init_msg: ScoreMessage = {
-			service : "game",
+			service: "game",
 			topic: "pong",
 			type: TypeMsg.score,
 			p1_score: this.score.p1,

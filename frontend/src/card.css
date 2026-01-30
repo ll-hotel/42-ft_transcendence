@@ -23,7 +23,7 @@
 }
 
 .friend-card-select {
-	@apply bg-slate-600 scale-105 transition text-white;
+	@apply bg-slate-600 transition text-white;
 }
 
 .friend-card-unselect 
