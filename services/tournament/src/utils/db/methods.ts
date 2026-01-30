@@ -58,7 +58,7 @@ export async function removeUserFromTournaments(userUUID: string) {
 	const [user] = await db.select().from(tables.users).where(
 		orm.eq(tables.users.uuid, userUUID),
 	);
-	// Notify every waiting tournament players of the user leave.
+
 	for (const tournament of tournaments) {
 		const players = await selectTournamentPlayers(tournament.id);
 		if (players.length == 0) {
@@ -124,7 +124,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 		orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
 	);
 	if (matchLinks.length === 0) {
-		// No matches yet: use waiting list from tournamentPlayers
+		
 		const waitingUsers = await db.select().from(tables.users).where(
 			orm.inArray(tables.users.id, playerLinks.map((link: { userId: number }) => link.userId)),
 		);
@@ -138,7 +138,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 
 	const matchIds = matchLinks.map((x: { matchId: number }) => x.matchId);
 	const dbMatchs = await db.select().from(tables.matches).where(orm.inArray(tables.matches.id, matchIds));
-	// Derive unique player IDs from matches and fetch their profiles
+	
 	const uniquePlayerIds = Array.from(new Set(
 		dbMatchs.flatMap((m: { player1Id: number, player2Id: number }) => [m.player1Id, m.player2Id])
 	));
@@ -166,7 +166,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 	info.rounds = [];
 	const roundsCount = Math.log2(tournament.size!);
 	if (tournament.size == 4) {
-		// Keep a leading placeholder to align with 3 containers (round-0, round-1, round-2)
+	
 		info.rounds.push([]);
 	}
 	for (let round = 0; round < roundsCount; round += 1) {
@@ -176,7 +176,7 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 			.filter((m: TournamentMatch | undefined): m is TournamentMatch => !!m);
 		info.rounds.push(roundMatchs);
 	}
-	// If exactly 2 arrays (for size 4 without placeholder), add one to align with UI; else leave as is
+
 	if (info.rounds.length == 2) {
 		info.rounds.push([]);
 	}
