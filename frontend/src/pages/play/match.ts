@@ -68,7 +68,7 @@ export default class PlayMatch implements AppPage {
 			return history.back();
 		}
 		const res = await api.post("/api/game/launch", { matchId: this.matchId });
-		if (res?.status !== Status.success) {
+		if (res?.status !== Status.success && res?.status !== Status.created) {
 			gotoPage("home");
 		}
 

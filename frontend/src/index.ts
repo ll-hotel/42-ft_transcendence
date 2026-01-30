@@ -80,7 +80,7 @@ function initSearchBar() {
 			const results = document.getElementById("user-results");
 
 			if (results) results.innerText = "";
-		}, 100);
+		}, 200);
 	});
 
 }
