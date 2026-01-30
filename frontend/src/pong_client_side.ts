@@ -5,11 +5,6 @@ type Position = { x: number, y: number };
 type Score = { p1: number, p2: number };
 type Size = { w: number, h: number };
 
-// TODO:
-//  - smooth les mouvements des paddles
-//  - les inputs marchent plus si je refresh
-//  - check de la position de la balle et la replacer si jamais
-
 const width_server = 500;
 const height_server = width_server * (1 / 2);
 

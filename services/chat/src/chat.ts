@@ -161,7 +161,7 @@ namespace Chat {
 	}
 
 	export class Instance {
-		users: Map<string, User>; // tous les users connus
+		users: Map<string, User>;
 		rooms: Map<string, Room>;
 
 		constructor() {
@@ -213,7 +213,6 @@ namespace Chat {
 			const user = this.getOrCreateUser(userInfo.id, userInfo.username);
 			user.connect(ws, this);
 
-			// Rejoin rooms existantes
 			for (const roomId of user.rooms) {
 				const room = this.rooms.get(roomId);
 				if (room) room.connect(user);

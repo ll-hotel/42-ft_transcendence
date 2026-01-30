@@ -1,16 +1,3 @@
-/*TO DO
-GROSSE TACHES
-x Creer un moyen d'ajouter des amis (navbar pour trouver un user (si la chose rentrer correspond au Displayname alors redirige vers le profil du mec))
-x Gerer la reception d'une demande d'ami (notif qui redirige vers son profil ? Message du type (Antoine sohaite etre amie avec vous) ?)
-X Gestion de l'affichage des chats (api via l'id qui retourne les precedents messages envoyés (api/message/iddupoteaquitenvoielesmessages))
-
-PETITES TACHES
-° Gerer mieux le responsive (card friend, container friend and mess)
-X Rendre visible l'ami séléctionner
-° link les bouttons Block, 1vs1
-X Link l'input text, et le button send
-
-*/
 import { api, Status } from "../api.js";
 import { gotoUserPage } from "../PageLoader.js";
 import socket from "../socket.js";
@@ -174,8 +161,6 @@ export class FriendPage implements AppPage {
 		card.classList.add("friend-card-select");
 		this.selectedCard = card;
 	}
-
-	// GESTION CARTES FRIENDS
 
 	static createFriendCard(displayName: string, avatar: string, isOnline: boolean): HTMLElement {
 		const card = document.createElement("div");
