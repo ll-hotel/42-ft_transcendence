@@ -251,7 +251,6 @@ export class FriendPage implements AppPage {
 
 	/** Creates or join a chat room and load it on the page. */
 	async loadChat(displayName: string, targetUuid?: string): Promise<void> {
-		this.hideButtons();
 		const userResponse = await api.get("/api/user?displayName=" + displayName);
 		if (!userResponse) return;
 		if (userResponse.status != Status.success) {
