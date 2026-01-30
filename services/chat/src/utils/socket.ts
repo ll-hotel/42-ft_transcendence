@@ -13,7 +13,14 @@ export type BaseMessage = {
 	service: string,
 	topic: string,
 };
-export type Message = BaseMessage;
+export type Message = BaseMessage | (BaseMessage & {
+	source: string,
+	content: string
+}) | (BaseMessage & {
+	source: string,
+	match: number,
+	opponent: string
+});
 
 namespace Socket {
 	export const clients: Map<UUID, Client> = new Map();

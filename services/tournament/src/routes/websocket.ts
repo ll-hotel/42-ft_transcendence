@@ -5,7 +5,7 @@ import { db } from "../utils/db/database";
 import * as dbM from "../utils/db/methods";
 import * as tables from "../utils/db/tables";
 import { schema, STATUS } from "../utils/http-reply";
-import socket, { isOnline } from "../utils/socket";
+import socket from "../utils/socket";
 
 export default function(fastify: FastifyInstance): void {
 	fastify.get("/websocket", {

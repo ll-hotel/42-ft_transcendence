@@ -1,6 +1,6 @@
 import { clearInterval, setInterval } from "node:timers";
 import * as dbM from "./utils/db/methods";
-import socket, { send } from "./utils/socket";
+import socket from "./utils/socket";
 import {
 	InputMessage,
 	LocalMessage,
@@ -147,7 +147,7 @@ export class GameInstance {
 		this.mode = mode;
 
 		if (mode == Mode.local) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
+			socket.addListener(this.p1_uuid, "pong", (msg: any) => {
 				this.local_input_listener(msg);
 			});
 			socket.addListener(this.p1_uuid, "disconnect", () => this.end());
