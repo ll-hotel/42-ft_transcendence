@@ -5,7 +5,7 @@ import * as tables from "./tables";
 import * as dbM from "./methods";
 import {hashPassword} from "../security/hash";
 import {users} from "./tables";
-
+import {v4 as uuidv4} from "uuid"; 
 const sql = orm.sql;
 
 const path = "/srv/app/db/database.sqlite";
@@ -29,13 +29,13 @@ export function createTables() {
 	const matches = selectOngoinMatches.all();
 	matches.forEach((match) => dbM.endMatch(match.id));
 
-	hashPassword("🔒-guest-password-^^-🔒").then((hashedPass) => {
-		db.insert(users).values({
-			uuid: uiidv4(),
+	hashPassword("🔒-guest-password-^^-🔒").then(async (hashedPass) => {
+		await db.insert(users).values({
+			uuid: uuidv4(),
 			username: "Guest",
 			displayName: "Guest",
 			password: hashedPass,
-		}).prepare().sync();
+		});
 	});
 }
 

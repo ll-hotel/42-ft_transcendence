@@ -12,7 +12,6 @@ export type TournamentPlayer = {
 export async function addTournamentPlayer(tournamentId: number, user: TournamentPlayer) {
 	const [player] = await db.select({ id: tables.tournamentPlayers.userId }).from(tables.tournamentPlayers).where(
 		orm.eq(tables.tournamentPlayers.userId, user.id),
-		orm.eq(tables.tournamentPlayers.userId, user.id)
 	);
 	if (player) return;
 	await db.insert(tables.tournamentPlayers).values({
