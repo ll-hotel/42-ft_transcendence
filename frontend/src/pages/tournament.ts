@@ -10,6 +10,7 @@ type TournamentMessage = {
 export class Tournament implements AppPage {
 	html: HTMLElement;
 	leaveButton: HTMLButtonElement;
+	private lastNonEmptyRounds: number | null = null;
 	constructor(html: HTMLElement) {
 		this.html = html;
 		this.leaveButton = html.querySelector<HTMLButtonElement>("#tournament-leave")!;
@@ -24,6 +25,7 @@ export class Tournament implements AppPage {
 	}
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.html);
+		this.resetUI();
 		const params = new URLSearchParams(location.search);
 		const tournamentName = params.get("name");
 		if (!tournamentName) {
@@ -34,14 +36,38 @@ export class Tournament implements AppPage {
 			notify("No such tournament", "error");
 			return gotoPage("tournaments");
 		}
-		socket.addListener("tournament", (data) => {
-			const message = data as unknown as TournamentMessage;
-			if (message.type != "left" && message.type != "join") return;
-			const { name } = message as unknown as { name: string };
-			if (message.type == "left") {
-				this.removeWaitingPlayer(name);
-			} else {
-				this.addWaitingPlayer(name);
+		socket.addListener("tournament", async (data) => {
+			const msg = data as unknown as { type?: string, name?: string, content?: string };
+	
+			if (typeof msg.content === "string") {
+				if (msg.content === "update") {
+					const updated = await this.retrieveTournamentInfo(tournamentName);
+					if (updated) {
+						const newCount = this.countNonEmptyRounds(updated.info);
+						if (this.lastNonEmptyRounds !== null && newCount > this.lastNonEmptyRounds && updated.info.status !== "ended") {
+							notify("New round started", "info");
+						}
+						this.lastNonEmptyRounds = newCount;
+						if (updated.info.status === "ended") this.displayEndScreen(updated.info);
+						else this.displayRounds(updated.info);
+					}
+					return;
+				}
+				if (msg.content.startsWith("ended:")) {
+					const winner = msg.content.split(":")[1];
+					const updated = await this.retrieveTournamentInfo(tournamentName);
+					if (updated) {
+						updated.info.winner = winner || updated.info.winner || null;
+						this.displayEndScreen(updated.info);
+					}
+					return;
+				}
+			}
+
+			if (msg.type === "left" || msg.type === "join") {
+				const { name } = msg as { name: string };
+				if (msg.type === "left") this.removeWaitingPlayer(name);
+				else this.addWaitingPlayer(name);
 			}
 		});
 		this.displayTournament(result.info);
@@ -54,7 +80,7 @@ export class Tournament implements AppPage {
 	}
 	async retrieveTournamentInfo(name: string) {
 		let res = await api.get("/api/tournament?name=" + name);
-		if (!res || res.status == Status.not_found || res.payload.status === "ended") {
+		if (!res || res.status == Status.not_found) {
 			if (res && res.payload.message) notify(res.payload.message, "error");
 			return null;
 		}
@@ -65,7 +91,9 @@ export class Tournament implements AppPage {
 	displayTournament(info: TournamentInfo) {
 		const nameElement = this.html.querySelector("#tournament-name") as HTMLElement | null;
 		if (nameElement) nameElement.innerText = "Tournament [" + info.name + "]";
-		if (info.rounds.length > 0) {
+		if (info.status === "ended") {
+			this.displayEndScreen(info);
+		} else if (info.rounds.length > 0) {
 			this.displayRounds(info);
 		} else {
 			this.displayWaitingList(info);
@@ -103,6 +131,7 @@ export class Tournament implements AppPage {
 		this.html.querySelector("#round-0")?.setAttribute("hidden", "");
 		this.html.querySelector("#round-1")?.setAttribute("hidden", "");
 		this.html.querySelector("#round-2")?.setAttribute("hidden", "");
+		this.html.querySelector("#tournament-end")?.setAttribute("hidden", "");
 		const waitingList = this.html.querySelector("#waiting-players")!;
 		waitingList.removeAttribute("hidden");
 		waitingList.innerHTML = "";
@@ -112,6 +141,7 @@ export class Tournament implements AppPage {
 	}
 	async displayRounds(info: TournamentInfo) {
 		this.html.querySelector("#waiting-players")!.setAttribute("hidden", "");
+		this.html.querySelector("#tournament-end")?.setAttribute("hidden", "");
 		const round0 = this.html.querySelector<HTMLElement>("#round-0");
 		const round1 = this.html.querySelector<HTMLElement>("#round-1");
 		const round2 = this.html.querySelector<HTMLElement>("#round-2");
@@ -139,6 +169,7 @@ export class Tournament implements AppPage {
 		if (round2.children.length > 0) {
 			round2.removeAttribute("hidden");
 		}
+		this.lastNonEmptyRounds = this.countNonEmptyRounds(info);
 	}
 	async addMatch(match: TournamentMatch, round: HTMLElement) {
 		if (!match?.p1 || !match?.p2)
@@ -190,6 +221,40 @@ export class Tournament implements AppPage {
 		)!;
 		playerList.appendChild(playerCard);
 	}
+
+	displayEndScreen(info: TournamentInfo) {
+		this.displayRounds(info);
+		const container = this.html.querySelector("#tournament-end") as HTMLElement | null;
+		if (!container) return;
+		container.removeAttribute("hidden");
+		container.innerHTML = "";
+		const winner = info.winner ? info.winner : "Unknown";
+		const banner = createElement(`
+			<div class="tournament-end-banner">
+				<h2 class="text-2xl font-bold">Tournament Ended</h2>
+				<p class="text-xl">Winner: <span class="font-semibold">${winner}</span></p>
+			</div>
+		`)!;
+		container.appendChild(banner);
+	}
+
+	private resetUI() {
+		const waiting = this.html.querySelector("#waiting-players");
+		const r0 = this.html.querySelector("#round-0");
+		const r1 = this.html.querySelector("#round-1");
+		const r2 = this.html.querySelector("#round-2");
+		const end = this.html.querySelector("#tournament-end");
+		if (waiting) { waiting.innerHTML = ""; waiting.setAttribute("hidden", ""); }
+		if (r0) { r0.innerHTML = ""; r0.setAttribute("hidden", ""); }
+		if (r1) { r1.innerHTML = ""; r1.setAttribute("hidden", ""); }
+		if (r2) { r2.innerHTML = ""; r2.setAttribute("hidden", ""); }
+		if (end) { end.innerHTML = ""; end.setAttribute("hidden", ""); }
+		this.lastNonEmptyRounds = null;
+	}
+
+	private countNonEmptyRounds(info: TournamentInfo): number {
+		return info.rounds.reduce((acc, r) => acc + (r.length > 0 ? 1 : 0), 0);
+	}
 	leaveTournament(name: string) {
 		api.post("/api/tournament/leave", { name }).then((res) => {
 			if (!res) return;
@@ -221,6 +286,7 @@ type TournamentInfo = {
 	status: string,
 	players: string[],
 	rounds: TournamentMatch[][],
+	winner?: string | null,
 };
 type TournamentMatch = {
 	matchId: number,

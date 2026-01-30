@@ -49,6 +49,14 @@ export class Tournament {
 		if (size !== 4 && size !== 8) {
 			return rep.code(STATUS.bad_request).send({ message: "Bad tournament size" });
 		}
+
+		const [nameTaken] = await db.select().from(tables.tournaments).where(
+			orm.eq(tables.tournaments.name, name),
+		);
+		if (nameTaken) {
+			return rep.code(STATUS.bad_request).send({ message: "Tournament name already taken" });
+		}
+
 		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(orm.and(
 			orm.eq(tables.tournamentPlayers.userId, user.id),
 			orm.eq(tables.tournamentPlayers.eliminated, 0),
@@ -104,7 +112,10 @@ export class Tournament {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended", started: true });
 		}
 		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(
-			orm.eq(tables.tournamentPlayers.userId, user.id),
+			orm.and(
+				orm.eq(tables.tournamentPlayers.userId, user.id),
+				orm.eq(tables.tournamentPlayers.eliminated, 0),
+			),
 		);
 		if (alreadyInTournament) {
 			const userInWantedTournament: boolean = alreadyInTournament.tournamentId == tournament.id;
@@ -295,9 +306,6 @@ export class Tournament {
 		if (!tournament) {
 			rep.code(STATUS.not_found).send({ message: "No such tournament" });
 			return;
-		}
-		if (tournament.status === "ended"){
-			rep.code(STATUS.success).send({status: tournament.status});
 		}
 		const [creator] = await db.select({ name: tables.users.displayName }).from(tables.users).where(
 			orm.eq(tables.users.uuid, tournament.createdBy),

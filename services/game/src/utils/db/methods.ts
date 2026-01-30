@@ -73,12 +73,12 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 			orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
 			orm.eq(tables.tournamentMatches.round, round)
 		));
-		const matchIds = link.map(x => x.matchId);
+		const matchIds = link.map((x: any) => x.matchId);
 		if (matchIds.length === 0)
 			return;
 		const roundMatches = await db.select().from(tables.matches).where(orm.inArray(tables.matches.id, matchIds));
 		
-		const finished = roundMatches.filter(x => x.status === "ended");
+		const finished = roundMatches.filter((x: any) => x.status === "ended");
 		if (finished.length !== roundMatches.length)
 			return; // wait for all round's matches to end
 
@@ -95,22 +95,27 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 				orm.eq(tables.tournamentPlayers.userId, loserId),
 			));
 		}
-		const randomKey = randomBytes(32).toString("hex"); 
-		const winners = finished.map(x => x.winnerId).filter(x => x !== null && x !== undefined);
+		const winners = finished
+			.map((x: any) => x.winnerId)
+			.filter((x: number | null | undefined): x is number => x !== null && x !== undefined);
 		if (winners.length === 1) {
 			const winnerId = winners[0];
 			if (winnerId !== null) {
-				/* await db.update(tables.tournamentPlayers).set({ eliminated: 1 }).where(orm.eq(tables.tournamentPlayers.userId, winnerId)); */
-				
-				await db.update(tables.tournaments).set({ status: "ended", winnerId: winnerId, name: randomKey}).where(orm.eq(tables.tournaments.id, tournamentId));
+
+				await db.update(tables.tournaments)
+					.set({ status: "ended", winnerId: winnerId })
+					.where(orm.eq(tables.tournaments.id, tournamentId));
+				const plyrs = await selectTournamentPlayers(tournamentId);
 				await db.delete(tables.tournamentPlayers)
 					.where(orm.eq(tables.tournamentPlayers.tournamentId, tournamentId));
+				const [winnerUser] = await db.select().from(tables.users).where(orm.eq(tables.users.id, winnerId));
+				const winnerName = winnerUser ? winnerUser.displayName : "winner";
+				for (const p of plyrs) {
+					socket.send(p.uuid, { service: "tournament", topic: "tournament", content: `ended:${winnerName}` });
+				}
 				
-
 			}
 
-			// notify winner tournament won
-			// notify others tournament ended
 			return; 
 		}
 
@@ -145,30 +150,35 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 			.set({ round: nextRound })
 			.where(orm.eq(tables.tournaments.id, tournamentId));
 
+		
+		const participants = await selectTournamentPlayers(tournamentId);
+		for (const p of participants) {
+			socket.send(p.uuid, { service: "tournament", topic: "tournament", content: "update" });
+		}
 
 }
 
 export async function removeUserFromTournaments(userUUID: string) {
 	const tournaments = await db.select({ id: tables.tournamentPlayers.tournamentId }).from(tables.tournamentPlayers)
 		.where(orm.eq(tables.tournamentPlayers.userUuid, userUUID));
-	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status }).from(
-		tables.tournaments,
-	).where(
-		orm.inArray(tables.tournaments.id, tournaments.map((value) => value.id)),
-	);
-	await db.delete(tables.tournamentPlayers).where(
-		orm.and(
+	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status })
+	.from(tables.tournaments)
+	.where(orm.inArray(tables.tournaments.id, tournaments.map((value: { id: number }) => value.id)));
+	
+	await db.delete(tables.tournamentPlayers).
+	where(orm.and(
 			orm.eq(tables.tournamentPlayers.userUuid, userUUID),
 			orm.inArray(
 				tables.tournamentPlayers.tournamentId,
-				tournamentStates.filter((value) => value.status == "pending").map((value) => value.id),
+				tournamentStates
+				.filter((value: { status: string }) => value.status == "pending")
+				.map((value: { id: number }) => value.id),
 			),
 		),
 	);
 	const [user] = await db.select().from(tables.users).where(
 		orm.eq(tables.users.uuid, userUUID),
 	);
-	// Notify every waiting tournament players of the user leave.
 	for (const tournament of tournaments) {
 		const players = await selectTournamentPlayers(tournament.id);
 		if (players.length == 0) {

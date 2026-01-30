@@ -146,7 +146,7 @@ export default class PlayMatch implements AppPage {
 		}
 
 		this.matchWindow!.appendChild(result);
-		notify(`The match n°${this.matchId} is finished`, "success");
+		notify(`Match is finished`, "success");
 		
 		let nextPage = "home", search = "";
 		const res = await api.get(`/api/tournament/isTmMatch?matchId=${this.matchId}`);

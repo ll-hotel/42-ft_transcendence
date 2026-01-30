@@ -42,15 +42,17 @@ export async function removeUserFromTournaments(userUUID: string) {
 	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status }).from(
 		tables.tournaments,
 	).where(
-		orm.inArray(tables.tournaments.id, tournaments.map((value) => value.id)),
+		orm.inArray(tables.tournaments.id, tournaments.map((value: { id: number }) => value.id)),
 	);
 	await db.delete(tables.tournamentPlayers).where(
 		orm.and(
 			orm.eq(tables.tournamentPlayers.userUuid, userUUID),
-			orm.inArray(
-				tables.tournamentPlayers.tournamentId,
-				tournamentStates.filter((value) => value.status == "pending").map((value) => value.id),
-			),
+					orm.inArray(
+						tables.tournamentPlayers.tournamentId,
+						tournamentStates
+							.filter((value: { status: string }) => value.status == "pending")
+							.map((value: { id: number }) => value.id),
+					),
 		),
 	);
 	const [user] = await db.select().from(tables.users).where(
@@ -92,6 +94,7 @@ export type TournamentInfo = {
 	status: string,
 	players: string[],
 	rounds: TournamentMatch[][],
+    winner?: string | null,
 };
 export type TournamentMatch = {
 	matchId: number,
@@ -110,52 +113,77 @@ export async function searchTournamentInfo(tournamentId: number): Promise<Tourna
 	const playerLinks = await db.select().from(tables.tournamentPlayers).where(
 		orm.eq(tables.tournamentPlayers.tournamentId, tournamentId),
 	);
-	const players = await db.select().from(tables.users).where(
-		orm.inArray(tables.users.id, playerLinks.map(link => link.userId)),
-	);
 	const info: TournamentInfo = {
 		name: tournament.name,
 		status: tournament.status,
-		players: players.map((player) => player.displayName),
+		players: [],
 		rounds: [],
+		winner: null,
 	};
 	const matchLinks = await db.select().from(tables.tournamentMatches).where(
 		orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
 	);
 	if (matchLinks.length === 0) {
+		// No matches yet: use waiting list from tournamentPlayers
+		const waitingUsers = await db.select().from(tables.users).where(
+			orm.inArray(tables.users.id, playerLinks.map((link: { userId: number }) => link.userId)),
+		);
+		info.players = waitingUsers.map((player: { displayName: string }) => player.displayName);
+		if (tournament.winnerId) {
+			const [winnerUser] = await db.select().from(tables.users).where(orm.eq(tables.users.id, tournament.winnerId));
+			info.winner = winnerUser ? winnerUser.displayName : null;
+		}
 		return info;
 	}
 
-	const matchIds = matchLinks.map(x => x.matchId);
+	const matchIds = matchLinks.map((x: { matchId: number }) => x.matchId);
 	const dbMatchs = await db.select().from(tables.matches).where(orm.inArray(tables.matches.id, matchIds));
-	const matchs: TournamentMatch[] = dbMatchs.map((match) => {
-		// Both players exists because the `players` list is made from the tournament players list.
-		const player1 = players.find((player) => player.id == match.player1Id)!;
-		const player2 = players.find((player) => player.id == match.player2Id)!;
-		let winner = null;
+	// Derive unique player IDs from matches and fetch their profiles
+	const uniquePlayerIds = Array.from(new Set(
+		dbMatchs.flatMap((m: { player1Id: number, player2Id: number }) => [m.player1Id, m.player2Id])
+	));
+	const players = await db.select().from(tables.users).where(
+		orm.inArray(tables.users.id, uniquePlayerIds),
+	);
+	info.players = players.map((p: { displayName: string }) => p.displayName);
+
+	const matchs: TournamentMatch[] = dbMatchs.map((match: { id: number, status: string, winnerId: number | null, player1Id: number, player2Id: number, scoreP1: number, scoreP2: number }) => {
+		const player1 = players.find((player: { id: number }) => player.id == match.player1Id);
+		const player2 = players.find((player: { id: number }) => player.id == match.player2Id);
+		let winner: number | null = null;
 		if (match.winnerId) {
-			winner = player1.id == match.winnerId ? 1 : 2;
+			winner = player1 && player1.id == match.winnerId ? 1 : 2;
 		}
 		return {
 			matchId: match.id,
 			status: match.status,
 			winner,
-			p1: { name: player1.displayName, score: match.scoreP1 },
-			p2: { name: player2.displayName, score: match.scoreP2 },
+			p1: { name: (players.find((p: { id: number, displayName: string }) => p.id === match.player1Id) || { displayName: "" }).displayName, score: match.scoreP1 },
+			p2: { name: (players.find((p: { id: number, displayName: string }) => p.id === match.player2Id) || { displayName: "" }).displayName, score: match.scoreP2 },
 		};
 	});
 
 	info.rounds = [];
+	const roundsCount = Math.log2(tournament.size!);
 	if (tournament.size == 4) {
+		// Keep a leading placeholder to align with 3 containers (round-0, round-1, round-2)
 		info.rounds.push([]);
 	}
-	for (let round = 0; Math.pow(2, round) <= tournament.size!; round += 1) {
-		const roundMatchs = matchLinks.filter((link) => link.round == round)
-			.map((link) => matchs.find((match) => match.matchId == link.matchId)!);
+	for (let round = 0; round < roundsCount; round += 1) {
+		const roundLinks = matchLinks.filter((link: { round: number }) => link.round == round);
+		const roundMatchs = roundLinks
+			.map((link: { matchId: number }) => matchs.find((match: TournamentMatch) => match.matchId == link.matchId))
+			.filter((m: TournamentMatch | undefined): m is TournamentMatch => !!m);
 		info.rounds.push(roundMatchs);
 	}
+	// If exactly 2 arrays (for size 4 without placeholder), add one to align with UI; else leave as is
 	if (info.rounds.length == 2) {
 		info.rounds.push([]);
+	}
+
+	if (tournament.status === "ended" && tournament.winnerId) {
+		const [winnerUser] = await db.select().from(tables.users).where(orm.eq(tables.users.id, tournament.winnerId));
+		info.winner = winnerUser ? winnerUser.displayName : null;
 	}
 	return info;
 }

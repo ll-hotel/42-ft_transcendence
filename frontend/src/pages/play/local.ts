@@ -171,7 +171,7 @@ export default class PlayLocal implements AppPage {
 		}
 
 		this.matchWindow!.appendChild(result);
-		notify(`The match n°${this.matchId} is finished`, "success");
+		notify(`Match is finished`, "success");
 		setTimeout( () => {
 			gotoPage("home");
 		}, 4000);
