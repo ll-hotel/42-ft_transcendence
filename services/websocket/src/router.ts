@@ -8,6 +8,7 @@ import * as tables from "./utils/db/tables";
 
 export default function(user: tables.User, ws: Ws.WebSocket) {
 	if (services.has(user.uuid)) {
+		ws.close();
 		return;
 	}
 	db.update(tables.users).set({ isOnline: 1 }).where(orm.eq(tables.users.id, user.id)).prepare().execute().sync();
