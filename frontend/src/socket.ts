@@ -65,7 +65,7 @@ namespace Socket {
 	let reconnection: number | null = null;
 
 	export async function connect(): Promise<boolean> {
-		if (conn) {
+		if (conn && conn.readyState == conn.OPEN) {
 			return true;
 		} else {
 			const ping = await api.get("/api/websocket/ping");
@@ -73,16 +73,25 @@ namespace Socket {
 				return false;
 			}
 		}
-		conn = new WebSocket("/api/websocket");
-		conn.onopen = () => {
-			console.log("[socket]", "Connected.");
-			if (reconnection) {
-				notify("Reconnected", "success");
-				clearInterval(reconnection);
-			}
-			reconnection = null;
-		};
-		conn.onclose = (ev) => {
+		const promise = new Promise<WebSocket | null>(resolve => {
+			const tmp = new WebSocket("/api/websocket");
+			tmp.onclose = () => resolve(null);
+			tmp.addEventListener("open", () => {
+				console.log("[socket]", "Connected.");
+				if (reconnection) {
+					notify("Reconnected", "success");
+					clearInterval(reconnection);
+				}
+				reconnection = null;
+				tmp.onclose = null;
+				resolve(tmp);
+			});
+		});
+		conn = await promise;
+		if (!conn) {
+			return false;
+		}
+		conn.addEventListener("close", (ev) => {
 			console.log("[socket]", "Disconnected.", ev.code);
 			conn = null;
 			// 1005 means server properly closed connection, and wanted us to be disconnected.
@@ -90,24 +99,28 @@ namespace Socket {
 				notify("Disconnected. Reconnecting...", "info");
 				reconnection = setInterval(connect, 1000);
 			}
-		};
-		conn.onmessage = (event) => {
+		});
+		conn.addEventListener("message", (event) => {
 			try {
 				const message = JSON.parse(event.data) as Message;
-				console.log("[socket]", message);
+				// console.log("[socket]", message);
 				if (hooks.has(message.topic)) {
 					hooks.get(message.topic)!.forEach(hook => hook(message));
 				}
 			} catch (err) {
 				console.log(err);
 			}
-		};
+		});
 		pingLoop();
 		return true;
 	}
+	let pingInterval: number | null = null;
 	function pingLoop() {
-		setTimeout(() => {
-			send({ service: "chat", topic: "ping" }) && pingLoop();
+		if (pingInterval != null) {
+			return;
+		}
+		pingInterval = setInterval(() => {
+			send({ service: "chat", topic: "ping" });
 		}, 4000);
 	}
 	export function isAlive() {
@@ -120,8 +133,14 @@ namespace Socket {
 		conn!.send(JSON.stringify(message));
 		return true;
 	}
-	export function disconnect() {
-		conn?.close();
+	export function disconnect(): Promise<void> {
+		return new Promise((resolve) => {
+			if (conn == null) {
+				return resolve();
+			}
+			conn.addEventListener("close", () => resolve());
+			conn.close();
+		});
 	}
 	export function addListener(topic: string, hook: (m: Message) => void) {
 		if (!hooks.has(topic)) {

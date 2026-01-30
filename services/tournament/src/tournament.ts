@@ -35,6 +35,7 @@ export class Tournament {
 			Tournament.queryTournament,
 		);
 		app.get("/api/tournament/list", { preHandler: authGuard }, Tournament.getTournamentList);
+		app.get("/api/tournament/isTmMatch", { preHandler: authGuard, schema: schema.query({ matchId: "number" }, ["matchId"]) }, Tournament.isTournamentMatch)
 	}
 
 	static async createTournament(req: FastifyRequest, rep: FastifyReply) {
@@ -48,6 +49,14 @@ export class Tournament {
 		if (size !== 4 && size !== 8) {
 			return rep.code(STATUS.bad_request).send({ message: "Bad tournament size" });
 		}
+
+		const [nameTaken] = await db.select().from(tables.tournaments).where(
+			orm.eq(tables.tournaments.name, name),
+		);
+		if (nameTaken) {
+			return rep.code(STATUS.bad_request).send({ message: "Tournament name already taken" });
+		}
+
 		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(orm.and(
 			orm.eq(tables.tournamentPlayers.userId, user.id),
 			orm.eq(tables.tournamentPlayers.eliminated, 0),
@@ -103,7 +112,10 @@ export class Tournament {
 			return rep.code(STATUS.bad_request).send({ message: "Tournament already started or ended", started: true });
 		}
 		const [alreadyInTournament] = await db.select().from(tables.tournamentPlayers).where(
-			orm.eq(tables.tournamentPlayers.userId, user.id),
+			orm.and(
+				orm.eq(tables.tournamentPlayers.userId, user.id),
+				orm.eq(tables.tournamentPlayers.eliminated, 0),
+			),
 		);
 		if (alreadyInTournament) {
 			const userInWantedTournament: boolean = alreadyInTournament.tournamentId == tournament.id;
@@ -191,63 +203,62 @@ export class Tournament {
 		});
 	}
 
-	// static async tournamentEndMatch(matchId: number, winnerId: number) {
-	// 	const [tm] = await db.select().from(tables.tournamentMatches).where(
-	// 		orm.eq(tables.tournamentMatches.matchId, matchId),
-	// 	);
-	// 	if (!tm) {
-	// 		return;
-	// 	}
-	// 	if (tm.round === 1) {
-	// 		await Tournament.semiFinalEnd(tm.tournamentId);
-	// 	} else if (tm.round === 2) {
-	// 		await db.update(tables.tournaments).set({ status: "ended" }).where(
-	// 			orm.eq(tables.tournaments.id, tm.tournamentId),
-	// 		);
-	// 		// notify User TOURNAMENT_ENDED
-	// 	}
-	// }
+	/* static async handleRoundEnd(tournamentId: number, round: number) {
+		const link = await db.select().from(tournamentMatches).where(and(
+			eq(tournamentMatches.tournamentId, tournamentId),
+			eq(tournamentMatches.round, round)
+		));
+		const matchIds = link.map(x => x.matchId);
+		if (matchIds.length === 0)
+			return;
+		const roundMatches = await db.select().from(matches).where(inArray(matches.id, matchIds));
+		
+		const finished = roundMatches.filter(x => x.status === "ended");
+		if (finished.length !== roundMatches.length)
+			return; // wait for all round's matches to end
 
-	// static async semiFinalEnd(tournamentId: number) {
-	// 	const link = await db.select().from(tables.tournamentMatches).where(orm.and(
-	// 		orm.eq(tables.tournamentMatches.tournamentId, tournamentId),
-	// 		orm.eq(tables.tournamentMatches.round, 1),
-	// 	));
+		// round ended
+		for (let i = 0; i < finished.length; i++) {
+			let loserId;
+			if (finished[i].winnerId === finished[i].player1Id)
+				loserId = finished[i].player2Id;
+			else
+				loserId = finished[i].player1Id;
+			await db.update(tournamentPlayers).set({ eliminated: 1 }).where(and(
+				eq(tournamentPlayers.tournamentId, tournamentId),
+				eq(tournamentPlayers.userId, loserId),
+			));
+		}
 
-	// 	if (link.length !== 2) {
-	// 		return;
-	// 	}
+		const winners = finished.map(x => x.winnerId); //null check
+		if (winners.length === 1) {
+			const winnerId = winners[0];
+			if (winnerId !== null) {
+				await db.update(tournamentPlayers).set({ eliminated: 1 }).where(eq(tournamentPlayers.userId, winnerId));
+				await db.update(tournaments).set({ status: "ended", winnerId: winnerId}).where(eq(tournaments.id, tournamentId));
+			}
+			// notify winner tournament won
+			// notify others tournament ended
+			return; 
+		}
 
-	// 	const semiMatches = await db.select().from(tables.matches).where(orm.or(
-	// 		orm.eq(tables.matches.id, link[0].matchId),
-	// 		orm.eq(tables.matches.id, link[1].matchId),
-	// 	));
+		const nextRound = round + 1;
+		for (let i = 0; i < winners.length; i += 2) {
+			const [match] = await db.insert(matches).values({
+				player1Id: Number(winners[i]),
+				player2Id: Number(winners[i + 1]),
+				status: "ongoing",
+			}).returning();
 
-	// 	const finished = semiMatches.filter(x => x.status === "ended");
-	// 	if (finished.length < 2) {
-	// 		return;
-	// 	}
+			await db.insert(tournamentMatches).values({
+				tournamentId,
+				matchId: match.id,
+				round: nextRound,
+			});
+			// notify players new_match (round nextRound)
+		}
 
-	// 	const winner1 = finished[0].winnerId;
-	// 	const winner2 = finished[1].winnerId;
-
-	// 	if (!winner1 || !winner2) {
-	// 		return;
-	// 	}
-
-	// 	const [finalMatch] = await db.insert(tables.matches).values({
-	// 		player1Id: Number(winner1),
-	// 		player2Id: Number(winner2),
-	// 		status: "ongoing",
-	// 	}).returning();
-
-	// 	// notifyUser FINAL_MATCH
-	// 	await db.insert(tables.tournamentMatches).values({
-	// 		tournamentId,
-	// 		matchId: finalMatch.id,
-	// 		round: 2,
-	// 	});
-	// }
+	} */
 
 	static async getTournament(req: FastifyRequest, rep: FastifyReply) {
 		const tournamentId = (req.params as { id: number }).id;
@@ -303,7 +314,25 @@ export class Tournament {
 		if (!info) {
 			return rep.code(STATUS.not_found).send({ message: "No such tournament" });
 		}
+		
 		rep.code(STATUS.success).send({ creator, ...info });
+	}
+
+	static async isTournamentMatch(req: FastifyRequest, rep: FastifyReply) {
+		const { matchId }= req.query as { matchId: number };
+
+		const [isTmMatch] = await db.select()
+			.from(tables.tournamentMatches)
+			.where(orm.eq(tables.tournamentMatches.matchId, matchId));	
+		
+		if (!isTmMatch)
+			return rep.code(STATUS.not_found).send({ isTmMatch: false });
+
+		const [tm] = await db.select()
+			.from(tables.tournaments)
+			.where(orm.eq(tables.tournaments.id,isTmMatch.tournamentId));
+
+		return rep.code(STATUS.success).send({name: tm.name});
 	}
 }
 
@@ -337,6 +366,8 @@ async function notifyTournamentStart(tournamentId: number) {
 		socket.send(player2.uuid, message2);
 	}
 }
+
+
 
 export default async function (fastify: FastifyInstance) {
 	Tournament.setup(fastify);

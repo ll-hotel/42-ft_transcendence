@@ -37,8 +37,9 @@ export class Tournaments implements AppPage {
 	async createTournament(form: HTMLFormElement) {
 		const formData = new FormData(form);
 		const name = formData.get("tournament-name")?.toString();
-		const size = formData.get("tournament-size")?.toString();
-		if (!name || !size) return;
+		const sizeStr = formData.get("tournament-size")?.toString();
+		if (!name || !sizeStr) return;
+		const size = parseInt(sizeStr, 10);
 		const input = form.querySelector("[name=tournament-name]")! as HTMLInputElement;
 		input.value = "";
 

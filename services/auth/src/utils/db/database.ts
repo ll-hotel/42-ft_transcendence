@@ -25,7 +25,7 @@ export function createTables() {
 		orm.eq(tables.matches.status, "ongoing"),
 	).prepare();
 	const matches = selectOngoinMatches.all();
-	matches.forEach((match) => dbM.endMatch(match.id));
+	matches.forEach(async (match) => await dbM.endMatch(match.id));
 }
 
 function createUserTable() {

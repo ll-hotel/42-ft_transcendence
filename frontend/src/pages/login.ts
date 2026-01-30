@@ -1,13 +1,12 @@
 import { api, Status } from "../api.js";
 import { gotoPage } from "../PageLoader.js";
 import socket from "../socket.js";
-import AppPage from "./AppPage.js";
 import { notify } from "../utils/notifs.js";
+import AppPage from "./AppPage.js";
 
 export class Login implements AppPage {
 	content: HTMLElement;
 	form: HTMLFormElement;
-	twoFAHidden: boolean;
 
 	constructor(content: HTMLElement) {
 		this.content = content;
@@ -17,7 +16,6 @@ export class Login implements AppPage {
 			this.submitForm();
 			return false;
 		});
-		this.twoFAHidden = true;
 		const intraButton: HTMLButtonElement = this.content.querySelector("button#button-intra")!;
 		intraButton.onclick = async function() {
 			const res = await api.get("/api/auth/42");
@@ -37,9 +35,9 @@ export class Login implements AppPage {
 	}
 	static async new(content: HTMLElement): Promise<AppPage | null> {
 		if (
-			!content.querySelector("form")
-			|| !content.querySelector("button#button-intra")
-			|| !content.querySelector("button#button-google")
+			!content.querySelector("form") ||
+			!content.querySelector("button#button-intra") ||
+			!content.querySelector("button#button-google")
 		) {
 			return null;
 		}
@@ -54,19 +52,27 @@ export class Login implements AppPage {
 		const provider = params.get("provider");
 		const code = params.get("code");
 		const error = params.get("error");
-		
+
 		if (error && provider) {
 			notify("Oauth failed", "error");
 		}
 		if (code && provider) {
 			return loginWithProvider(container, provider, code);
 		}
-		if (await socket.connect()) {
-			return gotoPage("profile");
+		const authRes = await api.get("/api/auth/ping");
+		if (authRes) {
+			if (authRes.status != Status.success) {
+				return;
+			}
+			notify("Already logged in", "info");
+			await socket.connect();
+			gotoPage("home");
 		}
+		this.form.reset();
 	}
-	unload(): void {
+	async unload(): Promise<void> {
 		this.content.remove();
+		this.hideTwofa();
 		(this.form.querySelector("[name=username]")! as HTMLInputElement).value = "";
 		(this.form.querySelector("[name=password]")! as HTMLInputElement).value = "";
 		(this.form.querySelector("[name=twoFACode]")! as HTMLInputElement).value = "";
@@ -77,14 +83,16 @@ export class Login implements AppPage {
 		const password = data.get("password");
 		const twoFACode = data.get("twoFACode");
 
+		this.hideTwofa();
 		const res = await api.post("/api/auth/login", { username, password, twoFACode });
 		if (!res) {
-			return this.hideTwofa();
+			return;
 		}
 		if (res.status === Status.success || res.payload.loggedIn) {
-			socket.connect();
+			this.form.reset();
 			notify(res.payload.message, "success");
-			return gotoPage("profile");
+			await socket.connect();
+			return await gotoPage("home");
 		}
 		if (res.payload.twoFAEnabled) {
 			return this.showTwofa();
@@ -92,29 +100,20 @@ export class Login implements AppPage {
 		notify(res.payload.message, "error");
 	}
 	hideTwofa() {
+		this.form.querySelector("#form-twoFACode")?.setAttribute("hidden", "");
 		this.form.querySelector("#form-username")?.removeAttribute("hidden");
 		this.form.querySelector("#form-password")?.removeAttribute("hidden");
 		this.content.querySelector("#button-intra")?.removeAttribute("hidden");
 		this.content.querySelector("#button-google")?.removeAttribute("hidden");
 		this.content.querySelector("#button-register")?.removeAttribute("hidden");
-		this.form.reset();
-		this.twoFAHidden = true;
 	}
 	showTwofa() {
+		this.form.querySelector("#form-twoFACode")?.removeAttribute("hidden");
 		this.form.querySelector("#form-username")?.setAttribute("hidden", "");
 		this.form.querySelector("#form-password")?.setAttribute("hidden", "");
 		this.content.querySelector("#button-intra")?.setAttribute("hidden", "");
 		this.content.querySelector("#button-google")?.setAttribute("hidden", "");
 		this.content.querySelector("#button-register")?.setAttribute("hidden", "");
-		this.form.querySelector("#form-twoFACode")?.removeAttribute("hidden");
-		this.twoFAHidden = false;
-	}
-	toggleTwoFA() {
-		if (this.twoFAHidden) {
-			this.showTwofa();
-		} else {
-			this.hideTwofa();
-		}
 	}
 }
 
@@ -123,10 +122,11 @@ async function loginWithProvider(container: HTMLElement, provider: string, code:
 	notify("Logging in...", "info");
 
 	let path: string;
-	if (provider === "42")
+	if (provider === "42") {
 		path = "/api/auth/42/callback?code=";
-	else
+	} else {
 		path = "/api/auth/google/callback?code=";
+	}
 	const res = await api.get(path + code);
 	if (!res || !res.payload.loggedIn) {
 		notify(res?.payload.message, "error");

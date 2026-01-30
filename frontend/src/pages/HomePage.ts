@@ -3,12 +3,11 @@ import { gotoPage, gotoUserPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
-import { MatchMaking } from "./matchmaking.js";
 
 export class HomePage implements AppPage {
 	html: HTMLElement;
-	listContainer : HTMLElement;
-	inQueue : boolean;
+	listContainer: HTMLElement;
+	inQueue: boolean;
 
 	constructor(html: HTMLElement) {
 		this.html = html;
@@ -22,6 +21,13 @@ export class HomePage implements AppPage {
 
 	loadInto(container: HTMLElement): void {
 		container.appendChild(this.html);
+		api.get("/api/auth/ping").then(async (res) => {
+			if (!res) return;
+			if (res.status != Status.success) {
+				await socket.disconnect();
+				gotoPage("login");
+			}
+		});
 		this.loadHome();
 	}
 
@@ -35,45 +41,35 @@ export class HomePage implements AppPage {
 		const buttonFindTournament = this.html.querySelector<HTMLDivElement>("#find");
 		const buttonCreateTournament = this.html.querySelector<HTMLDivElement>("#create");
 
-		if (!buttonLocalVs  || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament)
-		{
+		if (!buttonLocalVs || !buttonOnlineVs || !buttonFindTournament || !buttonCreateTournament) {
 			console.log("Missing some buttons in html");
 			return;
 		}
 
-/*		buttonOnlineVs.onclick = () => {
-				api.get("/api/game/current").then((res) => {
-					if (!res)
-						return;
-					if (res.status == Status.not_found)
-					{
-						gotoPage("matchmaking");
-					}
-					else if (res.status == Status.success)
-						gotoPage("pong", "?matchId=" + res.payload.id);
-					else
-						notify("Error " + res.status, "error");
-				});
-		}*/
-
 		buttonLocalVs.onclick = () => {
-			gotoPage("play/local");
+			api.get("/api/game/current").then((res) => {
+				if (!res) return;
+				if (res.status == Status.not_found)
+					gotoPage("play/local");
+				else
+					notify("You are already on a match", "info");
+			});
 		}
 
-		buttonOnlineVs.onclick =  () => {
+		buttonOnlineVs.onclick = () => {
 			api.get("/api/game/current").then((res) => {
-				if (!res)
+				if (!res) {
 					return;
-				if (res.status == Status.not_found)
-				{
-					gotoPage("matchmaking");
 				}
-				else if (res.status == Status.success)
+				if (res.status == Status.not_found) {
+					gotoPage("matchmaking");
+				} else if (res.status == Status.success) {
 					gotoPage("play/match", "?id=" + res.payload.id);
-				else
+				} else {
 					notify("Error " + res.status, "error");
-				});
-		}
+				}
+			});
+		};
 
 		const gotoTournaments = () => gotoPage("tournaments");
 		buttonFindTournament.onclick = gotoTournaments;
@@ -82,11 +78,11 @@ export class HomePage implements AppPage {
 		await this.loadFriends();
 	}
 
-/*	async playRandom() {
+	/*	async playRandom() {
 		socket.addListener("matchmaking:found", (message) => {
 			socket.removeListener("matchmaking:found");
 			this.inQueue = false;
-	
+
 			const matchMsg = message as { match: number, opponent: string };
 			notify("Match found! Playing against " + matchMsg.opponent, "success");
 			setTimeout( () => {
@@ -105,7 +101,7 @@ export class HomePage implements AppPage {
 	async loadFriends() {
 		this.listContainer.innerHTML = "<div>Searching friends...</div>";
 		const friendRes = await api.get("/api/friend");
-		const requestRes = await api.get("/api/friend/requests")
+		const requestRes = await api.get("/api/friend/requests");
 
 		if (!friendRes || !requestRes || friendRes.status !== Status.success || requestRes?.status !== Status.success) {
 			this.listContainer.innerHTML = "<div>Error while searching...</div>";
@@ -133,8 +129,7 @@ export class HomePage implements AppPage {
 		});
 	}
 
-	createFriendCard(friend: any): HTMLElement
-	{
+	createFriendCard(friend: any): HTMLElement {
 		const card = document.createElement("div");
 		card.className = "friend-card";
 		card.classList.add("friend-card-home");

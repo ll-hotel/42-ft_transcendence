@@ -30,7 +30,13 @@ export default class Play implements AppPage {
 		this.html.remove();
 	}
 	async playLocal() {
-		return gotoPage("play/local");
+		api.get("/api/game/current").then((res) => {
+		if (!res) return;
+		if (res.status == Status.not_found)
+			gotoPage("play/local");
+		else
+			notify("You are already on a match", "info");
+		});
 	}
 	async playRandom() {
 		api.get("/api/game/current").then((res) => {
