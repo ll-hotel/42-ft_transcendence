@@ -3,6 +3,8 @@ import * as orm from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as tables from "./tables";
 import * as dbM from "./methods";
+import {hashPassword} from "../security/hash";
+import {users} from "./tables";
 
 const sql = orm.sql;
 
@@ -26,6 +28,15 @@ export function createTables() {
 	).prepare();
 	const matches = selectOngoinMatches.all();
 	matches.forEach((match) => dbM.endMatch(match.id));
+
+	hashPassword("🔒-guest-password-^^-🔒").then((hashedPass) => {
+		db.insert(users).values({
+			uuid: uiidv4(),
+			username: "Guest",
+			displayName: "Guest",
+			password: hashedPass,
+		}).prepare().sync();
+	});
 }
 
 function createUserTable() {
