@@ -3,6 +3,7 @@ import { notify } from "../../utils/notifs.js";
 import AppPage from "../AppPage.js";
 import { Game, Mode } from "../../pong_client_side.js";
 import { gotoPage } from "../../PageLoader.js";
+import { Tournament } from "../tournament.js";
 
 export default class PlayMatch implements AppPage {
 	html: HTMLElement;
@@ -146,8 +147,16 @@ export default class PlayMatch implements AppPage {
 
 		this.matchWindow!.appendChild(result);
 		notify(`The match n°${this.matchId} is finished`, "success");
+		
+		let nextPage = "home", search = "";
+		const res = await api.get(`/api/tournament/isTmMatch?matchId=${this.matchId}`);
+		if (res?.status === Status.success) {
+			nextPage = "tournament";
+			search = "?name=" + res.payload.name;
+		}
+
 		setTimeout( () => {
-			gotoPage("home");
+			gotoPage(nextPage, search);
 		}, 4000);
 	}
 };
