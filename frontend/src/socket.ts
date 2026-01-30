@@ -73,15 +73,24 @@ namespace Socket {
 				return false;
 			}
 		}
-		conn = new WebSocket("/api/websocket");
-		conn.addEventListener("open", () => {
-			console.log("[socket]", "Connected.");
-			if (reconnection) {
-				notify("Reconnected", "success");
-				clearInterval(reconnection);
-			}
-			reconnection = null;
+		const promise = new Promise<WebSocket | null>(resolve => {
+			const tmp = new WebSocket("/api/websocket");
+			tmp.onclose = () => resolve(null);
+			tmp.addEventListener("open", () => {
+				console.log("[socket]", "Connected.");
+				if (reconnection) {
+					notify("Reconnected", "success");
+					clearInterval(reconnection);
+				}
+				reconnection = null;
+				tmp.onclose = null;
+				resolve(tmp);
+			});
 		});
+		conn = await promise;
+		if (!conn) {
+			return false;
+		}
 		conn.addEventListener("close", (ev) => {
 			console.log("[socket]", "Disconnected.", ev.code);
 			conn = null;
@@ -105,9 +114,13 @@ namespace Socket {
 		pingLoop();
 		return true;
 	}
+	let pingInterval: number | null = null;
 	function pingLoop() {
-		setTimeout(() => {
-			send({ service: "chat", topic: "ping" }) && pingLoop();
+		if (pingInterval != null) {
+			return;
+		}
+		pingInterval = setInterval(() => {
+			send({ service: "chat", topic: "ping" });
 		}, 4000);
 	}
 	export function isAlive() {
