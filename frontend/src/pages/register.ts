@@ -24,10 +24,9 @@ export class RegisterPage implements AppPage {
 	}
 
 	async loadInto(container: HTMLElement): Promise<void> {
-		const me = await api.get("/api/user/me");
+		const me = await api.get("/api/auth/ping");
 		if (me && me.status === Status.success) {
-			// Already connected. Redirecting to user profile page.
-			gotoPage("profile");
+			gotoPage("home");
 			return;
 		}
 		container.appendChild(this.content);

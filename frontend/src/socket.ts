@@ -65,7 +65,7 @@ namespace Socket {
 	let reconnection: number | null = null;
 
 	export async function connect(): Promise<boolean> {
-		if (conn) {
+		if (conn && conn.readyState == conn.OPEN) {
 			return true;
 		} else {
 			const ping = await api.get("/api/websocket/ping");
@@ -74,15 +74,15 @@ namespace Socket {
 			}
 		}
 		conn = new WebSocket("/api/websocket");
-		conn.onopen = () => {
+		conn.addEventListener("open", () => {
 			console.log("[socket]", "Connected.");
 			if (reconnection) {
 				notify("Reconnected", "success");
 				clearInterval(reconnection);
 			}
 			reconnection = null;
-		};
-		conn.onclose = (ev) => {
+		});
+		conn.addEventListener("close", (ev) => {
 			console.log("[socket]", "Disconnected.", ev.code);
 			conn = null;
 			// 1005 means server properly closed connection, and wanted us to be disconnected.
@@ -90,8 +90,8 @@ namespace Socket {
 				notify("Disconnected. Reconnecting...", "info");
 				reconnection = setInterval(connect, 1000);
 			}
-		};
-		conn.onmessage = (event) => {
+		});
+		conn.addEventListener("message", (event) => {
 			try {
 				const message = JSON.parse(event.data) as Message;
 				// console.log("[socket]", message);
@@ -101,7 +101,7 @@ namespace Socket {
 			} catch (err) {
 				console.log(err);
 			}
-		};
+		});
 		pingLoop();
 		return true;
 	}
@@ -120,8 +120,14 @@ namespace Socket {
 		conn!.send(JSON.stringify(message));
 		return true;
 	}
-	export function disconnect() {
-		conn?.close();
+	export function disconnect(): Promise<void> {
+		return new Promise((resolve) => {
+			if (conn == null) {
+				return resolve();
+			}
+			conn.addEventListener("close", () => resolve());
+			conn.close();
+		});
 	}
 	export function addListener(topic: string, hook: (m: Message) => void) {
 		if (!hooks.has(topic)) {
