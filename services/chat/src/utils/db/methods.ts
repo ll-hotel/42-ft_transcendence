@@ -8,7 +8,3 @@ export async function getUserIdByUsername(username: string): Promise<number | nu
 	const [user] = await db.select({ id: tables.users.id }).from(tables.users).where(orm.eq(tables.users.username, username));
 	return user ? user.id : null;
 }
-
-export async function setUserOffline(uuid: string) {
-	await db.update(tables.users).set({ isOnline: 0 }).where(orm.eq(tables.users.uuid, uuid));
-}

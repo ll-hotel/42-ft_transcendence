@@ -1,4 +1,4 @@
-import WebSocket, { MessageEvent } from "ws";
+import * as WebSocket from "ws";
 
 type Event = "message" | "disconnect";
 type Handler = (data?: any) => void;
@@ -52,18 +52,18 @@ export async function connect(uuid: ClientId, socket: WebSocket.WebSocket) {
 	client.sockets.push(socket);
 	client.lastOnlineTime = Date.now();
 
-	socket.addEventListener("message", (event) => onMessage(client, event));
-	socket.addEventListener("close", () => disconnect(uuid, socket));
+	socket.on("message", (data) => onMessage(client, data));
+	socket.on("close", () => disconnect(uuid, socket));
 }
 
 function updateOnlineTime(client: Client) {
 	client.lastOnlineTime = Date.now();
 }
 
-function onMessage(client: Client, event: MessageEvent) {
+function onMessage(client: Client, data: WebSocket.RawData) {
 	updateOnlineTime(client);
 	try {
-		const msg = JSON.parse(event.data.toString());
+		const msg = JSON.parse(data.toString());
 		if (msg.source === "ping") return;
 		client.onMessage.forEach((handler) => handler(msg));
 	} catch { }
@@ -76,6 +76,9 @@ export function send(target: ClientId, message: Message) {
 			clients.get(target)!.sockets.forEach(socket => socket.send(data));
 		} catch (err) { }
 	}
+}
+export function sendRaw(uuid: ClientId, data: WebSocket.Data) {
+	clients.get(uuid)!.sockets.forEach(socket => socket.send(data));
 }
 
 export function addListener(clientId: ClientId, event: Event, handler: Handler) {
@@ -108,8 +111,6 @@ export function disconnect(target: ClientId, socket?: WebSocket.WebSocket) {
 	}
 	if (!isOnline(target)) {
 		client.onDisconnect.forEach((handler) => handler());
-		client.onDisconnect = [];
-		client.onMessage = [];
 	}
 }
 
@@ -117,6 +118,7 @@ export default {
 	clients,
 	isOnline,
 	send,
+	sendRaw,
 	connect,
 	disconnect,
 	addListener,

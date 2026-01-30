@@ -15,12 +15,6 @@ export async function updateMatchInfo(matchId: number, score_p1: number, score_p
 		scoreP1: score_p1,
 		scoreP2: score_p2,
 	}).where(orm.eq(tables.matches.id, matchId));
-	/*const [tm] = await db.select().from(tables.tournamentMatches).where(
-		drizzle.eq(tables.tournamentMatches.matchId, matchId),
-	);*/
-	// if (tm) {
-	// 	await tournamentEndMatch(matchId, winnerId);
-	// }
 	return true;
 }
 
@@ -141,55 +135,4 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 			.where(orm.eq(tables.tournaments.id, tournamentId));
 
 
-}
-
-export async function removeUserFromTournaments(userUUID: string) {
-	const tournaments = await db.select({ id: tables.tournamentPlayers.tournamentId }).from(tables.tournamentPlayers)
-		.where(orm.eq(tables.tournamentPlayers.userUuid, userUUID));
-	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status }).from(
-		tables.tournaments,
-	).where(
-		orm.inArray(tables.tournaments.id, tournaments.map((value) => value.id)),
-	);
-	await db.delete(tables.tournamentPlayers).where(
-		orm.and(
-			orm.eq(tables.tournamentPlayers.userUuid, userUUID),
-			orm.inArray(
-				tables.tournamentPlayers.tournamentId,
-				tournamentStates.filter((value) => value.status == "pending").map((value) => value.id),
-			),
-		),
-	);
-	const [user] = await db.select().from(tables.users).where(
-		orm.eq(tables.users.uuid, userUUID),
-	);
-	// Notify every waiting tournament players of the user leave.
-	for (const tournament of tournaments) {
-		const players = await selectTournamentPlayers(tournament.id);
-		if (players.length == 0) {
-			await deleteTournament(tournament.id);
-		}
-		const message = { service: "tournament", topic: "left", name: user.displayName };
-		for (const player of players) {
-			socket.send(player.uuid, message);
-		}
-	}
-}
-
-export async function selectTournamentPlayers(id: number) {
-	return db.select({
-		id: tables.tournamentPlayers.userId,
-		uuid: tables.tournamentPlayers.userUuid,
-	}).from(tables.tournamentPlayers).where(
-		orm.eq(tables.tournamentPlayers.tournamentId, id),
-	);
-}
-
-export async function deleteTournament(id: number) {
-	await db.delete(tables.tournaments).where(
-		orm.eq(tables.tournaments.id, id),
-	);
-	await db.delete(tables.tournamentPlayers).where(
-		orm.eq(tables.tournamentPlayers.tournamentId, id),
-	);
 }
