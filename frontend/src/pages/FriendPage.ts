@@ -77,22 +77,31 @@ export class FriendPage implements AppPage {
 		this.chat.reset();
 		this.selectedCard = null;
 		this.content.remove();
-		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content");
-		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name");
+
+		const chatList = this.chatContainer.querySelector<HTMLElement>("#chat-content");
+		if (chatList) {
+			chatList.innerText = "";
+		}
+		const chatName = this.chatContainer.querySelector<HTMLElement>("#chat-name");
+		if (chatName) {
+			chatName.textContent = chatName.dataset.default!;
+			chatName.classList.remove("hover:text-[#04809F]");
+			chatName.classList.remove("cursor-pointer");
+		}
 		const blockBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-block");
+		if (blockBtn) {
+			blockBtn.disabled = true;
+		}
 		// const removeBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-remove-friend");
 		const vsBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-1vs1");
-		if (!chatList || !chatName || !blockBtn || !vsBtn) {
-			return;
+		if (vsBtn) {
+			vsBtn.disabled = true;
 		}
-		chatList.innerHTML = "";
-		chatName.textContent = chatName.dataset.default!;
-		chatName.classList.remove("hover:text-[#04809F]");
-		chatName.classList.remove("cursor-pointer");
-		chatName.onclick = null;
-
-		blockBtn.disabled = true;
-		vsBtn.disabled = true;
+		const buttonProfile = this.chatContainer.querySelector<HTMLButtonElement>("#button-profile")!;
+		if (buttonProfile) {
+			buttonProfile.setAttribute("hidden", "");
+			buttonProfile.onclick = null;
+		}
 	}
 
 	async loadRooms() {
@@ -254,6 +263,12 @@ export class FriendPage implements AppPage {
 			return;
 		}
 
+		const buttonProfile = this.chatContainer.querySelector<HTMLSpanElement>("#button-profile")!;
+		if (buttonProfile) {
+			buttonProfile.removeAttribute("hidden");
+			buttonProfile.onclick = () => gotoUserPage(displayName);
+		}
+
 		const chatName = this.chatContainer.querySelector<HTMLSpanElement>("#chat-name")!;
 		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
 
@@ -268,11 +283,6 @@ export class FriendPage implements AppPage {
 		await this.chat.loadHistory();
 
 		chatName.textContent = displayName;
-		chatName.classList.add("hover:text-[#04809F]");
-		chatName.classList.add("cursor-pointer");
-		chatName.onclick = async () => {
-			await gotoUserPage(displayName);
-		};
 		await this.setRemoveFriendButton(chatName, chatList, displayName);
 		await this.setBlockButton(chatName, chatList, displayName);
 		this.setVsButton(displayName, targetUuid || "");
