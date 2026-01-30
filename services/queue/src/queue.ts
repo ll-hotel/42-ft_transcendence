@@ -40,9 +40,12 @@ class Queue {
 			orm.eq(tables.tournamentPlayers.eliminated, 0),
 		));
 		if (alreadyInTournament) {
+			const [tm] = await db.select().from(tables.tournaments)
+			.where(orm.eq(tables.tournaments.id, alreadyInTournament.tournamentId));
 			return rep.code(STATUS.bad_request).send({
 				message: "Already in tournament",
 				tournamentId: alreadyInTournament.tournamentId,
+				name: tm.name,
 			});
 		}
 

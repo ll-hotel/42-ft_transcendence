@@ -11,8 +11,7 @@ class Match {
 	static setup(app: FastifyInstance) {
 		app.get("/api/game/current", { preHandler: authGuard }, Match.getCurrent);
 		app.get("/api/game/:id", { preHandler: authGuard, schema: schema.params({ id: "number" }, ["id"]) }, Match.getById);
-		// app.post("/api/match/:id/end", { preHandler: authGuard }, Match.end);
-		// use case: player invited to play by chat.
+
 		app.post("/api/game/create", { preHandler: authGuard, schema: schema.body({p1Id: "number", p2Id: "number"}, ["p1Id", "p2Id"])}, Match.create);
 
 		app.post("/api/game/launch", {preHandler: authGuard, schema: schema.body({matchId: "number"}, ["matchId"])}, Match.LaunchGame);
@@ -94,12 +93,6 @@ class Match {
 
 		let [user1] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, match.player1Id));
 		let [user2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, match.player2Id));
-
-		/*if (user1.id !== usr.id) {
-				[user1, user2] = [user2, user1];
-				[match.scoreP1, match.scoreP2] = [match.scoreP2, match.scoreP1];
-		}*/
-
 
 		return rep.code(STATUS.success).send({
 			p1: { name: user1.displayName, avatar: user1.avatar, score: match.scoreP1, },

@@ -78,26 +78,6 @@ export class HomePage implements AppPage {
 		await this.loadFriends();
 	}
 
-	/*	async playRandom() {
-		socket.addListener("matchmaking:found", (message) => {
-			socket.removeListener("matchmaking:found");
-			this.inQueue = false;
-
-			const matchMsg = message as { match: number, opponent: string };
-			notify("Match found! Playing against " + matchMsg.opponent, "success");
-			setTimeout( () => {
-				gotoPage("play/match", `?id=${matchMsg.match}`);
-			}, 3000);
-		})
-		const join = await api.post("/api/matchmaking/join");
-		if (!join || join.status != Status.success) {
-			notify(join ? join.payload.message : "Can not join queue.", "error");
-		} else {
-			this.inQueue = true;
-			notify(join.payload.message, "success");
-		}
-	}*/
-
 	async loadFriends() {
 		this.listContainer.innerHTML = "<div>Searching friends...</div>";
 		const friendRes = await api.get("/api/friend");

@@ -42,13 +42,6 @@ type GameState = {
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string) {
 	if (games.has(matchId))
 		return;
-	// if (mode == Mode.local)
-	// {
-	// 	let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
-	// 	games.set(matchId, game);
-	// 	game.start();
-	// }
-	// else {
 	let discard = dbM.startMatch(matchId).then(() => {
 		let game = new GameInstance(matchId, p1_uuid, p2_uuid, Mode.remote);
 		games.set(matchId, game);
@@ -351,7 +344,7 @@ export class PongBall extends PhysicObject {
 	respawn(side: number) {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
-		// TODO remettre l'angle aleatoire
+
 		let new_dir = 45 + Math.random() * 90;
 		this.speed.setX = 5 * side;
 		this.speed.setY = Math.sin(new_dir);
