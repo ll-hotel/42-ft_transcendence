@@ -1,17 +1,18 @@
+FROM oven/bun:alpine AS builder
+
+WORKDIR /srv/app
+RUN apk add typescript;
+COPY src/ src/
+COPY package.json .
+COPY tsconfig.json .
+RUN bun install
+RUN tsc;
+
 FROM node:22-alpine
 
 WORKDIR /srv/app
+COPY --from=builder /srv/app/dist dist/
+COPY --from=builder /srv/app/node_modules node_modules
+COPY package.json .
 
-RUN apk add tini
-RUN apk add curl
-RUN apk add typescript
-
-COPY package.json ./
-RUN npm install
-RUN npm install -g nodemon
-
-COPY tsconfig.json ./
-COPY init.sh ./init.sh
-
-ENTRYPOINT [ "tini", "--" ]
-CMD [ "sh", "./init.sh" ]
+CMD [ "node", "dist/main.js" ]
