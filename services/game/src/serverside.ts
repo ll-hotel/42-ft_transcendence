@@ -1,6 +1,6 @@
 import { clearInterval, setInterval } from "node:timers";
 import * as dbM from "./utils/db/methods";
-import socket from "./utils/socket";
+import socket, { send } from "./utils/socket";
 import {
 	InputMessage,
 	LocalMessage,
@@ -39,9 +39,14 @@ type GameState = {
 	score: Score,
 };
 
+type MatchId = number;
+
+export const games: Map<MatchId, GameInstance> = new Map();
+
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string) {
 	if (games.has(matchId))
 		return;
+
 	// if (mode == Mode.local)
 	// {
 	// 	let game = new GameInstance(matchId, p1_uuid, p2_uuid, mode);
@@ -65,7 +70,7 @@ export function kill_game(matchId: MatchId)
 	}
 	else
 		return false;
-	
+
 }
 
 export function create_local_game(p1_uuid : string)
@@ -147,19 +152,18 @@ export class GameInstance {
 		this.mode = mode;
 
 		if (mode == Mode.local) {
-			socket.addListener(this.p1_uuid, "pong", (msg: any) => {
+			socket.addListener(this.p1_uuid, "pong", (msg) => {
 				this.local_input_listener(msg);
 			});
-			socket.addListener(this.p1_uuid, "disconnect", () => this.end());
 		} else if (mode == Mode.remote) {
-			//socket.addListener(this.p1_uuid, "pong", (msg) => {
-			//	this.p1_event_listener(msg);
-			//});
-			//socket.addListener(this.p2_uuid!, "pong", (msg) => {
-			//	this.p2_event_listener(msg);
-			//});
-			//socket.addListener(this.p1_uuid, "pong", console.log);
-			//socket.addListener(this.p2_uuid!, "pong", console.log);
+			socket.addListener(this.p1_uuid, "pong", (msg) => {
+				this.p1_event_listener(msg);
+			});
+			socket.addListener(this.p2_uuid!, "pong", (msg) => {
+				this.p2_event_listener(msg);
+			});
+			socket.addListener(this.p1_uuid, "pong", console.log);
+			socket.addListener(this.p2_uuid!, "pong", console.log);
 		}
 	}
 
@@ -172,6 +176,16 @@ export class GameInstance {
 			this.input.p2.up = msg.up;
 		}
 	}
+
+	 p1_event_listener(msg: InputMessage) {
+	 	this.input.p1.up = msg.up;
+	 	this.input.p1.down = msg.down;
+	 }
+
+	 p2_event_listener(msg: InputMessage) {
+	 	this.input.p2.up = msg.up;
+	 	this.input.p2.down = msg.down;
+	 }
 
 	local_input_listener(msg: LocalMessage) {
 		if (msg.topic !== "pong" || msg.type !== "input") {
@@ -212,7 +226,6 @@ export class GameInstance {
 	}
 
 	start(): void {
-		console.log(this.game_id + " is running");
 		this.score.p1 = 0;
 		this.score.p2 = 0;
 		this.ball.respawn(Math.random() < 0.5 ? -1 : 1);
@@ -257,7 +270,6 @@ export class GameInstance {
 	}
 
 	end() {
-		console.log(this.game_id + " is done");
 		this.sendState(Status.ended);
 		this.is_running = false;
 		let discard = dbM.endMatch(this.game_id);
