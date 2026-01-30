@@ -7,11 +7,10 @@ type Size = { w: number, h: number };
 
 // TODO:
 //  - smooth les mouvements des paddles
-//  - les inputs marchent plus si je refresh
-//  - check de la position de la balle et la replacer si jamais
 
 const width_server = 500;
 const height_server = width_server * (1 / 2);
+
 
 export enum Mode {
 	local = "local",
@@ -27,8 +26,13 @@ enum TypeMsg {
 
 export enum PongStatus {
 	ended = "ended",
-	started = "started",
+	initialised = "initialised",
 	ongoing = "ongoing",
+}
+
+export enum Side {
+	Left = "left",
+	Right = "right",
 }
 
 function debug_message(msg: string, obj?: any): void {
@@ -105,12 +109,6 @@ export class Game {
 	public input: Map<string, boolean>;
 	private mode: Mode;
 	private tick_rate: number;
-
-	// HTMLElement
-	// private score_viewer_p1: HTMLElement;
-	// private score_viewer_p2: HTMLElement;
-	// private content_window: HTMLDivElement;
-
 	private current_interval_id: number | null = null;
 	private canvas_ratio: Size;
 	private speed_ratio: number;
@@ -120,6 +118,8 @@ export class Game {
 	onEnded: (() => void) | null = null;
 	private matchId: number;
 	private last_input: { p1_up: boolean, p1_down: boolean, p2_up: boolean, p2_down: boolean };
+	private  move_offset: number;
+	private side: Side | null = null;
 
 	constructor(
 		html: HTMLElement,
@@ -148,13 +148,14 @@ export class Game {
 		this.tick_rate = 60;
 		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
 		this.last_input = { p1_up: false, p1_down: false, p2_up: false, p2_down: false };
-		this.speed_ratio = 10 / this.tick_rate;
+		this.speed_ratio = 20 / this.tick_rate;
 		this.mode = mode;
 		if (this.mode == Mode.local) {
 			this.sendInputs = () => this.send_local_input();
 		} else {
 			this.sendInputs = () => this.send_remote_input();
 		}
+		this.move_offset = this.canvas.height * 0.05;
 	}
 
 	pong_event_listener(msg: PongMessage): void {
@@ -170,7 +171,8 @@ export class Game {
 			return;
 		}
 		const state = msg as StateMessage;
-		if (state.status == PongStatus.started) {
+		if (state.status == PongStatus.initialised) {
+			this.side = state.side;
 			this.run();
 		} else if (state.status == PongStatus.ended) {
 			if (this.onEnded) this.onEnded();
@@ -202,9 +204,6 @@ export class Game {
 		}
 	}
 
-	ended() {
-		this.canvas.hidden = true;
-	}
 	send_local_input() {
 		let msg: LocalMessage = {
 			service: "game",
@@ -324,6 +323,8 @@ export class Game {
 		});
 	}
 
+
+
 	update(): void {
 		if (this.running == false) {
 			return;
@@ -331,19 +332,37 @@ export class Game {
 		if (this.shouldSendInputs()) {
 			this.sendInputs();
 		}
-		this.ball.tick();
-		if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.canvas.height * 0.1) < this.canvas.height) {
-			this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
-		}
-		if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.canvas.height * 0.1) > 0) {
-			this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
-		}
-		if (this.mode == Mode.local) {
-			if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.canvas.height * 0.1) < this.canvas.height) {
-				this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.canvas.height * 0.1) * this.speed_ratio);
+		if (this.mode == Mode.remote) {
+			this.ball.tick();
+			if (this.side == Side.Left) {
+				if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height + this.move_offset) {
+					this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.move_offset) * this.speed_ratio);
+				}
+				if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.move_offset) > this.move_offset) {
+					this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.move_offset) * this.speed_ratio);
+				}
 			}
-			if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.canvas.height * 0.1) > 0) {
-				this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.canvas.height * 0.1) * this.speed_ratio);
+			else if (this.side == Side.Right) {
+				if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height + this.move_offset) {
+					this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.move_offset) * this.speed_ratio);
+				}
+				if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.move_offset) > this.move_offset) {
+					this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.move_offset) * this.speed_ratio);
+				}
+			}
+		}
+		else if (this.mode == Mode.local) {
+			if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height + this.move_offset) {
+				this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.move_offset) * this.speed_ratio);
+			}
+			if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.move_offset) > this.move_offset) {
+				this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.move_offset) * this.speed_ratio);
+			}
+			if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height + this.move_offset) {
+				this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.move_offset) * this.speed_ratio);
+			}
+			if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.move_offset) > this.move_offset) {
+				this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.move_offset) * this.speed_ratio);
 			}
 		}
 		this.render();

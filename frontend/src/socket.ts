@@ -33,6 +33,7 @@ export type StateMessage = BaseMessage & {
 	},
 	score: { p1: number, p2: number },
 	status: game.PongStatus,
+	side: game.Side,
 };
 
 export type InputMessage = BaseMessage & {
