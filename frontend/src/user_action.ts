@@ -37,7 +37,7 @@ export function initSearchBar(userAction: HTMLElement, onCardClick: (card: HTMLE
 			const results = userAction.querySelector<HTMLElement>("#user-results");
 
 			if (results) results.innerText = "";
-		}, 100);
+		}, 300);
 	});
 }
 

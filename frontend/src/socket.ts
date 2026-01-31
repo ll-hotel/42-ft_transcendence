@@ -76,7 +76,7 @@ namespace Socket {
 		}
 		const promise = new Promise<WebSocket | null>(resolve => {
 			const tmp = new WebSocket("/api/websocket");
-			tmp.onclose = () => resolve(null);
+			tmp.onerror = () => resolve(null);
 			tmp.addEventListener("open", () => {
 				console.log("[socket]", "Connected.");
 				if (reconnection) {
@@ -84,7 +84,7 @@ namespace Socket {
 					clearInterval(reconnection);
 				}
 				reconnection = null;
-				tmp.onclose = null;
+				tmp.onerror = null;
 				resolve(tmp);
 			});
 		});

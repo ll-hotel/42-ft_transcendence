@@ -7,6 +7,16 @@ function privateRoomId(UserAId: string, UserBId: string): string {
 	return `private:${a}:${b}`;
 }
 
+export function splitRoomName(name: string): { user1: string, user2: string } {
+	// Remove "private:"
+	name = name.substring(8);
+	// 1 -> "@"
+	const user1 = name.slice(1, name.search(/:@/));
+	// 3 -> "@" + ":@"
+	const user2 = name.slice(3 + user1.length);
+	return { user1, user2 };
+}
+
 namespace Chat {
 	export type Message = {
 		topic: "chat",
@@ -137,31 +147,43 @@ namespace Chat {
 			}
 		}
 
-		send(message: Message) {
+		send(message: Message): void {
+			if (!this.canSend(message)) {
+				return;
+			}
 			if (!message.system) {
 				this.messages.push(message);
 				if (this.messages.length > this.messMax) {
 					this.messages.shift();
 				}
 			}
-			const senderId = message.source;
-			const senderUser = db.userIdByUsername.get({ username: senderId.slice(1) });
-			if (!senderUser) {
-				return;
-			}
 			for (const chatUser of this.users) {
-				const otherUser = db.userIdByUsername.get({ username: chatUser.id.slice(1) });
-				if (!otherUser) continue;
-				const isBlocked = db.userBlocked.get({ userId: senderUser.id, otherId: otherUser.id });
-				if (!isBlocked) {
-					chatUser.send({ ...message, target: this.id });
-				}
+				chatUser.send({ ...message, target: this.id });
 			}
+		}
+		canSend(message: Message): boolean {
+			const senderUsername = message.source.slice(1);
+			const senderId = db.userIdByUsername.get({ username: senderUsername })?.id;
+			if (senderId == undefined) {
+				return false;
+			}
+
+			const { user1, user2 } = splitRoomName(this.id);
+			const targetUsername = senderUsername == user1 ? user2 : user1;
+
+			const otherUser = db.userIdByUsername.get({ username: targetUsername });
+			if (!otherUser) {
+				message.system = true;
+				message.content = "Error: user not found";
+				return true;
+			}
+			const isBlocked = db.userBlockedBy.get({ userId: senderId, otherId: otherUser.id });
+			return isBlocked == undefined;
 		}
 	}
 
 	export class Instance {
-		users: Map<string, User>; // tous les users connus
+		users: Map<string, User>;
 		rooms: Map<string, Room>;
 
 		constructor() {
@@ -213,7 +235,6 @@ namespace Chat {
 			const user = this.getOrCreateUser(userInfo.id, userInfo.username);
 			user.connect(ws, this);
 
-			// Rejoin rooms existantes
 			for (const roomId of user.rooms) {
 				const room = this.rooms.get(roomId);
 				if (room) room.connect(user);

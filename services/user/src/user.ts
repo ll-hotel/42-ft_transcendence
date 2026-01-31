@@ -280,7 +280,6 @@ class User {
 		return rep.code(STATUS.success).send({ message: "Twofa enabled" });
 	}
 
-	// L'user actuel est toujours le Player1
 	static async getMyHistory(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 		const matchesList = await db.select({

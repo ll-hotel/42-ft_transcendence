@@ -21,6 +21,7 @@ export class HomePage implements AppPage {
 
 	loadInto(container: HTMLElement): void {
 		container.appendChild(this.html);
+		this.loadHome();
 		api.get("/api/auth/ping").then(async (res) => {
 			if (!res) return;
 			if (res.status != Status.success) {
@@ -28,7 +29,6 @@ export class HomePage implements AppPage {
 				gotoPage("login");
 			}
 		});
-		this.loadHome();
 	}
 
 	unload(): void {

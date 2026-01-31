@@ -6,9 +6,9 @@ import { db } from "./utils/db/database";
 import * as dbM from "./utils/db/methods";
 import * as tables from "./utils/db/tables";
 
-export default function(user: tables.User, ws: Ws.WebSocket) {
+export function register(user: tables.User, ws: Ws.WebSocket) {
 	if (services.has(user.uuid)) {
-		ws.close();
+		ws.terminate();
 		return;
 	}
 	db.update(tables.users).set({ isOnline: 1 }).where(orm.eq(tables.users.id, user.id)).prepare().execute().sync();
@@ -131,4 +131,4 @@ function waitClose(conn: Ws.WebSocket): Promise<void> {
 	});
 }
 
-const services = new Map<string, ClientServices>();
+export const services = new Map<string, ClientServices>();
