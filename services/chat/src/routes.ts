@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { chat } from "./chat";
+import { chat, splitRoomName } from "./chat";
 import { userIdByUsername } from "./utils/db/methods";
 import { STATUS } from "./utils/http-reply";
 import { authGuard } from "./utils/security/authGuard";
@@ -38,12 +38,7 @@ export function chatRoute(fastify: FastifyInstance) {
 			roomsNames.push(name);
 		}
 		const rooms = roomsNames.map((name) => {
-			// Remove "private:"
-			name = name.substring(8);
-			// 1 -> "@"
-			const user1 = name.slice(1, name.search(/:@/));
-			// 3 -> "@" + ":@"
-			const user2 = name.slice(3 + user1.length);
+			const { user1, user2 } = splitRoomName(name);
 			return user1 == req.user!.username ? user2 : user1;
 		});
 		rep.code(STATUS.success).send({ rooms });
@@ -80,7 +75,7 @@ export function chatRoute(fastify: FastifyInstance) {
 			const me = chat.getOrCreateUser(req.user!.id, req.user!.username);
 			const targetName = (req.params as { username: string }).username;
 			try {
-				const targetUser = userIdByUsername.get({username: targetName});
+				const targetUser = userIdByUsername.get({ username: targetName });
 				if (!targetUser) {
 					throw new Error("Username not found");
 				}
