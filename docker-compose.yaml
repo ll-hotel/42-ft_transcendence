@@ -101,39 +101,38 @@ services:
         condition: service_started
         restart: true
 
-  # grafana:
-  #   image: grafana/grafana
-  #   container_name: grafana
-  #   restart: on-failure
-  #   ports:
-  #     - 3000:3000
-  #
-  # cadvisor:
-  #   image: gcr.io/cadvisor/cadvisor:v0.49.1
-  #   container_name: cadvisor
-  #   privileged: true
-  #   restart: on-failure
-  #   ports:
-  #     - 8098:8080
-  #   volumes:
-  #     - /:/rootfs:ro
-  #     - /var/run:/var/run:ro
-  #     - /sys:/sys:ro
-  #     - /var/lib/docker/:/var/lib/docker:ro
-  #     - /dev/disk/:/dev/disk:ro
-  #   devices:
-  #     - /dev/kmsg
-  #
-  # prometheus:
-  #   image: docker.io/prom/prometheus:latest
-  #   container_name: prometheus
-  #   restart: on-failure
-  #   ports:
-  #     - 9090:9090
-  #   volumes:
-  #     - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-  #     - prometheus-data:/prometheus
-  #
+  grafana:
+    image: grafana/grafana:12.3
+    container_name: grafana
+    restart: on-failure
+    volumes:
+      - grafana-config:/etc/grafana
+      - certificate:/var/certs:ro
+    env_file: .env
+  
+  prometheus:
+    image: docker.io/prom/prometheus:v3.9.0
+    container_name: prometheus
+    restart: on-failure
+    command:
+      - '--web.config.file=/etc/prometheus/web.yml'
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - prometheus-config:/etc/prometheus
+      - certificate:/var/certs:ro
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    privileged: true
+    restart: on-failure
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+  
   # elasticsearch:
   #   image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
   #   container_name: elasticsearch
@@ -170,8 +169,6 @@ services:
   #     - elasticsearch
 
 volumes:
-  prometheus-data:
-
   backend-db:
     driver: local
     driver_opts:
@@ -188,5 +185,17 @@ volumes:
     driver: local
     driver_opts:
       device: ./uploads
+      type: none
+      o: bind
+  grafana-config:
+    driver: local
+    driver_opts:
+      device: ./monitoring/grafana/
+      type: none
+      o: bind
+  prometheus-config:
+    driver: local
+    driver_opts:
+      device: ./monitoring/prometheus/
       type: none
       o: bind
