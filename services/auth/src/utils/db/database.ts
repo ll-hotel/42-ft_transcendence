@@ -66,8 +66,8 @@ function createFriendsTable() {
       senderId INTEGER NOT NULL,
 	  receiverId INTEGER NOT NULL,
 	  status TEXT NOT NULL DEFAULT 'pending',
-	  FOREIGN KEY (senderId) REFERENCES users(id) ON DELETE CASCADE,
-	  FOREIGN KEY (receiverId) REFERENCES users(id) ON DELETE CASCADE
+	  FOREIGN KEY (senderId) REFERENCES users(id),
+	  FOREIGN KEY (receiverId) REFERENCES users(id)
 	  );
 	  `);
 }
@@ -77,7 +77,7 @@ function createMatchmakingQueueTable() {
 		CREATE TABLE IF NOT EXISTS matchmakingQueue (
 		 id INTEGER PRIMARY KEY AUTOINCREMENT,
 		 userId INTEGER NOT NULL,
-		 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+		 FOREIGN KEY (userId) REFERENCES users(id)
 		);
 	`);
 }
@@ -93,9 +93,9 @@ function createMatchesTable() {
 		scoreP2 INTEGER DEFAULT 0,
 		status TEXT NOT NULL DEFAULT 'pending',
 		endedAt INTEGER,
-		FOREIGN KEY (player1Id) REFERENCES users(id) ON DELETE CASCADE,
-		FOREIGN KEY (player2Id) REFERENCES users(id) ON DELETE CASCADE,
-		FOREIGN KEY (winnerId) REFERENCES users(id) ON DELETE SET NULL
+		FOREIGN KEY (player1Id) REFERENCES users(id),
+		FOREIGN KEY (player2Id) REFERENCES users(id),
+		FOREIGN KEY (winnerId) REFERENCES users(id)
 	);
 	`);
 }
