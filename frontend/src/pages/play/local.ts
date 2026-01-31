@@ -185,9 +185,9 @@ export default class PlayLocal implements AppPage {
 
 		this.matchWindow!.appendChild(result);
 		notify(`Match is finished`, "success");
-		setTimeout( () => {
-			gotoPage("home");
-		}, 4000);
+		// setTimeout( () => {
+		// 	gotoPage("home");
+		// }, 4000);
 	}
 
  initSearchBar(container: HTMLElement) {

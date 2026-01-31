@@ -72,7 +72,7 @@ export type Input = { name: string, value: boolean };
 export class Vector2D {
 	private x: number;
 	private y: number;
-	private norm: number;
+	public norm: number;
 
 	constructor(x: number, y: number) {
 		this.x = x;

@@ -17,7 +17,7 @@ import {
 } from "./types";
 
 type MatchId = number;
-const server_tickrate: number = 20;
+const server_tickrate: number = 20 ;
 const table_width = 500;
 const table_ratio = 1/2;
 const table = {
@@ -350,7 +350,8 @@ export class PongBall extends PhysicObject {
 			);
 			this.speed.setX = -(speed_normal * normal.getX()) + (speed_tangent * normal.getY());
 			this.speed.setY = -(speed_normal * normal.getY()) + (speed_tangent * -normal.getX());
-			this.speed.scale(1.05);
+            if (this.speed.norm < 42)
+			    this.speed.scale(1.05);
 		}
 	}
 
@@ -359,8 +360,8 @@ export class PongBall extends PhysicObject {
 		this.pos.y = table.height / 2;
 		let new_dir = Math.random() * 90;
 		this.speed.setX = 5 * side;
-		this.speed.setY = Math.sin(new_dir);
-		this.speed.scale(4);
+		this.speed.setY = Math.sin(new_dir) * (Math.random() < 0.5 ? -1 : 1);
+        this.speed.scale(3);
 	}
 
 	ball_scored(line_position: Position, normal: Vector2D) {
@@ -417,7 +418,8 @@ export class PongBall extends PhysicObject {
 			);
 			this.speed.setX = -(speed_normal * new_normal.getX()) + (speed_tangent * (new_normal.getY()));
 			this.speed.setY = -(speed_normal * (new_normal.getY())) + (speed_tangent * -new_normal.getX());
-			this.speed.scale(1.05);
+            if (this.speed.norm < 42)
+			    this.speed.scale(1.05);
 		}
 	}
 

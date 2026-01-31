@@ -10,7 +10,7 @@ type Size = { w: number, h: number };
 
 const width_server = 500;
 const height_server = width_server * (1 / 2);
-
+const server_tickrate = 20;
 
 export enum Mode {
 	local = "local",
@@ -148,7 +148,7 @@ export class Game {
 		this.tick_rate = 60;
 		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
 		this.last_input = { p1_up: false, p1_down: false, p2_up: false, p2_down: false };
-		this.speed_ratio = 20 / this.tick_rate;
+		this.speed_ratio = server_tickrate / this.tick_rate;
 		this.mode = mode;
 		if (this.mode == Mode.local) {
 			this.sendInputs = () => this.send_local_input();
@@ -171,8 +171,9 @@ export class Game {
 			return;
 		}
 		const state = msg as StateMessage;
+
 		if (state.status == PongStatus.initialised) {
-			this.side = state.side;
+			this.side = state.side as Side;
 			this.run();
 		} else if (state.status == PongStatus.ended) {
 			if (this.onEnded) this.onEnded();
@@ -322,13 +323,10 @@ export class Game {
 		if (this.running == false) {
 			return;
 		}
-		if (this.shouldSendInputs()) {
-			this.sendInputs();
-		}
+        this.ball.tick();
 		if (this.mode == Mode.remote) {
-			this.ball.tick();
 			if (this.side == Side.Left) {
-				if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height + this.move_offset) {
+				if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
 					this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.move_offset) * this.speed_ratio);
 				}
 				if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.move_offset) > this.move_offset) {
@@ -336,7 +334,7 @@ export class Game {
 				}
 			}
 			else if (this.side == Side.Right) {
-				if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height + this.move_offset) {
+				if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
 					this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.move_offset) * this.speed_ratio);
 				}
 				if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.move_offset) > this.move_offset) {
@@ -345,13 +343,13 @@ export class Game {
 			}
 		}
 		else if (this.mode == Mode.local) {
-			if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height + this.move_offset) {
+			if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
 				this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.move_offset) * this.speed_ratio);
 			}
 			if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.move_offset) > this.move_offset) {
 				this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.move_offset) * this.speed_ratio);
 			}
-			if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height + this.move_offset) {
+			if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
 				this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.move_offset) * this.speed_ratio);
 			}
 			if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.move_offset) > this.move_offset) {
@@ -359,6 +357,9 @@ export class Game {
 			}
 		}
 		this.render();
+        if (this.shouldSendInputs()) {
+            this.sendInputs();
+        }
 	}
 
 	shouldSendInputs(): boolean {
