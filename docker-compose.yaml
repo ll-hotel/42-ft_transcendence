@@ -140,7 +140,7 @@ services:
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms2g -Xmx2g
-      - xpack.security.enabled=false
+      - ELASTIC_PASSWORD=changeme
     ports:
       - 9200:9200
       - 9300:9300
