@@ -1,5 +1,17 @@
+# Connexion to Elasticsearch
 elasticsearch.hosts: "http://elasticsearch:9200"
+
+# Serv for reverse proxy
 server.host: "0.0.0.0"
 server.basePath: "/log-management"
 server.publicBaseUrl: "https://transcendence:8443/log-management"
 server.rewriteBasePath: false
+
+# TLS
+server.ssl.enabled: true
+server.ssl.certificate: "/var/certs/certificate.pem"
+server.ssl.key: "/var/certs/privatekey.pem"
+server.ssl.certificateAuthorities: "/var/certs/certificate.pem"
+
+# Telemetry
+telemetry.optIn: false

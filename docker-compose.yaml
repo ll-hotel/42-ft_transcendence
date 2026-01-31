@@ -136,12 +136,18 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
     container_name: elasticsearch
+    restart: on-failure
     environment:
       - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
       - xpack.security.enabled=false
     ports:
       - 9200:9200
       - 9300:9300
+    volumes:
+      - elasticsearch-config:/usr/share/elasticsearch/config
+      - certificate:/usr/share/elasticsearch/config/certs:ro
+
   
   filebeat:
     image: docker.elastic.co/beats/filebeat:9.2.4
@@ -162,6 +168,7 @@ services:
     restart: on-failure
     volumes:
       - kibana-config:/usr/share/kibana/config
+      - certificate:/var/certs:ro
     depends_on:
       - elasticsearch
 
@@ -200,5 +207,11 @@ volumes:
     driver: local
     driver_opts:
       device: ./log-management/kibana
+      type: none
+      o: bind
+  elasticsearch-config:
+    driver: local
+    driver_opts:
+      device: ./log-management/elasticsearch
       type: none
       o: bind

@@ -20,7 +20,7 @@ filebeat.autodiscover:
 
 
 setup.kibana:
-  host: "localhost:5601"
+  host: 'https://kibana:5601'
 
 output.elasticsearch:
-  hosts: 'elasticsearch:9200'
+  hosts: 'https://elasticsearch:9200'
