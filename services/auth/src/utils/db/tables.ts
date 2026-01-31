@@ -40,20 +40,20 @@ export const users = sqliteTable("users", {
 
 export const friends = sqliteTable("friends", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
-	senderId: integer("senderId").notNull().references(() => users.id, { onDelete: "cascade" }),
-	receiverId: integer("receiverId").notNull().references(() => users.id, { onDelete: "cascade" }),
+	senderId: integer("senderId").notNull().references(() => users.id),
+	receiverId: integer("receiverId").notNull().references(() => users.id),
 	status: text("status").notNull().default("pending"),
 });
 
 export const matchmakingQueue = sqliteTable("matchmakingQueue", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
-	userId: integer("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+	userId: integer("userId").notNull().references(() => users.id),
 });
 
 export const matches = sqliteTable("matches", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
-	player1Id: integer("player1Id").notNull().references(() => users.id, { onDelete: "cascade" }),
-	player2Id: integer("player2Id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	player1Id: integer("player1Id").notNull().references(() => users.id),
+	player2Id: integer("player2Id").notNull().references(() => users.id),
 
 	status: text("status").notNull().default("pending"),
 
