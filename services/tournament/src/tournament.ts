@@ -318,6 +318,6 @@ export default async function (fastify: FastifyInstance) {
 		orm.eq(tables.tournaments.status, "pending"),
 	);
 	for (const tournament of tournaments) {
-		dbM.deleteTournament(tournament.id);
+		await dbM.deleteTournament(tournament.id);
 	}
 }

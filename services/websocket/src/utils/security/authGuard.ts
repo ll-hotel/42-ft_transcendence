@@ -34,6 +34,7 @@ export async function authGuard(req: FastifyRequest, rep: FastifyReply) {
 		rep.clearCookie("accessToken", { path: "/api" });
 		return rep.code(STATUS.unauthorized).send({ message: MESSAGE.not_found });
 	}
+	
 	const dbUser = dbUsers[0];
 	req.user = {
 		...dbUser,
