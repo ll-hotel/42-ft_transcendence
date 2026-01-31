@@ -33,7 +33,7 @@ class Game {
 
 		if (matchExists.status === "ended")
 			return rep.code(STATUS.bad_request).send({ message: "Match already ended" });
-		
+
 		if (matchExists.status !== "pending" && !isTmMatch)
 			return rep.code(STATUS.created).send({ message: MESSAGE.match_started});
 

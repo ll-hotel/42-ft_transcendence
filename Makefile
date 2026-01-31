@@ -12,7 +12,7 @@ up: volume_path certificate
 
 volume_path:
 	@mkdir -p ./database
-	@mkdir -p ./frontend/static/uploads
+	@mkdir -p ./uploads
 
 certificate: certificate/privatekey.pem certificate/certificate.pem
 certificate/privatekey.pem certificate/certificate.pem:

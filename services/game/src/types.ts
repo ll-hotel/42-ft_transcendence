@@ -1,5 +1,10 @@
 import * as socket from "./utils/socket";
 
+export enum Side {
+	left = "left",
+	right = "right",
+}
+
 export enum TypeMsg {
 	state = "state",
 	input = "input",
@@ -9,7 +14,7 @@ export enum TypeMsg {
 
 export enum Status {
 	ended = "ended",
-	started = "started",
+	initialised = "initialised",
 	ongoing = "ongoing",
 }
 
@@ -28,6 +33,7 @@ export type StateMessage = socket.BaseMessage & {
 	},
 	score: { p1: number, p2: number },
 	status: Status,
+	side: Side,
 };
 
 export type InputMessage = socket.BaseMessage & {
@@ -66,7 +72,7 @@ export type Input = { name: string, value: boolean };
 export class Vector2D {
 	private x: number;
 	private y: number;
-	private norm: number;
+	public norm: number;
 
 	constructor(x: number, y: number) {
 		this.x = x;

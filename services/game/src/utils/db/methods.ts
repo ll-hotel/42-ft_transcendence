@@ -70,7 +70,7 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 		if (matchIds.length === 0)
 			return;
 		const roundMatches = await db.select().from(tables.matches).where(orm.inArray(tables.matches.id, matchIds));
-		
+
 		const finished = roundMatches.filter((x: any) => x.status === "ended");
 		if (finished.length !== roundMatches.length)
 			return; // wait for all round's matches to end
@@ -106,10 +106,10 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 				for (const p of plyrs) {
 					socket.send(p.uuid, { service: "tournament", topic: "tournament", content: `ended:${winnerName}` });
 				}
-				
+
 			}
 
-			return; 
+			return;
 		}
 
 		const nextRound = round + 1;
@@ -138,12 +138,12 @@ export async function handleRoundEnd(tournamentId: number, round: number) {
 			socket.send(p2.uuid, message2);
 
 		}
-		
+
 		await db.update(tables.tournaments)
 			.set({ round: nextRound })
 			.where(orm.eq(tables.tournaments.id, tournamentId));
 
-		
+
 		const participants = await selectTournamentPlayers(tournamentId);
 		for (const p of participants) {
 			socket.send(p.uuid, { service: "tournament", topic: "tournament", content: "update" });
@@ -157,7 +157,7 @@ export async function removeUserFromTournaments(userUUID: string) {
 	const tournamentStates = await db.select({ id: tables.tournaments.id, status: tables.tournaments.status })
 	.from(tables.tournaments)
 	.where(orm.inArray(tables.tournaments.id, tournaments.map((value: { id: number }) => value.id)));
-	
+
 	await db.delete(tables.tournamentPlayers).
 	where(orm.and(
 			orm.eq(tables.tournamentPlayers.userUuid, userUUID),
@@ -201,4 +201,3 @@ export async function deleteTournament(id: number) {
 		orm.eq(tables.tournamentPlayers.tournamentId, id),
 	);
 }
-

@@ -209,7 +209,7 @@ class User {
 			return rep.code(STATUS.bad_request).send({ message: "Missing password" });
 		}
 		if (REGEX_PASSWORD.test(newPassword) === false) {
-			return rep.code(STATUS.bad_request).send({ message: "Invalid new password" });
+			return rep.code(STATUS.bad_request).send({ message: "Password must contain at least 1 lowercase, 1 uppercase and 8 characters minimum" });
 		}
 
 		const [usr] = await db.select().from(tables.users).where(orm.eq(tables.users.id, usrId));
