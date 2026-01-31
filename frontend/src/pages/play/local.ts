@@ -64,8 +64,7 @@ export default class PlayLocal implements AppPage {
 		return new PlayLocal(html, ball, paddle);
 	}
 	async loadInto(container: HTMLElement): Promise<void> {
-		if (this.game)
-		{
+		if (this.game) {
 			this.game.deinit();
 			this.game = null;
 		}
@@ -75,16 +74,16 @@ export default class PlayLocal implements AppPage {
 		this.html.querySelectorAll(".ended-match-mess").forEach(el => el.remove());
 		this.matchCanvas!.hidden = false;
 
-		const resMe = await api.get("api/user/me");
+		const resMe = await api.get("/api/user/me");
 		if (!resMe || resMe.status != Status.success) {
-			return history.back();
+			return gotoPage("home");
 		}
 		this.player1 = resMe.payload;
-		if (!this.player1)
-			return notify("Error wen charging player1", "error");
-
-		if (!this.player2)
-		{
+		if (!this.player1) {
+			notify("Error when charging player1", "error");
+			return gotoPage("home");
+		}
+		if (!this.player2) {
 			this.matchElement!.hidden = true;
 			this.p2Element!.hidden = false;
 			this.initSearchBar(container);
@@ -100,6 +99,7 @@ export default class PlayLocal implements AppPage {
 		this.p2_Avatar!.src = this.player2!.avatar.startsWith("/") ? this.player2!.avatar : `/${this.player2!.avatar}`;
 		this.p1_Score!.innerText = "0";
 		this.p2_Score!.innerText = "0";
+		this.matchId = null;
 
 		const canvas = this.html.querySelector("canvas")!;
 		const table_ratio = 9 / 16;
@@ -107,14 +107,15 @@ export default class PlayLocal implements AppPage {
 		canvas.height = canvas.width * table_ratio;
 
 		const resLocal = await api.post("/api/game/launch/local");
-		if (resLocal?.status !== Status.success) {
-			gotoPage("home");
+		if (!resLocal || resLocal.status !== Status.success) {
+			if (resLocal) notify(resLocal.payload.message, "error");
+			console.log("No:", resLocal?.payload.message, this.matchId);
+			this.matchId = null;
+			return gotoPage("home");
 		}
 
-		this.matchId = resLocal?.payload.matchId;
-
-		if (!this.matchId)
-			return;
+		this.matchId = resLocal.payload.matchId as number;
+		console.log("matchId:", this.matchId);
 
 		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.local, this.matchId);
 		this.game.onScore = () => {
@@ -129,16 +130,27 @@ export default class PlayLocal implements AppPage {
 		container.appendChild(this.html);
 	};
 
-	unload(): void {
+	async unload(): Promise<void> {
 		this.html.querySelectorAll(".ended-match-mess").forEach(el => el.remove());
-		const resKill = api.post("/api/game/kill/local", { matchId: this.matchId });
-		if (!resKill) return;
+		this.html.remove();
 
 		this.game?.deinit();
+		this.game = null;
+
 		this.player1 = null;
 		this.player2 = null;
-		this.game = null;
-		this.html.remove();
+
+		console.log("UNLOAD: matchId:", this.matchId);
+		if (this.matchId == null) {
+			return;
+		}
+		const resKill = await api.post("/api/game/kill/local", { matchId: this.matchId });
+		if (resKill) {
+			if (resKill.status != Status.success) {
+				notify(resKill.payload.message, "error");
+			}
+		}
+		this.matchId = null;
 	}
 
 
