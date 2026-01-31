@@ -1,12 +1,10 @@
 import Database from "better-sqlite3";
 import * as orm from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import {drizzle} from "drizzle-orm/better-sqlite3";
 import * as tables from "./tables";
 import * as dbM from "./methods";
 import {hashPassword} from "../security/hash";
-import {users} from "./tables";
-import {v4 as uuidv4} from "uuid"; 
-const sql = orm.sql;
+import {v4 as uuidv4} from "uuid";
 
 const path = "/srv/app/db/database.sqlite";
 
@@ -23,14 +21,19 @@ export function createTables() {
 	createTournamentMatches();
 
 	// Stop all ongoing matches.
-	const selectOngoinMatches = db.select({ id: tables.matches.id }).from(tables.matches).where(
+	const selectOngoingMatches = db.select({ id: tables.matches.id }).from(tables.matches).where(
 		orm.eq(tables.matches.status, "ongoing"),
 	).prepare();
-	const matches = selectOngoinMatches.all();
+	const matches = selectOngoingMatches.all();
 	matches.forEach((match) => dbM.endMatch(match.id));
 
 	hashPassword("🔒-guest-password-^^-🔒").then(async (hashedPass) => {
-		await db.insert(users).values({
+        const guestExists = db.select().from(tables.users).where(
+            orm.eq(tables.users.displayName, "Guest")
+        ).prepare().get() != undefined;
+        if (guestExists)
+            return;
+		await db.insert(tables.users).values({
 			uuid: uuidv4(),
 			username: "Guest",
 			displayName: "Guest",
