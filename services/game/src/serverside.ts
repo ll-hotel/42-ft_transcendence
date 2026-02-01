@@ -235,7 +235,7 @@ export class GameInstance {
 	start(): void {
 		this.score.p1 = 0;
 		this.score.p2 = 0;
-		this.ball.respawn(Math.random() < 0.5 ? -1 : 1);
+		this.ball.respawn(Math.random() < 0.5 ? "left" : "right");
 		this.sendState(Status.initialised);
 		this.is_running = true;
 		this.status = Status.initialised;
@@ -375,13 +375,19 @@ export class PongBall extends PhysicObject {
 		}
 	}
 
-	respawn(side: number): void {
+	respawn(side: "left" | "right"): void {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
-		let new_dir = Math.random() * 90;
-		this.speed.x = 5 * side;
-		this.speed.y = Math.sin(new_dir) * (Math.random() < 0.5 ? -1 : 1);
-		this.speed.scale(3);
+
+		this.speed.x = 0;
+		this.speed.y = 0;
+
+		setTimeout(() => {
+			const angle = Math.random() * 90;
+			this.speed.y = Math.sin(angle) * (Math.random() < 0.5 ? -1 : 1);
+			this.speed.x = 5 * (side == "left" ? -1 : 1);
+			this.speed.scale(2);
+		}, 1000);
 
 		this.paddle_p1.respawn();
 		this.paddle_p2.respawn();
@@ -395,17 +401,18 @@ export class PongBall extends PhysicObject {
 			normal.y,
 		);
 
-		let next_side;
 		if (distance_from_line < this.size.w / 2) {
-			next_side = 1;
-			if (this.pos.x <= this.size.w) {
+			const right_scored = this.pos.x <= this.size.w;
+			const left_scored = this.pos.x >= table.width - this.size.w;
+			if (right_scored) {
 				this.score.p2++;
-			} else if (this.pos.x >= table.width - this.size.w) {
+			} else if (left_scored) {
 				this.score.p1++;
-				next_side = -1;
 			}
+
 			let discard = dbM.updateMatchInfo(this.game_id, this.score.p1, this.score.p2);
-			this.respawn(next_side);
+
+			this.respawn(left_scored ? "left" : "right");
 			this.sendScore();
 		}
 	}
@@ -451,7 +458,7 @@ export class PongBall extends PhysicObject {
 		this.pos.x += this.speed.x;
 		this.pos.y += this.speed.y;
 
-		const top_line: Vec2 = { x: 0, y: (this.size.h / 2) }
+		const top_line: Vec2 = { x: 0, y: (this.size.h / 2) };
 		this.test_collide(top_line, this.top_normal);
 
 		const bot_line: Vec2 = { x: 0, y: table.height - (this.size.h / 2) };
