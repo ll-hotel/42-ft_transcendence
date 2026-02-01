@@ -4,7 +4,7 @@ import { db } from "./utils/db/database";
 import * as tables from "./utils/db/tables";
 import { authGuard } from "./utils/security/authGuard";
 import { MESSAGE, schema, STATUS } from "./utils/http-reply";
-import { create_game, create_local_game, kill_game as kill_local_game } from "./serverside";
+import { createRemoteGame, createLocalGame, endLocalGame } from "./serverside";
 import * as serverside from "./serverside";
 import { Mode as GameMode } from "./types";
 
@@ -21,7 +21,6 @@ class Game {
 	}
 	static async LaunchGame(req: FastifyRequest, rep: FastifyReply){
 		const { matchId } = req.body as { matchId: number };
-		const usr = req.user!;
 
 		const [matchExists] = await db.select().from(tables.matches)
 		.where(drizzle.eq(tables.matches.id, matchId));
@@ -44,7 +43,7 @@ class Game {
 		if (!p1 || !p2)
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
 
-		create_game(matchId, p1.uuid, p2.uuid);
+		createRemoteGame(matchId, p1.uuid, p2.uuid);
 
 		return rep.code(STATUS.success).send({ message: "Game launched"});
 	}
@@ -70,7 +69,7 @@ class Game {
 			return rep.code(STATUS.bad_request).send({ message: "Can not start local game while in queue" });
 		}
 
-		const matchId = create_local_game(usr.uuid);
+		const matchId = createLocalGame(usr.uuid);
 		if (matchId == null) {
 			return rep.code(STATUS.bad_request).send({ message: "Already in a game" });
 		}
@@ -93,7 +92,7 @@ class Game {
 			return rep.code(STATUS.bad_request).send({ message: "Not in game" })
 		}
 
-		if (kill_local_game(usr.uuid, matchId))
+		if (endLocalGame(usr.uuid, matchId))
 			return rep.code(STATUS.success).send({ message: "Local game killed" });
 
 		return rep.code(STATUS.bad_request).send({ message: "You should not be there" });
@@ -114,7 +113,6 @@ class Game {
 	}
 	static async getById(req: FastifyRequest, rep: FastifyReply) {
 		const { id } = req.params as { id: number };
-		const usr = req.user!;
 
 		const matchId = Number(id);
 
