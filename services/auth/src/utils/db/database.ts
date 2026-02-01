@@ -5,6 +5,8 @@ import * as tables from "./tables";
 import * as dbM from "./methods";
 import {hashPassword} from "../security/hash";
 import {v4 as uuidv4} from "uuid";
+import { randomBytes } from "crypto";
+
 
 const path = "/srv/app/db/database.sqlite";
 
@@ -27,7 +29,8 @@ export function createTables() {
 	const matches = selectOngoingMatches.all();
 	matches.forEach((match) => dbM.endMatch(match.id));
 
-	hashPassword("🔒-guest-password-^^-🔒").then(async (hashedPass) => {
+	const randomKey = randomBytes(32).toString("hex");
+	hashPassword(randomKey).then(async (hashedPass) => {
         const guestExists = db.select().from(tables.users).where(
             orm.eq(tables.users.displayName, "Guest")
         ).prepare().get() != undefined;
