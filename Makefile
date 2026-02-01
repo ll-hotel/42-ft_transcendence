@@ -10,12 +10,15 @@ PASS = $(shell cat /dev/urandom | base32 | head -c 12)
 
 all: up
 
-up: volume_path certificate env_file build
+up: clear_elk volume_path certificate env_file build
 	$(COMPOSE) up --detach
 
 volume_path:
 	@mkdir -p ./database
 	@mkdir -p ./uploads
+
+clear_elk:
+	rm -f ./log-management/elasticsearch/elasticsearch.keystore
 
 certificate: certificate/privatekey.pem certificate/certificate.pem
 certificate/privatekey.pem certificate/certificate.pem:
