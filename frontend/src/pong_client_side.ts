@@ -315,13 +315,11 @@ export class Game {
 		});
 	}
 
-
-
 	update(): void {
 		if (this.running == false) {
 			return;
 		}
-    this.ball.tick();
+    	this.ball.tick();
 		if (this.mode == Mode.remote) {
 			if (this.side == Side.Left) {
 				if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
