@@ -101,6 +101,7 @@ export class Login implements AppPage {
 		if (res.payload.twoFAEnabled) {
 			return this.showTwofa();
 		}
+		this.form.reset();
 		notify(res.payload.message, "error");
 	}
 	hideTwofa() {
