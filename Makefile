@@ -7,8 +7,8 @@ SERVICES := $(shell docker compose config --services | sed 's/^/DNS:/' | paste -
 
 all: up
 
-up: volume_path certificate
-	$(COMPOSE) up --build --detach
+up: volume_path certificate build
+	$(COMPOSE) up --detach
 
 volume_path:
 	@mkdir -p ./database
