@@ -11,7 +11,7 @@ import { generate2FASecret, generateQRCode, verify2FAToken } from "./utils/secur
 import { authGuard as preHandler } from "./utils/security/authGuard";
 import { comparePassword, hashPassword } from "./utils/security/hash";
 
-const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
+const REGEX_USERNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9_-]{3,24}$/;
 const REGEX_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9#@]{8,64}$/;
 
 class User {
@@ -184,7 +184,8 @@ class User {
 		}
 
 		if (displayName) {
-			if (REGEX_USERNAME.test(displayName) === false) {
+			const REGEX_UPDATE_DISPLAYNAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9-]{3,24}$/;
+			if (REGEX_UPDATE_DISPLAYNAME.test(displayName) === false) {
 				return (rep.code(STATUS.bad_request).send({
 					message: MESSAGE.invalid_displayName + " : Must contain 3 minimum characters (alphanumerical only)",
 				}));
