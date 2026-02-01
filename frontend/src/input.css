@@ -7,10 +7,10 @@
   @apply flex flex-row lg:flex-col lg:justify-items-center gap-4;
 }
 .tournament-player-card {
-  @apply border rounded-sm flex flex-row place-self-center min-w-80 w-80 h-24 p-4 items-center;
+  @apply border rounded-sm flex flex-row place-self-center min-w-80 w-80 h-24 lg:h-20 p-4 items-center;
 }
 .tournament-player-pic {
-  @apply rounded-[100%] min-h-20 min-w-20 max-h-20 max-w-20 overflow-hidden justify-center items-center bg-transparent border-1;
+  @apply rounded-[100%] min-h-18 min-w-18 max-h-18 max-w-18 overflow-hidden justify-center items-center bg-transparent border-1;
 }
 .tournament-player-username {
   @apply w-full text-center text-lg;
