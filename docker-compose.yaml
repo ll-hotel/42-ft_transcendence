@@ -14,6 +14,9 @@ services:
       auth-service:
         condition: service_started
         restart: true
+      grafana:
+        condition: service_started
+        restart: true
 
   auth-service:
     container_name: auth-service
@@ -109,6 +112,10 @@ services:
       - grafana-config:/etc/grafana
       - certificate:/var/certs:ro
     env_file: .env
+    depends_on:
+      prometheus:
+        condition: service_started
+        restart: true
   
   prometheus:
     image: docker.io/prom/prometheus:v3.9.0
