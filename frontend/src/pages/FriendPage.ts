@@ -101,7 +101,7 @@ export class FriendPage implements AppPage {
 				);
 				card.onclick = () => {
 					this.switchRoomCard(card);
-					this.loadChat(friend.displayName);
+					this.loadChat(friend.displayName, friend.uuid);
 				};
 				this.cardsDisplayNames.push(friend.displayName);
 				this.listContainer.appendChild(card);
@@ -119,15 +119,16 @@ export class FriendPage implements AppPage {
 				const userRes = await api.get("/api/user?username=" + username);
 				if (!userRes) return;
 				if (userRes.status != Status.success) return;
-				const { displayName, avatar, isOnline } = userRes.payload.user as {
+				const { displayName, avatar, isOnline, uuid } = userRes.payload.user as {
 					displayName: string,
 					avatar: string,
 					isOnline: boolean,
+					uuid : string,
 				};
 				const card = FriendPage.createFriendCard(displayName, avatar, isOnline);
 				card.onclick = () => {
 					this.switchRoomCard(card);
-					this.loadChat(displayName);
+					this.loadChat(displayName, uuid);
 				};
 				if (this.cardsDisplayNames.find((value) => value == displayName) == undefined) {
 					this.cardsDisplayNames.push(displayName);
@@ -258,7 +259,7 @@ export class FriendPage implements AppPage {
 		chatName.textContent = displayName;
 		await this.setRemoveFriendButton(displayName);
 		await this.setBlockButton(displayName);
-		this.setVsButton(displayName, uuid || "");
+		this.setVsButton(displayName, uuid);
 		this.renderMessages(chatList);
 		this.toggleChatInput("on");
 

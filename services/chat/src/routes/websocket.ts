@@ -5,7 +5,8 @@ import { chat } from "../chat";
 import { db } from "../utils/db/database";
 import * as tables from "../utils/db/tables";
 import { schema, STATUS } from "../utils/http-reply";
-import socketPool from "../utils/socket";
+import socketPool, { Message} from "../utils/socket";
+import { createMatch1vs1 } from "../utils/versus";
 
 export default function(fastify: FastifyInstance): void {
 	fastify.get("/websocket", {
@@ -20,6 +21,29 @@ function route(ws: WebSocket.WebSocket, req: FastifyRequest): void {
 
 	socketPool.connect(req.user!.uuid, ws);
 	chat.newWebsocketConnection(ws, req);
+	socketPool.addListener(req.user!.uuid, "vs:invite", async (mess : Message) => {
+		if (!("content" in mess))
+			return;
+		if (socketPool.isOnline(mess.content))
+		{
+			const [displaySender] = await db.select({displayName: tables.users.displayName}).from(tables.users).where(orm.eq(tables.users.id, req.user!.id))
+			if (!displaySender) return;
+			socketPool.send(mess.content, { service: "chat", topic: "vs:invite", source: req.user!.uuid, content: displaySender.displayName});
+		} else {
+			const [displayReceiver] = await db.select({displayName: tables.users.displayName}).from(tables.users).where(orm.eq(tables.users.uuid, mess.content))
+			if (!displayReceiver) return;
+			socketPool.send(req.user!.uuid, { source : "chat", service: "chat", topic: "vs:decline", content: displayReceiver.displayName})
+		}
+	});
+	socketPool.addListener(req.user!.uuid, "vs:accept", (mess : Message) => {
+		if ("content" in mess)
+			createMatch1vs1(req.user!.uuid, mess.content);
+	});
+	socketPool.addListener(req.user!.uuid, "vs:decline", async (mess : Message) => {
+		if ("content" in mess) {
+			socketPool.send(mess.content, { source : req.user!.uuid, topic : "vs:decline", service : "chat", content: req.user!.displayName });
+		}
+	});
 }
 
 async function userByUUID(req: FastifyRequest, rep: FastifyReply) {
