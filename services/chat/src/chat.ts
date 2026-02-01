@@ -18,13 +18,22 @@ export function splitRoomName(name: string): { user1: string, user2: string } {
 }
 
 namespace Chat {
-	export type Message = {
+	interface ErrorMessage {
+		topic: "error",
+		error: string,
+	}
+	interface UserMessage {
+		target?: string,
+		content?: string,
+	}
+	interface ChatMessage {
 		topic: "chat",
 		source: string,
 		target: string,
 		content: string,
 		system?: boolean,
-	};
+	}
+	export type Message = ChatMessage | ErrorMessage;
 
 	export class Connection {
 		ws: Ws.WebSocket;
@@ -147,7 +156,7 @@ namespace Chat {
 			}
 		}
 
-		send(message: Message): void {
+		send(message: ChatMessage): void {
 			if (!this.canSend(message)) {
 				return;
 			}
@@ -161,7 +170,7 @@ namespace Chat {
 				chatUser.send({ ...message, target: this.id });
 			}
 		}
-		canSend(message: Message): boolean {
+		canSend(message: ChatMessage): boolean {
 			const senderUsername = message.source.slice(1);
 			const senderId = db.userIdByUsername.get({ username: senderUsername })?.id;
 			if (senderId == undefined) {
@@ -174,7 +183,7 @@ namespace Chat {
 			const otherUser = db.userIdByUsername.get({ username: targetUsername });
 			if (!otherUser) {
 				message.system = true;
-				message.content = "Error: user not found";
+				message.content = "User not found";
 				return true;
 			}
 			const isBlocked = db.userBlockedBy.get({ userId: senderId, otherId: otherUser.id });
@@ -261,9 +270,15 @@ namespace Chat {
 			if (!message || typeof message !== "object") {
 				return;
 			}
-			const { target, content } = message as Message;
-			if (!target || typeof content !== "string") {
+			const { target, content } = message as UserMessage;
+			if (!target || !content) {
 				return;
+			}
+			if (content.length > 256) {
+				return sender.send({
+					topic: "error",
+					error: "Message too long (256 characters max)"
+				})
 			}
 			if (!this.rooms.has(target)) {
 				return;
@@ -272,7 +287,7 @@ namespace Chat {
 			if (!room.users.has(sender)) {
 				return;
 			}
-			const finalMess: Message = {
+			const finalMess: ChatMessage = {
 				topic: "chat",
 				source: sender.id,
 				target: room.id,

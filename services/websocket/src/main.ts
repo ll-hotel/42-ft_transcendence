@@ -13,7 +13,11 @@ const app: FastifyInstance = Fastify({
 });
 
 app.register(fastifyCookie);
-app.register(fastifyWebsocket);
+app.register(fastifyWebsocket, {
+	options: {
+		maxPayload: 1024 * 64,
+	}
+});
 app.register(websocketRoute);
 
 app.listen({ port: 8080, host: "0.0.0.0" }, function (err, _address) {
