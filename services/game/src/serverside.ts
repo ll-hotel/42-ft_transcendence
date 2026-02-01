@@ -51,22 +51,35 @@ export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string) 
 	});
 }
 
-export function kill_game(matchId: MatchId)
+export function kill_game(uuid: string, matchId: MatchId): boolean
 {
-	if (games.has(matchId)) {
-		let game = games.get(matchId);
-		game?.end();
-		return true;
-	}
-	else
+	const game = games.get(matchId);
+	if (!game) {
 		return false;
+	}
+	if (game.mode != Mode.local) {
+		return false;
+	}
+	if (game.p1_uuid != uuid) {
+		return false;
+	}
+	game.end();
+	return true;
 }
 
-export function create_local_game(p1_uuid : string)
+export function create_local_game(p1_uuid : string): number | null
 {
+	for (const [matchId, instance] of games) {
+		if (instance.p1_uuid == p1_uuid) {
+			return null;
+		}
+	}
+	
 	let localGame = -1;
-	while (games.has(localGame))
+	while (games.has(localGame)) {
 		localGame--;
+	}
+
 	let game = new GameInstance(localGame, p1_uuid, null, Mode.local)
 	games.set(localGame, game);
 	game.start();

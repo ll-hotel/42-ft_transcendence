@@ -5,9 +5,6 @@ type Position = { x: number, y: number };
 type Score = { p1: number, p2: number };
 type Size = { w: number, h: number };
 
-// TODO:
-//  - smooth les mouvements des paddles
-
 const width_server = 500;
 const height_server = width_server * (1 / 2);
 const server_tickrate = 20;

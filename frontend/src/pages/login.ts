@@ -92,6 +92,10 @@ export class Login implements AppPage {
 			this.form.reset();
 			notify(res.payload.message, "success");
 			await socket.connect();
+			const inMatch = await api.get("/api/game/current");
+			if (inMatch?.status === Status.success) {
+				gotoPage("play/match", `?id=${inMatch.payload.id}`);
+			}
 			return await gotoPage("home");
 		}
 		if (res.payload.twoFAEnabled) {
@@ -134,5 +138,9 @@ async function loginWithProvider(container: HTMLElement, provider: string, code:
 	}
 	notify(res.payload.message, "success");
 	await socket.connect();
+	const inMatch = await api.get("/api/game/current");
+	if (inMatch?.status === Status.success) {
+		gotoPage("play/match", `?id=${inMatch.payload.id}`);
+	}
 	return gotoPage("profile");
 }

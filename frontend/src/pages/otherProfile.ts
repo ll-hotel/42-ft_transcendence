@@ -88,7 +88,6 @@ export class OtherProfilePage implements AppPage {
 
 		const MatchList = resMatch.payload;
 		if (contMatchList && contMatchList.children.length == 0) {
-		// L'user est toujours le player1 (voir api)
 			for (let i = 0; i < MatchList.length ; i++) {
 				let matchInfo = MatchList[i];
 				let date = new Date(matchInfo.match.endedAt);

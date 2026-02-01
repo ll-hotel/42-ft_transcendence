@@ -39,6 +39,8 @@ export class MatchMaking implements AppPage {
 		{
 			if (!join || join.status != Status.success) {
 				notify(join ? join.payload.message : "Can not join queue.", "error");
+				if (join?.payload.message !== "Already in queue")
+					return gotoPage("home");
 			} else {
 				this.inQueue = true;
 				notify(join.payload.message, "success");

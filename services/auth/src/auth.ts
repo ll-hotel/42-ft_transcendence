@@ -175,7 +175,7 @@ class AuthService {
 		});
 		const userData = await response.json();
 
-		const [userExists] = await db.select().from(users).where(eq(users.username, userData.login));
+		const [userExists] = await db.select().from(users).where(eq(users.username, userData.email));
 		let user;
 		if (userExists) {
 			user = userExists;
@@ -196,13 +196,19 @@ class AuthService {
 				avatarPath = `./uploads/${filename}`;
 				await sharp(buffer).resize(751, 751, { fit: "cover" }).png().toFile(avatarPath);
 			} catch (error) {
-				console.log(error);
 				avatarPath = "default_pp.png";
+			}
+			let displayName;
+			const [displayNameExists] = await db.select().from(users).where(eq(users.displayName, userData.login));
+			if (displayNameExists) {
+				displayName = userData.login + "_";
+			} else {
+				displayName = userData.login;
 			}
 			await db.insert(users).values({
 				uuid,
-				username: userData.login,
-				displayName: userData.login,
+				username: userData.email,
+				displayName: displayName,
 				password: pass,
 				avatar: avatarPath,
 				oauth: OAuth.auth42,
@@ -274,9 +280,9 @@ class AuthService {
 				avatarPath = "default_pp.png";
 			}
 			let displayName;
-			const displayNameExists = await db.select().from(users).where(eq(users.displayName, userData.given_name));
-			if (displayNameExists.length > 0) {
-				displayName = userData.email;
+			const [displayNameExists] = await db.select().from(users).where(eq(users.displayName, userData.given_name));
+			if (displayNameExists) {
+				displayName = userData.given_name + "_";
 			} else {
 				displayName = userData.given_name;
 			}
