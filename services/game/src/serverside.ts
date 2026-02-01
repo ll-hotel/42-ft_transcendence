@@ -275,10 +275,10 @@ export class GameInstance {
 		this.sendState(Status.ongoing);
 	}
 
-	end(): void {
+	async end(): Promise<void> {
 		this.sendState(Status.ended);
 		this.is_running = false;
-		let discard = dbM.endMatch(this.game_id);
+		let discard = await dbM.endMatch(this.game_id);
 		socket.removeListener(this.p1_uuid, "pong");
 		if (this.p2_uuid) {
 			socket.removeListener(this.p2_uuid, "pong");
