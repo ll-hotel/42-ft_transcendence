@@ -55,6 +55,10 @@
 	@apply font-semibold text-gray-500;
 }
 
+#friend-buttons-cnt{
+	@apply flex justify-between gap-3
+}
+
 .user-result {
 	@apply flex items-center p-2 bg-white rounded shadow hover:bg-gray-50 cursor-pointer
 }

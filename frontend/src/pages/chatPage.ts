@@ -4,42 +4,42 @@ import socket from "../socket.js";
 import { initSearchBar } from "../user_action.js";
 import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
-import { FriendChat } from "./FriendChat.js";
+import { ChatStruct } from "../chat.js";
 
-export class FriendPage implements AppPage {
+export class ChatPage implements AppPage {
 	content: HTMLElement;
 	listContainer: HTMLElement;
 	chatContainer: HTMLElement;
 	selectedCard: HTMLElement | null;
 	renderInterval: number | null = null;
-	chat: FriendChat;
+	chat: ChatStruct;
 	searchBar: HTMLElement;
 	cardsDisplayNames: string[] = [];
 
 	constructor(content: HTMLElement, searchBar: HTMLElement) {
 		this.content = content;
 		this.listContainer = content.querySelector("#friend-list-content")!;
-		this.chatContainer = content.querySelector("#friend-chat")!;
+		this.chatContainer = content.querySelector("#chat")!;
 		initSearchBar(searchBar, (card) => this.userSelected(card));
 		this.searchBar = searchBar;
 		this.selectedCard = null;
-		this.chat = new FriendChat();
+		this.chat = new ChatStruct();
 		if (!this.listContainer || !this.chatContainer) {
 			console.log("Error in html");
 		}
 	}
 
 	static async new(content: HTMLElement): Promise<AppPage | null> {
-		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#friend-chat")) {
-			console.log("Missing Friend list or Friend chat in html");
+		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#chat")) {
+			console.log("Missing Friendlist or chat in html");
 			return null;
 		}
 		const searchBar = content.querySelector<HTMLElement>("#search-user-action");
 		if (!searchBar) {
-			console.log("friend page: missing search bar");
+			console.log("Chat page: missing search bar");
 			return null;
 		}
-		return new FriendPage(content, searchBar);
+		return new ChatPage(content, searchBar);
 	}
 
 	async userSelected(card: HTMLElement): Promise<void> {
@@ -94,7 +94,7 @@ export class FriendPage implements AppPage {
 		if (friendRes) {
 			const friends = friendRes.payload.friends as any[];
 			friends.forEach((friend) => {
-				const card: HTMLElement = FriendPage.createFriendCard(
+				const card: HTMLElement = ChatPage.createFriendCard(
 					friend.displayName,
 					friend.avatar,
 					friend.isOnline,
@@ -125,7 +125,7 @@ export class FriendPage implements AppPage {
 					isOnline: boolean,
 					uuid : string,
 				};
-				const card = FriendPage.createFriendCard(displayName, avatar, isOnline);
+				const card = ChatPage.createFriendCard(displayName, avatar, isOnline);
 				card.onclick = () => {
 					this.switchRoomCard(card);
 					this.loadChat(displayName, uuid);
@@ -250,6 +250,8 @@ export class FriendPage implements AppPage {
 			return;
 		}
 
+		chatList.innerHTML = "";
+
 		if (!await this.chat.openRoom(user.username)) {
 			this.unselectCard();
 			return;
@@ -257,7 +259,7 @@ export class FriendPage implements AppPage {
 		await this.chat.loadHistory();
 
 		chatName.textContent = displayName;
-		await this.setRemoveFriendButton(displayName);
+		await this.setIsFriend(displayName);
 		await this.setBlockButton(displayName);
 		this.setVsButton(displayName, uuid);
 		this.renderMessages(chatList);
@@ -275,7 +277,7 @@ export class FriendPage implements AppPage {
 	}
 
 	hideButtons(): void {
-		const buttons = this.chatContainer.querySelector<HTMLElement>("#chat-friend-buttons");
+		const buttons = this.chatContainer.querySelector<HTMLElement>("#chat-buttons");
 		if (buttons) {
 			buttons.setAttribute("hidden", "");
 		}
@@ -285,7 +287,7 @@ export class FriendPage implements AppPage {
 		}
 	}
 	showButtons(): void {
-		const buttons = this.chatContainer.querySelector<HTMLElement>("#chat-friend-buttons");
+		const buttons = this.chatContainer.querySelector<HTMLElement>("#chat-buttons");
 		if (buttons) {
 			buttons.removeAttribute("hidden");
 		}
@@ -326,20 +328,13 @@ export class FriendPage implements AppPage {
 		}
 	}
 
-	async setRemoveFriendButton(displayName: string) {
-		const removeBtn = this.chatContainer.querySelector<HTMLButtonElement>("#button-remove-friend")!;
+	async setIsFriend(displayName: string) {
+		const isFriendDiv = this.chatContainer.querySelector<HTMLDivElement>("#is-friend")!;
 
-		removeBtn.disabled = false;
-		removeBtn.onclick = async () => {
-			const res = await api.delete("/api/friend/remove", { displayName: displayName });
-			if (res && res.status === Status.success) {
-				notify(`${displayName} isn't your friend anymore.`, "info");
-				removeBtn.disabled = true;
-				this.unselectCard();
-			} else {
-				notify("Error while deleting this friend.", "error");
-			}
-		};
+		isFriendDiv.innerText = "";
+		isFriendDiv.classList.remove("bg-slate-600");
+		isFriendDiv.classList.remove("bg-red-500");
+
 		api.get("/api/friend/status?displayName=" + displayName).then(statusRes => {
 			if (!statusRes) return;
 			if (statusRes && statusRes.status != Status.success) {
@@ -347,20 +342,13 @@ export class FriendPage implements AppPage {
 			}
 			const status = statusRes.payload.status as string;
 			if (status == "accepted") {
-				return;
+				isFriendDiv.innerText = "Friend";
+				isFriendDiv.classList.add("bg-slate-600");
 			}
-			removeBtn.disabled = false;
-			removeBtn.innerText = "Send friend request";
-			removeBtn.onclick = async () => {
-				const requestRes = await api.post("/api/friend/request", { displayName });
-				if (!requestRes) return;
-				if (requestRes.status != Status.success) {
-					return notify(requestRes.payload.message, "error");
-				}
-				notify("Friend request sent", "info");
-				removeBtn.disabled = true;
-				this.unselectCard();
-			};
+			else {
+				isFriendDiv.innerText = "Not friend";
+				isFriendDiv.classList.add("bg-red-500");
+			}
 		});
 	}
 
@@ -413,7 +401,7 @@ export class FriendPage implements AppPage {
 	unselectCard(): void {
 		const chatList = this.chatContainer.querySelector<HTMLElement>("#chat-content");
 		if (chatList) {
-			chatList.innerText = "";
+			chatList.innerHTML = "";
 		}
 		const chatName = this.chatContainer.querySelector<HTMLElement>("#chat-name");
 		if (chatName) {

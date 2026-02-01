@@ -32,7 +32,7 @@ export class ProfilePage implements AppPage {
 
 	async loadInto(container: HTMLElement) {
 		container.appendChild(this.content);
-		return this.loadUserInfo();
+		this.loadUserInfo();
 	}
 
 	unload(): void {
@@ -48,9 +48,10 @@ export class ProfilePage implements AppPage {
 		const userInfo = res.payload as { displayName: string, username: string, id: number, avatar: string };
 		const contMatchList = this.content.querySelector("#match-list");
 		const avatarImg = this.content.querySelector<HTMLImageElement>("#profile-picture");
-		if (avatarImg) {
-			avatarImg.src = userInfo.avatar == "DEFAULT_AVATAR" ? "default_pp.png" : userInfo.avatar;
-		}
+		if (!contMatchList || !avatarImg)
+			return;
+
+		avatarImg.src = userInfo.avatar == "DEFAULT_AVATAR" ? "default_pp.png" : userInfo.avatar;
 		this.displayname.innerText = userInfo.displayName;
 		this.username.innerText = userInfo.username;
 
@@ -59,25 +60,24 @@ export class ProfilePage implements AppPage {
 			notify("Can't load matchs info", "error");
 			return;
 		}
-		const MatchList = resMatch.payload;
-		if (contMatchList && contMatchList.children.length == 0) {
 
-			for (let i = 0; i < MatchList.length; i++) {
-				let matchInfo = MatchList[i];
-				let date = new Date(matchInfo.match.endedAt);
-				contMatchList.append(
-					MatchInfo.new(
-						date.toLocaleDateString("fr-FR"),
-						date.toLocaleTimeString("fr-FR"),
-						{ name: this.displayname.innerText, score: matchInfo.match.scoreP1 },
-						{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
-						userInfo.displayName || "Display name",
-					).toHTML(),
-				);
-			}
-			if (!MatchList.length) {
-				contMatchList.append(MatchInfo.noMatchHtml());
-			}
+		const MatchList = resMatch.payload;
+		contMatchList.innerHTML = "";
+		for (let i = 0; i < MatchList.length; i++) {
+			let matchInfo = MatchList[i];
+			let date = new Date(matchInfo.match.endedAt);
+			contMatchList.append(
+				MatchInfo.new(
+					date.toLocaleDateString("fr-FR"),
+					date.toLocaleTimeString("fr-FR"),
+					{ name: this.displayname.innerText, score: matchInfo.match.scoreP1 },
+					{ name: matchInfo.opponent.displayName, score: matchInfo.match.scoreP2 },
+					userInfo.displayName || "Display name",
+				).toHTML(),
+			);
+		}
+		if (!MatchList.length) {
+			contMatchList.append(MatchInfo.noMatchHtml());
 		}
 
 		const infoPlayedMatch = this.content.querySelector("#played-match");
@@ -112,9 +112,8 @@ export class ProfilePage implements AppPage {
 
 	async logoutClick() {
 		const reply = await api.post("/api/auth/logout");
-		if (!reply || reply.status == Status.unauthorized) {
-			// Unauthorized = not logged in or wrong user.
-		}
+		if (!reply || reply.status == Status.unauthorized)
+			return;
 		notify("Logged out", "info");
 		this.unload();
 		await socket.disconnect();
