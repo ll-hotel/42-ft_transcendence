@@ -26,7 +26,7 @@ const requiredEnv = [
 
 const missing = requiredEnv.filter((variable) => !process.env[variable]);
 if (missing.length) {
-  throw new Error("Missing environment variables");
+	throw new Error("Missing environment variable: " + missing[0]);
 }
 
 const jwtSecret = process.env.JWT_SECRET!;
