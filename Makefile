@@ -10,8 +10,8 @@ PASS = $(shell cat /dev/urandom | base32 | head -c 12)
 
 all: up
 
-up: volume_path certificate env_file
-	$(COMPOSE) up --build --detach
+up: volume_path certificate env_file build
+	$(COMPOSE) up --detach
 
 volume_path:
 	@mkdir -p ./database
