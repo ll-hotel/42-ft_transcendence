@@ -223,10 +223,6 @@ namespace Chat {
 			if (userA.userId == userB.userId) {
 				throw new Error("You can not talk to yourself");
 			}
-			// const friends = await areFriends(userA.userId, userB.userId);
-			// if (!friends) {
-			// 	throw new Error("Cannot create private room: not friends");
-			// }
 
 			const id = privateRoomId(userA.id, userB.id);
 			let room = this.rooms.get(id);

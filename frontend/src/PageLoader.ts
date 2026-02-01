@@ -1,6 +1,6 @@
 import AppPage from "./pages/AppPage.js";
 import { editProfile } from "./pages/editProfile.js";
-import { FriendPage } from "./pages/FriendPage.js";
+import { ChatPage } from "./pages/chatPage.js";
 import { HomePage } from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
 import Play from "./pages/play.js";
@@ -22,11 +22,10 @@ const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[
 	{ name: "profile", new: ProfilePage.new },
 	{ name: "profile/other", new: OtherProfilePage.new },
 	{ name: "profile/edit", new: editProfile.new },
-	{ name: "friends", new: FriendPage.new },
+	{ name: "chat", new: ChatPage.new },
 	{ name : "play", new: Play.new},
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
-	{ name: "friends", new: FriendPage.new},
 	{ name: "tournament", new: Tournament.new },
 	{ name: "tournaments", new: Tournaments.new },
 	{ name: "matchmaking", new: MatchMaking.new}

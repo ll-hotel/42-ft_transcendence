@@ -60,7 +60,7 @@ export function chatRoute(fastify: FastifyInstance) {
 			if (!room.users.has(me)) {
 				return rep.code(STATUS.unauthorized).send({ message: "User not allow" });
 			}
-			const allMess = room.messages.slice(-8);
+			const allMess = room.messages.slice(-32);
 
 			return rep.code(STATUS.success).send(allMess);
 		},

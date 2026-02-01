@@ -165,5 +165,3 @@ namespace Socket {
 }
 
 export default Socket;
-
-(window as any).socket = Socket;

@@ -1,5 +1,5 @@
 <div class="flex w-full h-screen items-center justify-center">
-	<div id="friend-widget" class="w-4/5 h-4/5 sm:pt-4 pt-12 grid grid-cols-3 gap-4">
+	<div id="widget" class="w-4/5 h-4/5 sm:pt-4 pt-12 grid grid-cols-3 gap-4">
 		<div class="flex flex-col col-span-3 sm:col-span-1 h-full gap-4">
 			<div id="search-user"
 				class="rounded-md flex flex-col items-center justify-center user-action p-4 bg-gray-200">
@@ -27,21 +27,20 @@
 				</div>
 			</div>
 		</div>
-		<div id="friend-chat"
+		<div id="chat"
 			class=" rounded-md col-span-3 sm:col-span-2 flex flex-col justify-between overflow-y-auto">
 			<div id="chat-header" class="bg-gray-200 h-12 p-2 flex rounded-t-md justify-between items-center font-bold">
 				<button id="button-profile" hidden=""
 					class="text-sm bg-slate-600 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">See
 					profile</button>
 				<span id="chat-name" data-default="Select a room">Select a room</span>
-				<div id="chat-friend-buttons" class="flex space-x-2">
+				<div id="chat-buttons" class="flex space-x-2">
 					<button id="button-1vs1"
 						class="text-sm bg-slate-600 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">1v1</button>
 					<button id="button-block"
 						class="text-sm bg-red-500 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">Block</button>
-					<button id="button-remove-friend"
-						class="text-sm bg-red-500 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">Remove
-						Friend</button>
+					<div id="is-friend"
+						class="text-sm text-white px-2 rounded hover:scale-110 transition">Friend</div>
 				</div>
 			</div>
 			<div id="chat-content"></div>

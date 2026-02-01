@@ -1,6 +1,6 @@
-import { api, Status } from "../api.js";
-import socket from "../socket.js";
-import { notify } from "../utils/notifs.js";
+import { api, Status } from "./api.js";
+import socket from "./socket.js";
+import { notify } from "./utils/notifs.js";
 
 type Message = {
 	source: string,
@@ -8,7 +8,7 @@ type Message = {
 	content: string,
 };
 
-export class FriendChat {
+export class ChatStruct {
 	ws: WebSocket | null = null;
 	messages: Message[] = [];
 	username: string = "";
