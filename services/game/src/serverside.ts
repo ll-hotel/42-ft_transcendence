@@ -11,6 +11,7 @@ import {
 	StateMessage,
 	Status,
 	TypeMsg,
+	Vec2,
 	Vector2D,
 } from "./types";
 import * as dbM from "./utils/db/methods";
@@ -100,8 +101,8 @@ abstract class PhysicObject {
 	}
 
 	move(): void {
-		this.pos.x += this.speed.getX();
-		this.pos.y += this.speed.getY();
+		this.pos.x += this.speed.x;
+		this.pos.y += this.speed.y;
 	}
 }
 
@@ -355,19 +356,19 @@ export class PongBall extends PhysicObject {
 		let distance_from_line = dot_product(
 			this.pos.x - line_position.x,
 			this.pos.y - line_position.y,
-			normal.getX(),
-			normal.getY(),
+			normal.x,
+			normal.y,
 		);
 		if (distance_from_line < this.size.w / 2) {
-			let speed_normal: number = dot_product(this.speed.getX(), this.speed.getY(), normal.getX(), normal.getY());
+			let speed_normal: number = dot_product(this.speed.x, this.speed.y, normal.x, normal.y);
 			let speed_tangent: number = dot_product(
-				this.speed.getX(),
-				this.speed.getY(),
-				normal.getY(),
-				-normal.getX(),
+				this.speed.x,
+				this.speed.y,
+				normal.y,
+				-normal.x,
 			);
-			this.speed.setX = -(speed_normal * normal.getX()) + (speed_tangent * normal.getY());
-			this.speed.setY = -(speed_normal * normal.getY()) + (speed_tangent * -normal.getX());
+			this.speed.x = -(speed_normal * normal.x) + (speed_tangent * normal.y);
+			this.speed.y = -(speed_normal * normal.y) + (speed_tangent * -normal.x);
 			if (this.speed.norm < 42) {
 				this.speed.scale(1.05);
 			}
@@ -378,8 +379,8 @@ export class PongBall extends PhysicObject {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
 		let new_dir = Math.random() * 90;
-		this.speed.setX = 5 * side;
-		this.speed.setY = Math.sin(new_dir) * (Math.random() < 0.5 ? -1 : 1);
+		this.speed.x = 5 * side;
+		this.speed.y = Math.sin(new_dir) * (Math.random() < 0.5 ? -1 : 1);
 		this.speed.scale(3);
 
 		this.paddle_p1.respawn();
@@ -390,8 +391,8 @@ export class PongBall extends PhysicObject {
 		let distance_from_line = dot_product(
 			this.pos.x - line_position.x,
 			this.pos.y - line_position.y,
-			normal.getX(),
-			normal.getY(),
+			normal.x,
+			normal.y,
 		);
 
 		let next_side;
@@ -409,37 +410,37 @@ export class PongBall extends PhysicObject {
 		}
 	}
 
-	paddle_blocked(pos: Position, normal: Vector2D): void {
+	paddle_blocked(paddleEdge: Position, normal: Vector2D): void {
 		let distanceToWall = dot_product(
-			this.pos.x - pos.x,
-			this.pos.y - pos.y,
-			normal.getX(),
-			normal.getY(),
+			this.pos.x - paddleEdge.x,
+			this.pos.y - paddleEdge.y,
+			normal.x,
+			normal.y,
 		);
 
 		if (
 			(distanceToWall <= this.size.w / 2) &&
-			(pos.y - this.pos.y > -(this.paddle_p1.size.h / 2)) &&
-			(pos.y - this.pos.y) < (this.paddle_p1.size.h / 2)
+			(paddleEdge.y - this.pos.y > -(this.paddle_p1.size.h / 2)) &&
+			(paddleEdge.y - this.pos.y) < (this.paddle_p1.size.h / 2)
 		) {
 			let new_normal = normal;
 
 			new_normal.unit_himself();
-			this.pos.x = pos.x + ((this.size.w / 2) * normal.getX());
-			let speed_normal: number = dot_product(
-				this.speed.getX(),
-				this.speed.getY(),
-				new_normal.getX(),
-				new_normal.getY(),
+			this.pos.x = paddleEdge.x + ((this.size.w / 2) * normal.x);
+			const speed_normal: number = dot_product(
+				this.speed.x,
+				this.speed.y,
+				new_normal.x,
+				new_normal.y,
 			);
-			let speed_tangent: number = dot_product(
-				this.speed.getX(),
-				this.speed.getY(),
-				new_normal.getY(),
-				-new_normal.getX(),
+			const speed_tangent: number = dot_product(
+				this.speed.x,
+				this.speed.y,
+				new_normal.y,
+				-new_normal.x,
 			);
-			this.speed.setX = -(speed_normal * new_normal.getX()) + (speed_tangent * (new_normal.getY()));
-			this.speed.setY = -(speed_normal * (new_normal.getY())) + (speed_tangent * -new_normal.getX());
+			this.speed.x = -(speed_normal * new_normal.x) + (speed_tangent * (new_normal.y));
+			this.speed.y = -(speed_normal * (new_normal.y)) + (speed_tangent * -new_normal.x);
 			if (this.speed.norm < 42) {
 				this.speed.scale(1.05);
 			}
@@ -447,18 +448,27 @@ export class PongBall extends PhysicObject {
 	}
 
 	move(): void {
-		this.pos.x += this.speed.getX();
-		this.pos.y += this.speed.getY();
-		this.test_collide({ x: 0, y: (this.size.h / 2) }, this.top_normal);
-		this.test_collide({ x: 0, y: table.height - (this.size.h / 2) }, this.bottom_normal);
-		this.paddle_blocked({
-			x: this.paddle_p2.pos.x - (this.paddle_p2.size.w / 2) - (this.size.w / 2),
-			y: this.paddle_p2.pos.y,
-		}, this.right_normal);
-		this.paddle_blocked({
+		this.pos.x += this.speed.x;
+		this.pos.y += this.speed.y;
+
+		const top_line: Vec2 = { x: 0, y: (this.size.h / 2) }
+		this.test_collide(top_line, this.top_normal);
+
+		const bot_line: Vec2 = { x: 0, y: table.height - (this.size.h / 2) };
+		this.test_collide(bot_line, this.bottom_normal);
+
+		const leftPaddleEdge: Position = {
 			x: this.paddle_p1.pos.x + (this.paddle_p1.size.w / 2) + (this.size.w / 2),
 			y: this.paddle_p1.pos.y,
-		}, this.left_normal);
+		};
+		this.paddle_blocked(leftPaddleEdge, this.left_normal);
+
+		const rightPaddleEdge: Position = {
+			x: this.paddle_p2.pos.x - (this.paddle_p2.size.w / 2) - (this.size.w / 2),
+			y: this.paddle_p2.pos.y,
+		};
+		this.paddle_blocked(rightPaddleEdge, this.right_normal);
+
 		this.ball_scored({ x: 0, y: 0 }, this.left_normal);
 		this.ball_scored({ x: table.width, y: 0 }, this.right_normal);
 	}
