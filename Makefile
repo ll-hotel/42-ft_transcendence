@@ -10,12 +10,12 @@ PASS = $(shell cat /dev/urandom | base32 | head -c 12)
 
 all: up
 
-up: volume_path certificate env_file
-	$(COMPOSE) up --build --detach
+up: volume_path certificate env_file build
+	$(COMPOSE) up --detach
 
 volume_path:
 	@mkdir -p ./database
-	@mkdir -p ./frontend/static/uploads
+	@mkdir -p ./uploads
 
 certificate: certificate/privatekey.pem certificate/certificate.pem
 certificate/privatekey.pem certificate/certificate.pem:
@@ -41,7 +41,7 @@ build:
 	$(COMPOSE) build
 
 down:
-	$(COMPOSE) down --timeout 2
+	$(COMPOSE) down
 
 ps:
 	$(COMPOSE) ps

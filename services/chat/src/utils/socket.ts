@@ -13,14 +13,23 @@ export type BaseMessage = {
 	service: string,
 	topic: string,
 };
-export type Message = BaseMessage | (BaseMessage & {
-	source: string,
-	content: string
-}) | (BaseMessage & {
+export type MatchMessage = BaseMessage & {
+	service : "chat",
+	topic: "vs:start",
 	source: string,
 	match: number,
-	opponent: string
-});
+	opponent: string,
+};
+type VersusTopics = "vs:invite" | "vs:accept" | "vs:decline" | "vs:error"
+
+export type VersusMessage = BaseMessage & {
+	service : "chat",
+	topic : VersusTopics,
+	source: string,
+	content: string,
+};
+
+export type Message = BaseMessage | VersusMessage | MatchMessage;
 
 namespace Socket {
 	export const clients: Map<UUID, Client> = new Map();

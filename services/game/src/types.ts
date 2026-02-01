@@ -1,5 +1,10 @@
 import * as socket from "./utils/socket";
 
+export enum Side {
+	left = "left",
+	right = "right",
+}
+
 export enum TypeMsg {
 	state = "state",
 	input = "input",
@@ -9,7 +14,7 @@ export enum TypeMsg {
 
 export enum Status {
 	ended = "ended",
-	started = "started",
+	initialised = "initialised",
 	ongoing = "ongoing",
 }
 
@@ -28,6 +33,7 @@ export type StateMessage = socket.BaseMessage & {
 	},
 	score: { p1: number, p2: number },
 	status: Status,
+	side: Side,
 };
 
 export type InputMessage = socket.BaseMessage & {
@@ -58,36 +64,33 @@ export enum Mode {
 	remote = "remote",
 }
 
-export type Position = { x: number, y: number };
+export type Vec2 = { x: number, y: number };
+export type Position = Vec2;
 export type Size = { w: number, h: number };
 export type Score = { p1: number, p2: number };
 export type Input = { name: string, value: boolean };
 
 export class Vector2D {
-	private x: number;
-	private y: number;
-	private norm: number;
+	x: number;
+	y: number;
+
+	get norm(): number {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
 
 	constructor(x: number, y: number) {
 		this.x = x;
 		this.y = y;
-		this.norm = Math.sqrt(this.x * this.x + this.y * this.y);
 	}
 
 	addVector2D(other: Vector2D) {
 		this.x += other.x;
 		this.y += other.y;
-		this.updateValue();
 	}
 
 	scale(coef: number) {
 		this.x *= coef;
 		this.y *= coef;
-		this.updateValue();
-	}
-
-	private updateValue() {
-		this.norm = Math.sqrt(this.x * this.x + this.y * this.y);
 	}
 
 	unitVector() {
@@ -97,22 +100,5 @@ export class Vector2D {
 	unit_himself() {
 		this.x = this.x / this.norm;
 		this.y = this.y / this.norm;
-		this.updateValue();
-	}
-
-	getX() {
-		return this.x;
-	}
-
-	getY() {
-		return this.y;
-	}
-
-	public set setY(value: number) {
-		this.y = value;
-	}
-
-	public set setX(value: number) {
-		this.x = value;
 	}
 }

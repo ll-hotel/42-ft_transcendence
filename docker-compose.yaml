@@ -120,7 +120,7 @@ services:
     volumes:
       - prometheus-config:/etc/prometheus
       - certificate:/var/certs:ro
-
+  
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: cadvisor
@@ -217,6 +217,7 @@ volumes:
       device: ./monitoring/prometheus/
       type: none
       o: bind
+
   elasticsearch-data:
   elasticsearch-config:
     driver: local

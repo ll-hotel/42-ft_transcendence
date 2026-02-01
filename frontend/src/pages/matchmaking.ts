@@ -23,8 +23,8 @@ export class MatchMaking implements AppPage {
 		return new MatchMaking(html, queueButton);
 	}
 	loadInto(container: HTMLElement): void {
-		this.queueButton.hidden = false;
 		container.appendChild(this.html);
+		this.queueButton.hidden = false;
 		socket.addListener("matchmaking:found", (message) => {
 			socket.removeListener("matchmaking:found");
 			this.inQueue = false;
@@ -39,6 +39,8 @@ export class MatchMaking implements AppPage {
 		{
 			if (!join || join.status != Status.success) {
 				notify(join ? join.payload.message : "Can not join queue.", "error");
+				if (join?.payload.message !== "Already in queue")
+					return gotoPage("home");
 			} else {
 				this.inQueue = true;
 				notify(join.payload.message, "success");

@@ -202,64 +202,7 @@ export class Tournament {
 			message: "Tournament started",
 		});
 	}
-
-	/* static async handleRoundEnd(tournamentId: number, round: number) {
-		const link = await db.select().from(tournamentMatches).where(and(
-			eq(tournamentMatches.tournamentId, tournamentId),
-			eq(tournamentMatches.round, round)
-		));
-		const matchIds = link.map(x => x.matchId);
-		if (matchIds.length === 0)
-			return;
-		const roundMatches = await db.select().from(matches).where(inArray(matches.id, matchIds));
-		
-		const finished = roundMatches.filter(x => x.status === "ended");
-		if (finished.length !== roundMatches.length)
-			return; // wait for all round's matches to end
-
-		// round ended
-		for (let i = 0; i < finished.length; i++) {
-			let loserId;
-			if (finished[i].winnerId === finished[i].player1Id)
-				loserId = finished[i].player2Id;
-			else
-				loserId = finished[i].player1Id;
-			await db.update(tournamentPlayers).set({ eliminated: 1 }).where(and(
-				eq(tournamentPlayers.tournamentId, tournamentId),
-				eq(tournamentPlayers.userId, loserId),
-			));
-		}
-
-		const winners = finished.map(x => x.winnerId); //null check
-		if (winners.length === 1) {
-			const winnerId = winners[0];
-			if (winnerId !== null) {
-				await db.update(tournamentPlayers).set({ eliminated: 1 }).where(eq(tournamentPlayers.userId, winnerId));
-				await db.update(tournaments).set({ status: "ended", winnerId: winnerId}).where(eq(tournaments.id, tournamentId));
-			}
-			// notify winner tournament won
-			// notify others tournament ended
-			return; 
-		}
-
-		const nextRound = round + 1;
-		for (let i = 0; i < winners.length; i += 2) {
-			const [match] = await db.insert(matches).values({
-				player1Id: Number(winners[i]),
-				player2Id: Number(winners[i + 1]),
-				status: "ongoing",
-			}).returning();
-
-			await db.insert(tournamentMatches).values({
-				tournamentId,
-				matchId: match.id,
-				round: nextRound,
-			});
-			// notify players new_match (round nextRound)
-		}
-
-	} */
-
+	
 	static async getTournament(req: FastifyRequest, rep: FastifyReply) {
 		const tournamentId = (req.params as { id: number }).id;
 
@@ -375,6 +318,6 @@ export default async function (fastify: FastifyInstance) {
 		orm.eq(tables.tournaments.status, "pending"),
 	);
 	for (const tournament of tournaments) {
-		dbM.deleteTournament(tournament.id);
+		await dbM.deleteTournament(tournament.id);
 	}
 }

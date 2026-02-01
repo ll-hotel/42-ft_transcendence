@@ -1,10 +1,12 @@
 import Database from "better-sqlite3";
 import * as orm from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import {drizzle} from "drizzle-orm/better-sqlite3";
 import * as tables from "./tables";
 import * as dbM from "./methods";
+import {hashPassword} from "../security/hash";
+import {v4 as uuidv4} from "uuid";
+import { randomBytes } from "crypto";
 
-const sql = orm.sql;
 
 const path = "/srv/app/db/database.sqlite";
 
@@ -21,11 +23,26 @@ export function createTables() {
 	createTournamentMatches();
 
 	// Stop all ongoing matches.
-	const selectOngoinMatches = db.select({ id: tables.matches.id }).from(tables.matches).where(
+	const selectOngoingMatches = db.select({ id: tables.matches.id }).from(tables.matches).where(
 		orm.eq(tables.matches.status, "ongoing"),
 	).prepare();
-	const matches = selectOngoinMatches.all();
-	matches.forEach(async (match) => await dbM.endMatch(match.id));
+	const matches = selectOngoingMatches.all();
+	matches.forEach((match) => dbM.endMatch(match.id));
+
+	const randomKey = randomBytes(32).toString("hex");
+	hashPassword(randomKey).then(async (hashedPass) => {
+        const guestExists = db.select().from(tables.users).where(
+            orm.eq(tables.users.displayName, "Guest")
+        ).prepare().get() != undefined;
+        if (guestExists)
+            return;
+		await db.insert(tables.users).values({
+			uuid: uuidv4(),
+			username: "Guest",
+			displayName: "Guest",
+			password: hashedPass,
+		});
+	});
 }
 
 function createUserTable() {
@@ -52,8 +69,8 @@ function createFriendsTable() {
       senderId INTEGER NOT NULL,
 	  receiverId INTEGER NOT NULL,
 	  status TEXT NOT NULL DEFAULT 'pending',
-	  FOREIGN KEY (senderId) REFERENCES users(id) ON DELETE CASCADE,
-	  FOREIGN KEY (receiverId) REFERENCES users(id) ON DELETE CASCADE
+	  FOREIGN KEY (senderId) REFERENCES users(id),
+	  FOREIGN KEY (receiverId) REFERENCES users(id)
 	  );
 	  `);
 }
@@ -63,7 +80,7 @@ function createMatchmakingQueueTable() {
 		CREATE TABLE IF NOT EXISTS matchmakingQueue (
 		 id INTEGER PRIMARY KEY AUTOINCREMENT,
 		 userId INTEGER NOT NULL,
-		 FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+		 FOREIGN KEY (userId) REFERENCES users(id)
 		);
 	`);
 }
@@ -79,9 +96,9 @@ function createMatchesTable() {
 		scoreP2 INTEGER DEFAULT 0,
 		status TEXT NOT NULL DEFAULT 'pending',
 		endedAt INTEGER,
-		FOREIGN KEY (player1Id) REFERENCES users(id) ON DELETE CASCADE,
-		FOREIGN KEY (player2Id) REFERENCES users(id) ON DELETE CASCADE,
-		FOREIGN KEY (winnerId) REFERENCES users(id) ON DELETE SET NULL
+		FOREIGN KEY (player1Id) REFERENCES users(id),
+		FOREIGN KEY (player2Id) REFERENCES users(id),
+		FOREIGN KEY (winnerId) REFERENCES users(id)
 	);
 	`);
 }

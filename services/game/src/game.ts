@@ -4,25 +4,23 @@ import { db } from "./utils/db/database";
 import * as tables from "./utils/db/tables";
 import { authGuard } from "./utils/security/authGuard";
 import { MESSAGE, schema, STATUS } from "./utils/http-reply";
-import { create_game, create_local_game, kill_game } from "./serverside";
-import { Mode } from "./types";
+import { createRemoteGame, createLocalGame, endLocalGame } from "./serverside";
+import * as serverside from "./serverside";
+import { Mode as GameMode } from "./types";
 
-class Match {
+class Game {
 	static setup(app: FastifyInstance) {
-		app.get("/api/game/current", { preHandler: authGuard }, Match.getCurrent);
-		app.get("/api/game/:id", { preHandler: authGuard, schema: schema.params({ id: "number" }, ["id"]) }, Match.getById);
-		// app.post("/api/match/:id/end", { preHandler: authGuard }, Match.end);
-		// use case: player invited to play by chat.
-		app.post("/api/game/create", { preHandler: authGuard, schema: schema.body({p1Id: "number", p2Id: "number"}, ["p1Id", "p2Id"])}, Match.create);
+		app.get("/api/game/current", { preHandler: authGuard }, Game.getCurrent);
+		app.get("/api/game/:id", { preHandler: authGuard, schema: schema.params({ id: "number" }, ["id"]) }, Game.getById);
+		app.post("/api/game/create", { preHandler: authGuard, schema: schema.body({p1Id: "number", p2Id: "number"}, ["p1Id", "p2Id"])}, Game.create);
 
-		app.post("/api/game/launch", {preHandler: authGuard, schema: schema.body({matchId: "number"}, ["matchId"])}, Match.LaunchGame);
-		app.post("/api/game/launch/local", {preHandler: authGuard}, Match.LaunchLocalGame);
+		app.post("/api/game/launch", {preHandler: authGuard, schema: schema.body({matchId: "number"}, ["matchId"])}, Game.LaunchGame);
+		app.post("/api/game/launch/local", {preHandler: authGuard}, Game.LaunchLocalGame);
 
-		app.post("/api/game/kill/local", {preHandler: authGuard, schema: schema.body({matchId: "number"}, ["matchId"])}, Match.killLocalGame)
+		app.post("/api/game/kill/local", {preHandler: authGuard, schema: schema.body({matchId: "number"}, ["matchId"])}, Game.killLocalGame)
 	}
 	static async LaunchGame(req: FastifyRequest, rep: FastifyReply){
 		const { matchId } = req.body as { matchId: number };
-		const usr = req.user!;
 
 		const [matchExists] = await db.select().from(tables.matches)
 		.where(drizzle.eq(tables.matches.id, matchId));
@@ -34,7 +32,7 @@ class Match {
 
 		if (matchExists.status === "ended")
 			return rep.code(STATUS.bad_request).send({ message: "Match already ended" });
-		
+
 		if (matchExists.status !== "pending" && !isTmMatch)
 			return rep.code(STATUS.created).send({ message: MESSAGE.match_started});
 
@@ -45,7 +43,7 @@ class Match {
 		if (!p1 || !p2)
 			return rep.code(STATUS.bad_request).send({ message: "User not found" });
 
-		create_game(matchId, p1.uuid, p2.uuid);
+		createRemoteGame(matchId, p1.uuid, p2.uuid);
 
 		return rep.code(STATUS.success).send({ message: "Game launched"});
 	}
@@ -53,7 +51,28 @@ class Match {
 	static LaunchLocalGame(req: FastifyRequest, rep: FastifyReply) {
 		const usr = req.user!;
 
-		const matchId = create_local_game(usr.uuid);
+		const inMatch = db.select().from(tables.matches).where(drizzle.and(
+			drizzle.or(
+				drizzle.eq(tables.matches.player1Id, usr.id),
+				drizzle.eq(tables.matches.player2Id, usr.id)
+			),
+			drizzle.ne(tables.matches.status, "ended")
+		)).prepare().get() != undefined;
+		if (inMatch) {
+			return rep.code(STATUS.bad_request).send({ message: "Already in a game" });
+		}
+
+		const inQueue = db.select().from(tables.matchmakingQueue).where(
+			drizzle.eq(tables.matchmakingQueue.userId, usr.id)
+		).prepare().get() != undefined;
+		if (inQueue) {
+			return rep.code(STATUS.bad_request).send({ message: "Can not start local game while in queue" });
+		}
+
+		const matchId = createLocalGame(usr.uuid);
+		if (matchId == null) {
+			return rep.code(STATUS.bad_request).send({ message: "Already in a game" });
+		}
 
 		return rep.code(STATUS.success).send({ message: "Local game launched", matchId: matchId});
 	}
@@ -62,10 +81,21 @@ class Match {
 		const usr = req.user!;
 		const { matchId } = req.body as { matchId: number };
 
-		if (kill_game(matchId))
-			return rep.code(STATUS.success).send({ message: "Local game killed"});
-		return rep.code(STATUS.not_found).send({message : "Local Game not found"})
+		const game = serverside.games.get(matchId);
+		if (!game) {
+			return rep.code(STATUS.not_found).send({ message: "Local Game not found" })
+		}
+		if (game.mode != GameMode.local) {
+			return rep.code(STATUS.bad_request).send({ message: "Not a local game" })
+		}
+		if (game.p1_uuid != usr.uuid) {
+			return rep.code(STATUS.bad_request).send({ message: "Not in game" })
+		}
 
+		if (endLocalGame(usr.uuid, matchId))
+			return rep.code(STATUS.success).send({ message: "Local game killed" });
+
+		return rep.code(STATUS.bad_request).send({ message: "You should not be there" });
 	}
 
 	static async getCurrent(req: FastifyRequest, rep: FastifyReply) {
@@ -83,7 +113,6 @@ class Match {
 	}
 	static async getById(req: FastifyRequest, rep: FastifyReply) {
 		const { id } = req.params as { id: number };
-		const usr = req.user!;
 
 		const matchId = Number(id);
 
@@ -94,12 +123,6 @@ class Match {
 
 		let [user1] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, match.player1Id));
 		let [user2] = await db.select().from(tables.users).where(drizzle.eq(tables.users.id, match.player2Id));
-
-		/*if (user1.id !== usr.id) {
-				[user1, user2] = [user2, user1];
-				[match.scoreP1, match.scoreP2] = [match.scoreP2, match.scoreP1];
-		}*/
-
 
 		return rep.code(STATUS.success).send({
 			p1: { name: user1.displayName, avatar: user1.avatar, score: match.scoreP1, },
@@ -156,5 +179,5 @@ class Match {
 }
 
 export default function(fastify: FastifyInstance) {
-	Match.setup(fastify);
+	Game.setup(fastify);
 }
