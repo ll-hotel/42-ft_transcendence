@@ -6,3 +6,5 @@ xpack.security.http.ssl.enabled: true
 xpack.security.http.ssl.certificate: "certs/certificate.pem"
 xpack.security.http.ssl.key: "certs/privatekey.pem"
 xpack.security.http.ssl.certificate_authorities: "certs/certificate.pem"
+
+network.host: "0.0.0.0"

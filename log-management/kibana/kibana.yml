@@ -1,17 +1,23 @@
-# Connexion to Elasticsearch
-elasticsearch.hosts: "http://elasticsearch:9200"
-
 # Serv for reverse proxy
 server.host: "0.0.0.0"
 server.basePath: "/log-management"
 server.publicBaseUrl: "https://transcendence:8443/log-management"
 server.rewriteBasePath: false
 
-# TLS
+# TLS settings
 server.ssl.enabled: true
 server.ssl.certificate: "/var/certs/certificate.pem"
 server.ssl.key: "/var/certs/privatekey.pem"
 server.ssl.certificateAuthorities: "/var/certs/certificate.pem"
+
+# Elasticsearch connexion
+elasticsearch.hosts: "https://elasticsearch:9200"
+elasticsearch.username: "${KIBANA_USERNAME}"
+elasticsearch.password: "${KIBANA_PASSWORD}"
+elasticsearch.ssl.verificationMode: "none"
+elasticsearch.ssl.certificateAuthorities: "/var/certs/certificate.pem"
+
+xpack.fleet.enabled: false
 
 # Telemetry
 telemetry.optIn: false

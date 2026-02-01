@@ -31,6 +31,11 @@ env_file: .env
 	@echo "" >> .env
 	@echo GF_ADMIN_USER=monitoring >> .env
 	@echo GF_ADMIN_PASS=$(PASS) >> .env
+	@echo ELASTIC_USERNAME=elastic >> .env
+	@echo ELASTIC_PASSWORD=$(PASS) >> .env
+	@echo KIBANA_USERNAME=log-management >> .env
+	@echo KIBANA_PASSWORD=$(PASS) >> .env
+	@echo "=> New .env has been generated"
 
 build:
 	$(COMPOSE) build

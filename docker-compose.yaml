@@ -138,17 +138,41 @@ services:
     container_name: elasticsearch
     restart: on-failure
     environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms2g -Xmx2g
-      - ELASTIC_PASSWORD=changeme
     ports:
       - 9200:9200
       - 9300:9300
     volumes:
       - elasticsearch-config:/usr/share/elasticsearch/config
+      - elasticsearch-data:/usr/share/elasticsearch/data
       - certificate:/usr/share/elasticsearch/config/certs:ro
+    env_file: .env
 
-  
+  elk-setup:
+    build:
+      context: ./log-management/setup
+    container_name: elk-config
+    restart: on-failure
+    volumes:
+      - certificate:/var/certs:ro
+    depends_on:
+      - elasticsearch
+    env_file: .env
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.2.4
+    container_name: kibana
+    restart: on-failure
+    volumes:
+      - kibana-config:/usr/share/kibana/config
+      - certificate:/var/certs:ro
+    depends_on:
+      elk-setup:
+        condition: service_completed_successfully
+    env_file: .env
+
   filebeat:
     image: docker.elastic.co/beats/filebeat:9.2.4
     container_name: filebeat
@@ -162,16 +186,6 @@ services:
     depends_on:
       - elasticsearch
   
-  kibana:
-    image: docker.elastic.co/kibana/kibana:9.2.4
-    container_name: kibana
-    restart: on-failure
-    volumes:
-      - kibana-config:/usr/share/kibana/config
-      - certificate:/var/certs:ro
-    depends_on:
-      - elasticsearch
-
 volumes:
   backend-db:
     driver: local
@@ -203,15 +217,16 @@ volumes:
       device: ./monitoring/prometheus/
       type: none
       o: bind
-  kibana-config:
-    driver: local
-    driver_opts:
-      device: ./log-management/kibana
-      type: none
-      o: bind
+  elasticsearch-data:
   elasticsearch-config:
     driver: local
     driver_opts:
       device: ./log-management/elasticsearch
+      type: none
+      o: bind
+  kibana-config:
+    driver: local
+    driver_opts:
+      device: ./log-management/kibana
       type: none
       o: bind

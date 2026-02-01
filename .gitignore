@@ -9,3 +9,4 @@ uploads/
 .idea/
 tmp/
 *lock.json
+*.keystore
