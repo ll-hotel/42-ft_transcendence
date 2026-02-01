@@ -2,23 +2,23 @@ import { api, Status } from "./api.js";
 import * as game from "./pong_client_side.js";
 import { notify } from "./utils/notifs.js";
 
-export type BaseMessage = {
+export interface BaseMessage {
 	service: string,
 	topic: string,
 };
 
-export type MatchMessage = BaseMessage & {
+export interface MatchMessage extends BaseMessage {
 	source: string,
 	match: number,
 	opponent: string,
 };
 
-export type VersusMessage = BaseMessage & {
+export interface VersusMessage extends BaseMessage {
 	source: string,
 	content: string,
 };
 
-export type StateMessage = BaseMessage & {
+export interface StateMessage extends BaseMessage {
 	type: "state",
 	ball: {
 		x: number,
@@ -36,19 +36,19 @@ export type StateMessage = BaseMessage & {
 	side: game.Side,
 };
 
-export type InputMessage = BaseMessage & {
+export interface InputMessage extends BaseMessage {
 	type: "input",
 	up: boolean,
 	down: boolean,
 };
 
-export type ScoreMessage = BaseMessage & {
+export interface ScoreMessage extends BaseMessage {
 	type: "score",
 	p1_score: number,
 	p2_score: number,
 };
 
-export type LocalMessage = BaseMessage & {
+export interface LocalMessage extends BaseMessage {
 	type: "input",
 	p1_up: boolean,
 	p1_down: boolean,
