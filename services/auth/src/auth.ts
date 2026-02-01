@@ -175,7 +175,7 @@ class AuthService {
 		});
 		const userData = await response.json();
 
-		const [userExists] = await db.select().from(users).where(eq(users.username, userData.email));
+		const [userExists] = await db.select().from(users).where(eq(users.username, userData.login + "_42"));
 		let user;
 		if (userExists) {
 			user = userExists;
@@ -201,13 +201,13 @@ class AuthService {
 			let displayName;
 			const [displayNameExists] = await db.select().from(users).where(eq(users.displayName, userData.login));
 			if (displayNameExists) {
-				displayName = userData.login + "_";
+				displayName = userData.login + "_42";
 			} else {
 				displayName = userData.login;
 			}
 			await db.insert(users).values({
 				uuid,
-				username: userData.email,
+				username: userData.login + "_42",
 				displayName: displayName,
 				password: pass,
 				avatar: avatarPath,
@@ -256,7 +256,7 @@ class AuthService {
 			headers: { Authorization: `Bearer ${token.access_token}` },
 		});
 		const userData = await response.json();
-		const [userExists] = await db.select().from(users).where(eq(users.username, userData.email));
+		const [userExists] = await db.select().from(users).where(eq(users.username, userData.given_name + "_G"));
 		let user;
 		if (userExists) {
 			user = userExists;
@@ -264,6 +264,11 @@ class AuthService {
 				return rep.code(STATUS.bad_request).send({ message: MESSAGE.already_logged_in });
 			}
 		} else {
+			const REGEX_GOOGLENAME = /^(?=[a-zA-Z].*)[a-zA-Z0-9_-]{3,24}$/;
+			if (REGEX_GOOGLENAME.test(userData.given_name) === false) {
+				return rep.code(STATUS.unauthorized)
+				.send({ message: "Invalid google name, please rename your first name's account (alphanumerical only)"});
+			}
 			const uuid = uiidv4();
 			user = { uuid };
 			const randomKey = randomBytes(32).toString("hex");
@@ -282,13 +287,13 @@ class AuthService {
 			let displayName;
 			const [displayNameExists] = await db.select().from(users).where(eq(users.displayName, userData.given_name));
 			if (displayNameExists) {
-				displayName = userData.given_name + "_";
+				displayName = userData.given_name + "_G";
 			} else {
 				displayName = userData.given_name;
 			}
 			await db.insert(users).values({
 				uuid,
-				username: userData.email,
+				username: userData.given_name + "_G",
 				displayName: displayName,
 				password: pass,
 				avatar: avatarPath,
