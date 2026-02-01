@@ -7,6 +7,10 @@ export interface BaseMessage {
 	topic: string,
 };
 
+export interface ErrorMessage extends BaseMessage {
+	error: string,
+}
+
 export interface MatchMessage extends BaseMessage {
 	source: string,
 	match: number,
@@ -113,6 +117,10 @@ namespace Socket {
 			}
 		});
 		pingLoop();
+		addListener("error", (data) => {
+			const { error } = data as unknown as { error: string };
+			notify(error, "error");
+		});
 		return true;
 	}
 	let pingInterval: number | null = null;
