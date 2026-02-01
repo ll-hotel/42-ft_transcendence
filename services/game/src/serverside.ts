@@ -16,6 +16,18 @@ import {
 	Side,
 } from "./types";
 
+type MatchId = number;
+const server_tickrate: number = 20 ;
+const table_width = 500;
+const table_ratio = 1/2;
+const table = {
+	width: table_width,
+	height: table_width * table_ratio,
+};
+const paddleWidth = table.width * 0.03;
+const paddleHeight = table.height * 0.2;
+export const games: Map<MatchId, GameInstance> = new Map();
+
 type GameState = {
 	ball: { x: number, y: number, speed: Vector2D },
 	paddles: {
@@ -28,18 +40,6 @@ type GameState = {
 	score: Score,
 };
 
-type MatchId = number;
-
-const table_width = 500;
-const table_ratio = 1/2;
-const table = {
-	width: table_width,
-	height: table_width * table_ratio,
-};
-const paddleWidth = table.width * 0.03;
-const paddleHeight = table.height * 0.2;
-
-export const games: Map<MatchId, GameInstance> = new Map();
 
 export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string) {
 	if (games.has(matchId))
@@ -51,30 +51,40 @@ export function create_game(matchId: MatchId, p1_uuid: string, p2_uuid: string) 
 	});
 }
 
-export function kill_game(matchId: MatchId)
+export function kill_game(uuid: string, matchId: MatchId): boolean
 {
-	if (games.has(matchId)) {
-		let game = games.get(matchId);
-		game?.end();
-		return true;
-	}
-	else
+	const game = games.get(matchId);
+	if (!game) {
 		return false;
+	}
+	if (game.mode != Mode.local) {
+		return false;
+	}
+	if (game.p1_uuid != uuid) {
+		return false;
+	}
+	game.end();
+	return true;
 }
 
-export function create_local_game(p1_uuid : string)
+export function create_local_game(p1_uuid : string): number | null
 {
+	for (const [matchId, instance] of games) {
+		if (instance.p1_uuid == p1_uuid) {
+			return null;
+		}
+	}
+	
 	let localGame = -1;
-	while (games.has(localGame))
+	while (games.has(localGame)) {
 		localGame--;
+	}
+
 	let game = new GameInstance(localGame, p1_uuid, null, Mode.local)
 	games.set(localGame, game);
 	game.start();
-
 	return (localGame);
 }
-
-const server_tickrate: number = 20;
 
 function dot_product(x1: number, y1: number, x2: number, y2: number): number {
 	return ((x1 * x2) + (y1 * y2));
@@ -142,15 +152,15 @@ export class GameInstance {
 		this.mode = mode;
 
 		if (mode == Mode.local) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
+			socket.addListener(this.p1_uuid, "pong", (msg : any) => {
 				this.local_input_listener(msg);
 			});
 			socket.addListener(this.p1_uuid, "disconnect", () => this.end());
 		} else if (mode == Mode.remote) {
-			socket.addListener(this.p1_uuid, "pong", (msg) => {
+			socket.addListener(this.p1_uuid, "pong", (msg: any) => {
 				this.p1_event_listener(msg);
 			});
-			socket.addListener(this.p2_uuid!, "pong", (msg) => {
+			socket.addListener(this.p2_uuid!, "pong", (msg: any) => {
 				this.p2_event_listener(msg);
 			});
 			socket.addListener(this.p1_uuid, "pong", console.log);
@@ -193,7 +203,7 @@ export class GameInstance {
 			topic: "pong",
 			type : TypeMsg.state,
 			side: Side.left,
-			...state
+			...state,
 		} as StateMessage;
 		socket.send(this.p1_uuid, message);
 		if (this.p2_uuid)
@@ -324,7 +334,7 @@ export class PongBall extends PhysicObject {
 
 	sendScore() {
 		let init_msg: ScoreMessage = {
-			service : "game",
+			service: "game",
 			topic: "pong",
 			type: TypeMsg.score,
 			p1_score: this.score.p1,
@@ -353,17 +363,18 @@ export class PongBall extends PhysicObject {
 			);
 			this.speed.setX = -(speed_normal * normal.getX()) + (speed_tangent * normal.getY());
 			this.speed.setY = -(speed_normal * normal.getY()) + (speed_tangent * -normal.getX());
-			this.speed.scale(1.05);
+            if (this.speed.norm < 42)
+			    this.speed.scale(1.05);
 		}
 	}
 
 	respawn(side: number) {
 		this.pos.x = table.width / 2;
 		this.pos.y = table.height / 2;
-		let new_dir = 45 + Math.random() * 90;
-		this.speed.setX = 5;
-		this.speed.setY = Math.sin(new_dir) * 5;
-		this.speed.scale(4);
+		let new_dir = Math.random() * 90;
+		this.speed.setX = 5 * side;
+		this.speed.setY = Math.sin(new_dir) * (Math.random() < 0.5 ? -1 : 1);
+        this.speed.scale(3);
 	}
 
 	ball_scored(line_position: Position, normal: Vector2D) {
@@ -420,7 +431,8 @@ export class PongBall extends PhysicObject {
 			);
 			this.speed.setX = -(speed_normal * new_normal.getX()) + (speed_tangent * (new_normal.getY()));
 			this.speed.setY = -(speed_normal * (new_normal.getY())) + (speed_tangent * -new_normal.getX());
-			this.speed.scale(1.05);
+            if (this.speed.norm < 42)
+			    this.speed.scale(1.05);
 		}
 	}
 

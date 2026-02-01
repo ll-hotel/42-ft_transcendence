@@ -1,30 +1,55 @@
 <div class="flex w-full h-screen items-center justify-center">
 	<div id="friend-widget" class="w-4/5 h-4/5 sm:pt-4 pt-12 grid grid-cols-3 gap-4">
-		<div id="friend-list" class="rounded-md col-span-3 sm:col-span-1 flex flex-col items-center justify-center overflow-y-auto">
-			<div id="friend-list-header" class=" bg-gray-200 space-x-2 h-12 p-2 w-full rounded-t-md flex items-center justify-center">
-				<h2 class="font-bold">Friends list</h2>
+		<div class="flex flex-col col-span-3 sm:col-span-1 h-full gap-4">
+			<div id="search-user"
+				class="rounded-md  flex flex-col items-center justify-center user-action p-4 bg-gray-200">
+				<div id="search-user-action"
+					class="flex justify-end items-center col-span-2 sm:col-span-1 space-x-3 relative mt-1 sm:mt-0">
+					<input id="user-search" class="w-full px-2 py-1 border rounded hover:bg-neutral-200 " type="text"
+						autocomplete="off" placeholder="Find a user..." />
+					<div id="user-results"
+						class="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-y-auto bg-white rounded shadow z-50">
+					</div>
+				</div>
 			</div>
-			<div id="friend-list-content" class="bg-gray-200 w-full space-y-3 flex flex-1 flex-col items-center overflow-y-auto">
-
-			</div>
-			<div id="friend-list-bottom" class="w-full bg-gray-200 space-x-2 h-12 p-2 rounded-b-md flex justify-center items-center">
-				<i class="fa-solid fa-arrow-down "></i>
+			<div id="friend-list"
+				class="rounded-md flex flex-col size-full items-center justify-center overflow-y-auto">
+				<div id="friend-list-header"
+					class=" bg-gray-200 space-x-2 h-12 p-2 w-full rounded-t-md flex items-center justify-center">
+					<h2 class="font-bold">Rooms</h2>
+				</div>
+				<div id="friend-list-content"
+					class="bg-gray-200 w-full space-y-3 flex flex-1 flex-col items-center overflow-y-auto">
+				</div>
+				<div id="friend-list-bottom"
+					class="w-full bg-gray-200 space-x-2 h-12 p-2 rounded-b-md flex justify-center items-center">
+					<i class="fa-solid fa-arrow-down "></i>
+				</div>
 			</div>
 		</div>
-		<div id="friend-chat"  class=" rounded-md col-span-3 sm:col-span-2 flex flex-col justify-between overflow-y-auto">
+		<div id="friend-chat"
+			class=" rounded-md col-span-3 sm:col-span-2 flex flex-col justify-between overflow-y-auto">
 			<div id="chat-header" class="bg-gray-200 h-12 p-2 flex rounded-t-md justify-between items-center font-bold">
-				<span id="chat-name" data-default="Select a friend">Select a friend</span>
-				<div class="flex space-x-2">
-					<button id="button-1vs1" class="text-sm bg-slate-600 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">1v1</button>
-					<button id="button-block" class="text-sm bg-red-500 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">Block</button>
-					<button id="button-remove-friend" class="text-sm bg-red-500 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">Remove Friend</button>
+				<button id="button-profile" hidden=""
+					class="text-sm bg-slate-600 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">See
+					profile</button>
+				<span id="chat-name" data-default="Select a room">Select a room</span>
+				<div id="chat-friend-buttons" class="flex space-x-2">
+					<button id="button-1vs1"
+						class="text-sm bg-slate-600 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">1v1</button>
+					<button id="button-block"
+						class="text-sm bg-red-500 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">Block</button>
+					<button id="button-remove-friend"
+						class="text-sm bg-red-500 text-white px-2 rounded hover:cursor-pointer hover:scale-110 transition">Remove
+						Friend</button>
 				</div>
 			</div>
 			<div id="chat-content"></div>
-			<form id ="chat-footer" class="bg-gray-200 h-12 p-2 rounded-b-md flex space-x-2">
-				<input id="chat-input" type="text" class="bg-white flex-1 border rounded p-1">
-				<button id="chat-send" type="submit" class="bg-slate-600 text-white px-2 rounded hover:cursor-pointer hover:scale-105 transition">Send</button>
-			</div>
+			<form id="chat-footer" class="bg-gray-200 h-12 p-2 rounded-b-md flex space-x-2">
+				<input id="chat-input" type="text" class="bg-white flex-1 border rounded p-1" autocomplete="off">
+				<button id="chat-send" type="submit"
+					class="bg-slate-600 text-white px-2 rounded hover:cursor-pointer hover:scale-105 transition">Send</button>
 		</div>
 	</div>
+</div>
 </div>

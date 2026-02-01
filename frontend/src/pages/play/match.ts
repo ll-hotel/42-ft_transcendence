@@ -146,8 +146,8 @@ export default class PlayMatch implements AppPage {
 		}
 
 		this.matchWindow!.appendChild(result);
-		notify(`The match n°${this.matchId} is finished`, "success");
-		
+		notify(`Match is finished`, "success");
+
 		let nextPage = "home", search = "";
 		const res = await api.get(`/api/tournament/isTmMatch?matchId=${this.matchId}`);
 		if (res?.status === Status.success) {
@@ -157,7 +157,7 @@ export default class PlayMatch implements AppPage {
 
 		setTimeout( () => {
 			gotoPage(nextPage, search);
-		}, 4000);
+		}, 2000);
 	}
 };
 async function fetchImage(url: string): Promise<HTMLImageElement | null> {

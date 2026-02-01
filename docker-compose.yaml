@@ -8,9 +8,12 @@ services:
     ports:
       - "8443:443"
     volumes:
-      - frontend-static:/srv/app/static
-      - frontend-src:/srv/app/src:ro
-      - cert:/run/secrets:ro
+      - certificate:/run/secrets:ro
+      - uploads:/srv/app/static/uploads:ro
+    depends_on:
+      auth-service:
+        condition: service_started
+        restart: true
 
   auth-service:
     container_name: auth-service
@@ -18,10 +21,9 @@ services:
     build:
       context: ./services/auth
     volumes:
-      - auth-service-src:/srv/app/src
       - backend-db:/srv/app/db
       - uploads:/srv/app/uploads
-      - cert:/run/secrets:ro
+      - certificate:/run/secrets:ro
     env_file: .env
 
   chat-service:
@@ -30,9 +32,8 @@ services:
     build:
       context: ./services/chat
     volumes:
-      - chat-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - chat-service-cert:/run/secrets:ro
+      - certificate:/run/secrets:ro
     env_file: .env
 
   friend-service:
@@ -41,9 +42,8 @@ services:
     build:
       context: ./services/friend
     volumes:
-      - friend-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - cert:/run/secrets:ro
+      - certificate:/run/secrets:ro
     env_file: .env
 
   game-service:
@@ -52,9 +52,8 @@ services:
     build:
       context: ./services/game
     volumes:
-      - game-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - game-service-cert:/run/secrets:ro
+      - certificate:/run/secrets:ro
     env_file: .env
 
   queue-service:
@@ -63,9 +62,8 @@ services:
     build:
       context: ./services/queue
     volumes:
-      - queue-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - queue-service-cert:/run/secrets:ro
+      - certificate:/run/secrets:ro
     env_file: .env
 
   tournament-service:
@@ -74,9 +72,8 @@ services:
     build:
       context: ./services/tournament
     volumes:
-      - tournament-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - tournament-service-cert:/run/secrets:ro
+      - certificate:/run/secrets:ro
     env_file: .env
 
   user-service:
@@ -85,10 +82,9 @@ services:
     build:
       context: ./services/user
     volumes:
-      - user-service-src:/srv/app/src
       - backend-db:/srv/app/db
       - uploads:/srv/app/uploads
-      - cert:/run/secrets:ro
+      - certificate:/run/secrets:ro
     env_file: .env
 
   websocket-service:
@@ -97,14 +93,13 @@ services:
     build:
       context: ./services/websocket
     volumes:
-      - websocket-service-src:/srv/app/src
       - backend-db:/srv/app/db
-      - cert:/run/secrets:ro
-      - tournament-service-cert:/run/cert/tournament:ro
-      - queue-service-cert:/run/cert/queue:ro
-      - game-service-cert:/run/cert/game:ro
-      - chat-service-cert:/run/cert/chat:ro
+      - certificate:/run/secrets:ro
     env_file: .env
+    depends_on:
+      auth-service:
+        condition: service_started
+        restart: true
 
   # grafana:
   #   image: grafana/grafana
@@ -176,103 +171,6 @@ services:
 
 volumes:
   prometheus-data:
-  frontend-static:
-    driver: local
-    driver_opts:
-      device: ./frontend/static
-      type: none
-      o: bind
-  frontend-src:
-    driver: local
-    driver_opts:
-      device: ./frontend/src
-      type: none
-      o: bind
-  auth-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/auth/src
-      type: none
-      o: bind
-
-  chat-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/chat/src
-      type: none
-      o: bind
-  chat-service-cert:
-    driver: local
-    driver_opts:
-      device: ./services/chat/cert
-      type: none
-      o: bind
-
-  friend-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/friend/src
-      type: none
-      o: bind
-
-  game-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/game/src
-      type: none
-      o: bind
-  game-service-cert:
-    driver: local
-    driver_opts:
-      device: ./services/game/cert
-      type: none
-      o: bind
-
-  queue-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/queue/src
-      type: none
-      o: bind
-  queue-service-cert:
-    driver: local
-    driver_opts:
-      device: ./services/queue/cert
-      type: none
-      o: bind
-
-  tournament-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/tournament/src
-      type: none
-      o: bind
-  tournament-service-cert:
-    driver: local
-    driver_opts:
-      device: ./services/tournament/cert
-      type: none
-      o: bind
-
-  user-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/user/src
-      type: none
-      o: bind
-
-  websocket-service-src:
-    driver: local
-    driver_opts:
-      device: ./services/websocket/src
-      type: none
-      o: bind
-  websocket-service-cert:
-    driver: local
-    driver_opts:
-      device: ./services/websocket/cert
-      type: none
-      o: bind
 
   backend-db:
     driver: local
@@ -280,15 +178,15 @@ volumes:
       device: ./database
       type: none
       o: bind
-  cert:
+  certificate:
     driver: local
     driver_opts:
-      device: ./cert
+      device: ./certificate
       type: none
       o: bind
   uploads:
     driver: local
     driver_opts:
-      device: ./frontend/static/uploads
+      device: ./uploads
       type: none
       o: bind

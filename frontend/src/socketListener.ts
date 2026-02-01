@@ -20,7 +20,7 @@ export async function initSocket() {
 		notify(`You're going to play against ${mess.opponent} in 3 seconds !`, "success");
 		setTimeout( () => {
 			gotoPage("play/match", `?id=${mess.match}`)
-		}, 3000);
+		}, 5000);
 	});
 
 	socket.addListener("vs:decline", (m:Message) => {

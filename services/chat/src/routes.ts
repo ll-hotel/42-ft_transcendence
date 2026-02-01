@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { chat } from "./chat";
-import { getUserIdByUsername } from "./utils/db/methods";
+import { chat, splitRoomName } from "./chat";
+import { userIdByUsername } from "./utils/db/methods";
 import { STATUS } from "./utils/http-reply";
 import { authGuard } from "./utils/security/authGuard";
 
@@ -30,6 +30,18 @@ export function chatRoute(fastify: FastifyInstance) {
 		}
 		const room = chat.rooms.get(roomId)!;
 		return rep.code(STATUS.success).send({ roomId: room.id });
+	});
+
+	fastify.get("/api/chat/rooms", { preHandler: authGuard }, (req, rep) => {
+		const roomsNames: string[] = [];
+		for (const [name, _room] of chat.rooms) {
+			roomsNames.push(name);
+		}
+		const rooms = roomsNames.map((name) => {
+			const { user1, user2 } = splitRoomName(name);
+			return user1 == req.user!.username ? user2 : user1;
+		});
+		rep.code(STATUS.success).send({ rooms });
 	});
 
 	fastify.get(
@@ -63,11 +75,11 @@ export function chatRoute(fastify: FastifyInstance) {
 			const me = chat.getOrCreateUser(req.user!.id, req.user!.username);
 			const targetName = (req.params as { username: string }).username;
 			try {
-				const targetId = await getUserIdByUsername(targetName);
-				if (!targetId) {
+				const targetUser = userIdByUsername.get({ username: targetName });
+				if (!targetUser) {
 					throw new Error("Username not found");
 				}
-				const target = chat.getOrCreateUser(targetId, targetName);
+				const target = chat.getOrCreateUser(targetUser.id, targetName);
 				const room = await chat.createPrivateRoom(me, target);
 				return rep.send({ roomId: room.id });
 			} catch (err) {

@@ -2,7 +2,6 @@ import * as orm from "drizzle-orm";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import * as WebSocket from "ws";
 import { db } from "../utils/db/database";
-import * as dbM from "../utils/db/methods";
 import * as tables from "../utils/db/tables";
 import { schema, STATUS } from "../utils/http-reply";
 import socket from "../utils/socket";
@@ -18,7 +17,7 @@ export default function(fastify: FastifyInstance): void {
 function route(ws: WebSocket.WebSocket, req: FastifyRequest): void {
 	ws.on("error", (error) => console.log(error));
 
-	socket.connect(req.user!.uuid, ws);
+	socket.register(req.user!.uuid, ws);
 }
 
 async function userByUUID(req: FastifyRequest, rep: FastifyReply) {

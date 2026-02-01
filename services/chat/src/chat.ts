@@ -1,29 +1,20 @@
-import { and, eq, or } from "drizzle-orm";
 import { FastifyRequest } from "fastify";
 import * as Ws from "ws";
-import { db } from "./utils/db/database";
-import { friends } from "./utils/db/tables";
-
-async function areFriends(user_1: number, user_2: number): Promise<boolean> {
-	const res = await db.select({ id: friends.id }).from(friends).where(and(
-		eq(friends.status, "accepted"),
-		or(
-			and(
-				eq(friends.senderId, user_1),
-				eq(friends.receiverId, user_2),
-			),
-			and(
-				eq(friends.senderId, user_2),
-				eq(friends.receiverId, user_1),
-			),
-		),
-	)).limit(1);
-	return res.length > 0;
-}
+import * as db from "./utils/db/methods";
 
 function privateRoomId(UserAId: string, UserBId: string): string {
 	const [a, b] = UserAId < UserBId ? [UserAId, UserBId] : [UserBId, UserAId];
 	return `private:${a}:${b}`;
+}
+
+export function splitRoomName(name: string): { user1: string, user2: string } {
+	// Remove "private:"
+	name = name.substring(8);
+	// 1 -> "@"
+	const user1 = name.slice(1, name.search(/:@/));
+	// 3 -> "@" + ":@"
+	const user2 = name.slice(3 + user1.length);
+	return { user1, user2 };
 }
 
 namespace Chat {
@@ -156,22 +147,43 @@ namespace Chat {
 			}
 		}
 
-		send(message: Message) {
+		send(message: Message): void {
+			if (!this.canSend(message)) {
+				return;
+			}
 			if (!message.system) {
 				this.messages.push(message);
 				if (this.messages.length > this.messMax) {
 					this.messages.shift();
 				}
 			}
-
-			for (const user of this.users) {
-				user.send({ ...message, target: this.id });
+			for (const chatUser of this.users) {
+				chatUser.send({ ...message, target: this.id });
 			}
+		}
+		canSend(message: Message): boolean {
+			const senderUsername = message.source.slice(1);
+			const senderId = db.userIdByUsername.get({ username: senderUsername })?.id;
+			if (senderId == undefined) {
+				return false;
+			}
+
+			const { user1, user2 } = splitRoomName(this.id);
+			const targetUsername = senderUsername == user1 ? user2 : user1;
+
+			const otherUser = db.userIdByUsername.get({ username: targetUsername });
+			if (!otherUser) {
+				message.system = true;
+				message.content = "Error: user not found";
+				return true;
+			}
+			const isBlocked = db.userBlockedBy.get({ userId: senderId, otherId: otherUser.id });
+			return isBlocked == undefined;
 		}
 	}
 
 	export class Instance {
-		users: Map<string, User>; // tous les users connus
+		users: Map<string, User>;
 		rooms: Map<string, Room>;
 
 		constructor() {
@@ -199,10 +211,13 @@ namespace Chat {
 		}
 
 		async createPrivateRoom(userA: User, userB: User): Promise<Room> {
-			const friends = await areFriends(userA.userId, userB.userId);
-			if (!friends) {
-				throw new Error("Cannot create private room: not friends");
+			if (userA.userId == userB.userId) {
+				throw new Error("You can not talk to yourself");
 			}
+			// const friends = await areFriends(userA.userId, userB.userId);
+			// if (!friends) {
+			// 	throw new Error("Cannot create private room: not friends");
+			// }
 
 			const id = privateRoomId(userA.id, userB.id);
 			let room = this.rooms.get(id);
@@ -220,7 +235,6 @@ namespace Chat {
 			const user = this.getOrCreateUser(userInfo.id, userInfo.username);
 			user.connect(ws, this);
 
-			// Rejoin rooms existantes
 			for (const roomId of user.rooms) {
 				const room = this.rooms.get(roomId);
 				if (room) room.connect(user);
@@ -251,7 +265,6 @@ namespace Chat {
 			if (!target || typeof content !== "string") {
 				return;
 			}
-
 			if (!this.rooms.has(target)) {
 				return;
 			}
@@ -259,7 +272,6 @@ namespace Chat {
 			if (!room.users.has(sender)) {
 				return;
 			}
-
 			const finalMess: Message = {
 				topic: "chat",
 				source: sender.id,

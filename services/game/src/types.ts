@@ -1,4 +1,9 @@
-import { BaseMessage } from "./utils/socket";
+import * as socket from "./utils/socket";
+
+export enum Side {
+	left = "left",
+	right = "right",
+}
 
 export enum Side {
 	left = "left",
@@ -18,7 +23,7 @@ export enum Status {
 	ongoing = "ongoing",
 }
 
-export type StateMessage = BaseMessage & {
+export type StateMessage = socket.BaseMessage & {
 	type: "state",
 	ball: {
 		x: number,
@@ -36,14 +41,14 @@ export type StateMessage = BaseMessage & {
 	side: Side,
 };
 
-export type InputMessage = BaseMessage & {
+export type InputMessage = socket.BaseMessage & {
 	type: "input",
 	clientId: string,
 	up: boolean,
 	down: boolean,
 };
 
-export type LocalMessage = BaseMessage & {
+export type LocalMessage = socket.BaseMessage & {
 	type: "input",
 	p1_up: boolean,
 	p1_down: boolean,
@@ -51,13 +56,13 @@ export type LocalMessage = BaseMessage & {
 	p2_down: boolean,
 };
 
-export type ScoreMessage = BaseMessage & {
+export type ScoreMessage = socket.BaseMessage & {
 	type: "score",
 	p1_score: number,
 	p2_score: number,
 };
 
-export type Message = BaseMessage | StateMessage | InputMessage | LocalMessage;
+export type Message = socket.BaseMessage | StateMessage | InputMessage | LocalMessage;
 
 export enum Mode {
 	local = "local",
@@ -72,7 +77,7 @@ export type Input = { name: string, value: boolean };
 export class Vector2D {
 	private x: number;
 	private y: number;
-	private norm: number;
+	public norm: number;
 
 	constructor(x: number, y: number) {
 		this.x = x;

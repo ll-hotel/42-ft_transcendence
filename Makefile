@@ -1,69 +1,34 @@
+COMPOSE := docker compose
 COMPOSE_FILE := docker-compose.yaml
 # COMPOSE_PROJECT_NAME := ft_transcendence
-COMPOSE := docker compose
+export COMPOSE COMPOSE_FILE COMPOSE_PROJECT_NAME
 
-export COMPOSE_FILE COMPOSE_PROJECT_NAME
+SERVICES := $(shell docker compose config --services | sed 's/^/DNS:/' | paste -sd ',' -)
 
-.PHONY: all
 all: up
 
-.PHONY: up
-up: cert dbDir uploadsDir
+up: volume_path certificate
 	$(COMPOSE) up --build --detach
 
-.PHONY: cert
-cert: cert/privatekey.pem cert/certificate.pem
-
-dbDir:
+volume_path:
 	@mkdir -p ./database
-uploadsDir:
-	@mkdir -p ./frontend/static/uploads
+	@mkdir -p ./uploads
 
-cert/privatekey.pem cert/certificate.pem:
+certificate: certificate/privatekey.pem certificate/certificate.pem
+certificate/privatekey.pem certificate/certificate.pem:
 	@mkdir -p $(dir $@)
-	@openssl req -newkey rsa:2048 -nodes -keyout cert/privatekey.pem -x509 -days 365 -out cert/certificate.pem \
-		-subj "/CN=internal" -addext "subjectAltName=DNS:localhost" 2>/dev/null
+	@openssl req -newkey rsa:2048 -nodes -keyout certificate/privatekey.pem -x509 -days 365 -out certificate/certificate.pem \
+		-subj "/CN=internal" -addext "subjectAltName=DNS:localhost,$(SERVICES)" 2>/dev/null
+	@chmod 644 certificate/*	# Very important for grafana and prometheus because they run as own user
 	@echo "=> New certs has been generated"
 
-.PHONY: services-cert
-services-cert: services/tournament/cert services/game/cert services/queue/cert services/chat/cert 
-
-.PHONY: services/tournament/cert
-services/tournament/cert:
-	@mkdir -p $@
-	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
-		-subj "/CN=internal" -addext "subjectAltName=DNS:tournament-service" 2>/dev/null
-
-.PHONY: services/game/cert
-services/game/cert:
-	@mkdir -p $@
-	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
-		-subj "/CN=internal" -addext "subjectAltName=DNS:game-service" 2>/dev/null
-
-.PHONY: services/queue/cert
-services/queue/cert:
-	@mkdir -p $@
-	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
-		-subj "/CN=internal" -addext "subjectAltName=DNS:queue-service" 2>/dev/null
-
-.PHONY: services/chat/cert
-services/chat/cert:
-	@mkdir -p $@
-	@openssl req -newkey rsa:2048 -nodes -keyout $@/privatekey.pem -x509 -days 365 -out $@/certificate.pem \
-		-subj "/CN=internal" -addext "subjectAltName=DNS:chat-service" 2>/dev/null
-
-.PHONY: build
 build:
 	$(COMPOSE) build
 
-.PHONY: down
 down:
 	$(COMPOSE) down --timeout 2
 
-.PHONY: ps
 ps:
 	$(COMPOSE) ps
 
-.PHONY: tailwind
-tailwind: up
-	docker exec -it frontend npx tailwindcss -i src/input.css -o static/tailwind.css
+.PHONY: all up certificate build down ps
