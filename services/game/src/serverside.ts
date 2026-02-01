@@ -17,7 +17,7 @@ import {
 } from "./types";
 
 type MatchId = number;
-const server_tickrate: number = 20 ;
+const server_tickrate: number = 30;
 const table_width = 500;
 const table_ratio = 1/2;
 const table = {

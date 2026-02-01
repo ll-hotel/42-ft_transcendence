@@ -1,100 +1,7 @@
 import { api } from "./api.js";
 import socket, { LocalMessage, PongMessage, ScoreMessage, StateMessage } from "./socket.js";
 
-type Position = { x: number, y: number };
-type Score = { p1: number, p2: number };
-type Size = { w: number, h: number };
-
-const width_server = 500;
-const height_server = width_server * (1 / 2);
-const server_tickrate = 20;
-
-export enum Mode {
-	local = "local",
-	remote = "remote",
-}
-
-enum TypeMsg {
-	state = "state",
-	input = "input",
-	error = "error",
-	score = "score",
-}
-
-export enum PongStatus {
-	ended = "ended",
-	initialised = "initialised",
-	ongoing = "ongoing",
-}
-
-export enum Side {
-	Left = "left",
-	Right = "right",
-}
-
-function debug_message(msg: string, obj?: any): void {
-	console.debug(msg, obj ? obj : "");
-}
-
-function draw_hit_box(context: CanvasRenderingContext2D, obj: PhysicObject): void {
-	context.lineWidth = 1;
-	context.strokeStyle = "#ff0000";
-	context.strokeRect(
-		obj.pos.x - Math.floor(obj.size.w / 2),
-		obj.pos.y - Math.floor(obj.size.h / 2),
-		obj.size.w,
-		obj.size.h,
-	);
-	context.strokeStyle = "#000000";
-}
-
-function dot_product(x1: number, y1: number, x2: number, y2: number): number {
-	return ((x1 * x2) + (y1 * y2));
-}
-
-abstract class PhysicObject {
-	protected position: Position;
-	public speed: Vector2D;
-	readonly size: Size;
-
-	constructor(position: Position, size: Size, speed: Vector2D) {
-		this.size = size;
-		this.position = position;
-		this.speed = speed;
-	}
-
-	tick(): void {
-		this.position.x += this.speed.x;
-		this.position.y += this.speed.y;
-	}
-
-	public get pos(): Position {
-		return this.position;
-	}
-
-	public set pos(pos: Position) {
-		this.position = pos;
-	}
-
-	public setY(y: number) {
-		this.position.y = y;
-	}
-}
-
-export class Vector2D {
-	public x: number;
-	public y: number;
-
-	constructor(x: number, y: number) {
-		this.x = x;
-		this.y = y;
-	}
-}
-
-function scale_vec(vec: Vector2D, coef: number) {
-	vec.x *= coef;
-	vec.y *= coef;
-}
+const paddle_ratio: number = 0.06;
 
 export class Game {
 	private canvas: HTMLCanvasElement;
@@ -115,7 +22,7 @@ export class Game {
 	onEnded: (() => void) | null = null;
 	private matchId: number;
 	private last_input: { p1_up: boolean, p1_down: boolean, p2_up: boolean, p2_down: boolean };
-	private  move_offset: number;
+	private move_offset: number;
 	private side: Side | null = null;
 
 	constructor(
@@ -129,8 +36,14 @@ export class Game {
 		this.canvas = html.querySelector("#match-canvas")! as HTMLCanvasElement;
 		this.context = this.canvas.getContext("2d")!;
 		this.score = { p1: 0, p2: 0 };
-		this.canvas_ratio = { w: this.canvas.width / width_server, h: this.canvas.height / height_server };
-		const paddle_size = { w: this.canvas.width * 0.06, h: this.canvas.width * 0.06 * 1.80 };
+		this.canvas_ratio = {
+			w: this.canvas.width / server_width,
+			h: this.canvas.height / server_height
+		};
+		const paddle_size = {
+			w: paddle_ratio * this.canvas.width,
+			h: paddle_ratio * this.canvas.width * 1.80,
+		};
 		this.paddle_p1 = new PongPaddle(
 			{ x: paddle_size.w / 2, y: this.canvas.height / 2 },
 			paddle_texture,
@@ -141,7 +54,7 @@ export class Game {
 			paddle_texture,
 			paddle_size,
 		);
-		this.ball = new PongBall(this.canvas, this.context, ball_texture);
+		this.ball = new PongBall({ w: this.canvas.width, h: this.canvas.height }, ball_texture);
 		this.tick_rate = 60;
 		this.input = new Map([["p1_up", false], ["p1_down", false], ["p2_up", false], ["p2_down", false]]);
 		this.last_input = { p1_up: false, p1_down: false, p2_up: false, p2_down: false };
@@ -190,7 +103,14 @@ export class Game {
 		}
 		this.running = true;
 		this.current_interval_id = setInterval(() => {
+			if (this.running == false) {
+				return;
+			}
 			this.update();
+			this.render();
+			if (this.shouldSendInputs()) {
+				this.sendInputs();
+			}
 		}, 1000 / this.tick_rate);
 	}
 
@@ -314,49 +234,50 @@ export class Game {
 		});
 	}
 
-
-
 	update(): void {
-		if (this.running == false) {
-			return;
-		}
-        this.ball.tick();
+		this.ball.tick();
 		if (this.mode == Mode.remote) {
 			if (this.side == Side.Left) {
-				if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
+				if (
+					this.input.get("p1_down") &&
+					this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height - this.move_offset
+				) {
 					this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.move_offset) * this.speed_ratio);
 				}
 				if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.move_offset) > this.move_offset) {
 					this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.move_offset) * this.speed_ratio);
 				}
-			}
-			else if (this.side == Side.Right) {
-				if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
+			} else if (this.side == Side.Right) {
+				if (
+					this.input.get("p2_down") &&
+					this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height - this.move_offset
+				) {
 					this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.move_offset) * this.speed_ratio);
 				}
 				if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.move_offset) > this.move_offset) {
 					this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.move_offset) * this.speed_ratio);
 				}
 			}
-		}
-		else if (this.mode == Mode.local) {
-			if (this.input.get("p1_down") && this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
+		} else if (this.mode == Mode.local) {
+			if (
+				this.input.get("p1_down") &&
+				this.paddle_p1.pos.y + (this.move_offset) < this.canvas.height - this.move_offset
+			) {
 				this.paddle_p1.pos.y = this.paddle_p1.pos.y + ((this.move_offset) * this.speed_ratio);
 			}
 			if (this.input.get("p1_up") && this.paddle_p1.pos.y - (this.move_offset) > this.move_offset) {
 				this.paddle_p1.pos.y = this.paddle_p1.pos.y - ((this.move_offset) * this.speed_ratio);
 			}
-			if (this.input.get("p2_down") && this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height - this.move_offset) {
+			if (
+				this.input.get("p2_down") &&
+				this.paddle_p2.pos.y + (this.move_offset) < this.canvas.height - this.move_offset
+			) {
 				this.paddle_p2.pos.y = this.paddle_p2.pos.y + ((this.move_offset) * this.speed_ratio);
 			}
 			if (this.input.get("p2_up") && this.paddle_p2.pos.y - (this.move_offset) > this.move_offset) {
 				this.paddle_p2.pos.y = this.paddle_p2.pos.y - ((this.move_offset) * this.speed_ratio);
 			}
 		}
-		this.render();
-        if (this.shouldSendInputs()) {
-            this.sendInputs();
-        }
 	}
 
 	shouldSendInputs(): boolean {
@@ -388,11 +309,40 @@ export class Game {
 	}
 }
 
+abstract class PhysicObject {
+	protected position: Position;
+	public speed: Vector2D;
+	readonly size: Size;
+
+	constructor(position: Position, size: Size, speed: Vector2D) {
+		this.size = size;
+		this.position = position;
+		this.speed = speed;
+	}
+
+	tick(): void {
+		this.position.x += this.speed.x;
+		this.position.y += this.speed.y;
+	}
+
+	public get pos(): Position {
+		return this.position;
+	}
+
+	public set pos(pos: Position) {
+		this.position = pos;
+	}
+
+	public setY(y: number) {
+		this.position.y = y;
+	}
+}
+
 export class PongPaddle extends PhysicObject {
 	private texture: HTMLImageElement;
 
 	constructor(position: Position, texture: HTMLImageElement, size: Size) {
-		super(position, size, new Vector2D(0, 0));
+		super(position, size, Vector2D(0, 0));
 		this.texture = texture;
 	}
 
@@ -408,18 +358,14 @@ export class PongPaddle extends PhysicObject {
 }
 
 export class PongBall extends PhysicObject {
-	private canvas: HTMLCanvasElement;
-	private context: CanvasRenderingContext2D;
 	private texture: HTMLImageElement;
 
-	constructor(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, texture: HTMLImageElement) {
+	constructor(canvas: Size, texture: HTMLImageElement) {
 		super(
-			{ x: canvas.width / 2, y: canvas.height / 2 },
-			{ w: canvas.height * 0.1 * 2.15, h: canvas.height * 0.1 },
-			new Vector2D(0, 0),
+			{ x: canvas.w / 2, y: canvas.h / 2 },
+			{ w: canvas.h * 0.1 * 2.15, h: canvas.h * 0.1 },
+			Vector2D(0, 0),
 		);
-		this.canvas = canvas;
-		this.context = context;
 		this.texture = texture;
 	}
 
@@ -432,4 +378,50 @@ export class PongBall extends PhysicObject {
 			this.size.h,
 		);
 	}
+}
+
+interface Position {
+	x: number;
+	y: number;
+}
+interface Score {
+	p1: number;
+	p2: number;
+}
+interface Size {
+	w: number;
+	h: number;
+}
+
+const server_width = 500;
+const server_height = server_width * (1 / 2);
+const server_tickrate = 30;
+
+export enum Mode {
+	local = "local",
+	remote = "remote",
+}
+
+export enum PongStatus {
+	ended = "ended",
+	initialised = "initialised",
+	ongoing = "ongoing",
+}
+
+export enum Side {
+	Left = "left",
+	Right = "right",
+}
+
+export interface Vector2D {
+	x: number;
+	y: number;
+}
+function Vector2D(x: number, y: number): Vector2D {
+	return { x, y };
+}
+
+function scale_vec(vec: Vector2D, coef: number) {
+	vec.x *= coef;
+	vec.y *= coef;
 }
