@@ -295,6 +295,8 @@ export class PongPaddle extends PhysicObject {
 	}
 }
 
+const ball_table_ratio = 0.1;
+
 export class PongBall extends PhysicObject {
 	private score: Score;
 	readonly paddle_p1: PongPaddle;
@@ -317,7 +319,7 @@ export class PongBall extends PhysicObject {
 	) {
 		super(
 			{ x: table.width / 2, y: table.height / 2 },
-			{ w: table.height * 0.1, h: table.height * 0.1 },
+			{ w: table.height * ball_table_ratio, h: table.height * ball_table_ratio },
 			new Vector2D(0, 0),
 		);
 		this.score = score;

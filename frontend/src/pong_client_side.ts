@@ -14,7 +14,7 @@ export class Game {
 	private mode: Mode;
 	private tick_rate: number;
 	private current_interval_id: number | null = null;
-	private canvas_ratio: Size;
+	private canvas_table_ratio: Size;
 	private speed_ratio: number;
 	private sendInputs: () => void;
 	running: boolean = false;
@@ -36,7 +36,7 @@ export class Game {
 		this.canvas = html.querySelector("#match-canvas")! as HTMLCanvasElement;
 		this.context = this.canvas.getContext("2d")!;
 		this.score = { p1: 0, p2: 0 };
-		this.canvas_ratio = {
+		this.canvas_table_ratio = {
 			w: this.canvas.width / server_width,
 			h: this.canvas.height / server_height
 		};
@@ -144,14 +144,14 @@ export class Game {
 	}
 
 	update_state(msg: StateMessage) {
-		this.ball.speed.x = msg.ball.speed.x * this.canvas_ratio.w;
-		this.ball.speed.y = msg.ball.speed.y * this.canvas_ratio.h;
+		this.ball.speed.x = msg.ball.speed.x * this.canvas_table_ratio.w;
+		this.ball.speed.y = msg.ball.speed.y * this.canvas_table_ratio.h;
 		scale_vec(this.ball.speed, this.speed_ratio);
 
-		this.ball.pos.x = msg.ball.x * this.canvas_ratio.w;
-		this.ball.pos.y = msg.ball.y * this.canvas_ratio.h;
-		this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_ratio.h);
-		this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_ratio.h);
+		this.ball.pos.x = msg.ball.x * this.canvas_table_ratio.w;
+		this.ball.pos.y = msg.ball.y * this.canvas_table_ratio.h;
+		this.paddle_p1.setY(msg.paddles.p1_Y * this.canvas_table_ratio.h);
+		this.paddle_p2.setY(msg.paddles.p2_Y * this.canvas_table_ratio.h);
 		this.score.p1 = msg.score.p1;
 		this.score.p2 = msg.score.p2;
 	}
@@ -357,13 +357,15 @@ export class PongPaddle extends PhysicObject {
 	}
 }
 
+const ball_table_ratio = 0.1;
+
 export class PongBall extends PhysicObject {
 	private texture: HTMLImageElement;
 
-	constructor(canvas: Size, texture: HTMLImageElement) {
+	constructor(table: Size, texture: HTMLImageElement) {
 		super(
-			{ x: canvas.w / 2, y: canvas.h / 2 },
-			{ w: canvas.h * 0.1 * 2.15, h: canvas.h * 0.1 },
+			{ x: table.w / 2, y: table.h / 2 },
+			{ w: table.h * ball_table_ratio, h: table.h * ball_table_ratio },
 			Vector2D(0, 0),
 		);
 		this.texture = texture;
