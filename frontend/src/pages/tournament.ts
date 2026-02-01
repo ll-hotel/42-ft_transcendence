@@ -229,13 +229,19 @@ export class Tournament implements AppPage {
 		container.removeAttribute("hidden");
 		container.innerHTML = "";
 		const winner = info.winner ? info.winner : "Unknown";
-		const banner = createElement(`
-			<div class="tournament-end-banner">
-				<h2 class="text-2xl font-bold">Tournament Ended</h2>
-				<p class="text-xl">Winner: <span class="font-semibold">${winner}</span></p>
-			</div>
-		`)!;
-		container.appendChild(banner);
+		
+		getUserAvatar(winner).then((avatar) => {
+        const winnerCard = createElement(`
+            <div class="tournament-end-banner">
+                <h2 class="text-2xl font-bold">Tournament Ended</h2>
+                <p class="text-xl">Winner:</p>
+                <div class="tournament-player-card bg-yellow-500 border border-yellow-500 text-white font-bold shadow-lg p-2 rounded-lg">
+                    <img src="${avatar}" class="tournament-player-pic" />
+                    <p class="tournament-player-username">${winner}</p>
+                </div>
+            </div>
+        `)!;
+        container.appendChild(winnerCard)});
 	}
 
 	private resetUI() {
