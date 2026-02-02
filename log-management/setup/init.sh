@@ -20,6 +20,8 @@ fi
 echo "INFO: Checking configuration status..."
 if [[ $(curl -s -o /dev/null -w "%{http_code}" $CERT -u $KIBANA_USERNAME:$KIBANA_PASSWORD $ELASTIC_HOST/_security/_authenticate) == 200 ]]; then
 	echo "INFO: Kibana visualisation user already present"
+	echo "INFO: Bulk importing saved objects..."
+	curl -sfk -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" -X POST "$ELASTIC_URL/_bulk" -H "Content-Type: application/x-ndjson" --form file=@/dashboard.ndjson
 	echo "INFO: Configuration already done. Exiting with sucess..."
 	exit 0
 fi
@@ -29,6 +31,9 @@ if [[ $(curl -s -o /dev/null -w "%{http_code}" $CERT -u $ELASTIC_USERNAME:$ELAST
 	echo "ERROR: Unable to create kibana_admin (named $KIBANA_USERNAME) user"
 	exit 4;
 fi
+
+echo "INFO: Bulk importing saved objects..."
+curl -sfk -u "$KIBANA_USERNAME:$KIBANA_PASSWORD" -X POST "$ELASTIC_URL/_bulk" -H "Content-Type: application/x-ndjson" --form file=@/dashboard.ndjson
 
 echo "INFO: Configuration done. Exiting with sucess..."
 exit 0
