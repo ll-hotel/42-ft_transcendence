@@ -18,7 +18,7 @@ import * as dbM from "./utils/db/methods";
 import socket from "./utils/socket";
 
 type MatchId = number;
-const server_tickrate: number = 30;
+const server_tickrate: number = 60;
 const table_width = 500;
 const table_ratio = 1 / 2;
 const table = {
@@ -137,7 +137,7 @@ export class GameInstance {
 			p1: { up: false, down: false },
 			p2: { up: false, down: false },
 		};
-		this.move_offset = table.height * 0.05;
+		this.move_offset = table.height * 0.025;
 		this.p1_uuid = p1_uuid;
 		this.p2_uuid = p2_uuid;
 		this.ball = new PongBall(
@@ -384,9 +384,8 @@ export class PongBall extends PhysicObject {
 
 		setTimeout(() => {
 			const angle = Math.random() * 90;
-			this.speed.y = Math.sin(angle) * (Math.random() < 0.5 ? -1 : 1);
+			this.speed.y = (0.2 + Math.sin(angle)) * (Math.random() < 0.5 ? -1 : 1);
 			this.speed.x = 5 * (side == "left" ? -1 : 1);
-			this.speed.scale(2);
 		}, 1000);
 
 		this.paddle_p1.respawn();
@@ -411,7 +410,6 @@ export class PongBall extends PhysicObject {
 			}
 
 			let discard = dbM.updateMatchInfo(this.game_id, this.score.p1, this.score.p2);
-
 			this.respawn(left_scored ? "left" : "right");
 			this.sendScore();
 		}
