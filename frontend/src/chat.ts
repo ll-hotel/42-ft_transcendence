@@ -1,21 +1,25 @@
 import { api, Status } from "./api.js";
-import socket from "./socket.js";
+import { loader } from "./PageLoader.js";
+import socket, { ChatMessage } from "./socket.js";
 import { notify } from "./utils/notifs.js";
 
-type Message = {
-	source: string,
-	target: string,
-	content: string,
-};
-
-export class ChatStruct {
+export class Chat {
 	ws: WebSocket | null = null;
-	messages: Message[] = [];
+	messages: ChatMessage[] = [];
 	username: string = "";
 	targetUsername: string = "";
 	currentRoomId: string | null = null;
 	lastMessage = 0;
-	setListeners: boolean = false;
+	connected: boolean = false;
+
+	notifyDaemon: NotifyDaemon = new NotifyDaemon();
+
+	constructor() {
+		socket.addListener("chat", (msg) => {
+			this.messages.push(msg as unknown as ChatMessage);
+		});
+		this.notifyDaemon.start();
+	}
 
 	async connect(): Promise<boolean> {
 		const ping = await api.get("/api/chat/ping");
@@ -23,27 +27,28 @@ export class ChatStruct {
 			notify("API error", "error");
 			return false;
 		}
-		await new Promise<boolean>(async (resolve) => {
+		const conn = await new Promise<WebSocket | null>(async (resolve) => {
 			const ping = await api.get("/api/chat/ping");
 			if (!ping || !ping.payload || ping.status !== Status.success) {
 				notify("API error", "error");
-				return resolve(false);
+				return resolve(null);
 			}
 			const connected = await socket.connect();
-			if (!connected) {
-				this.disconnect();
+			if (connected) {
+				resolve(socket.conn!);
+			} else {
+				resolve(null);
 			}
-			this.ws = socket.conn!;
-			if (!this.setListeners) {
-				this.setListeners = true;
-				socket.addListener("chat", (msg) => {
-					this.messages.push(msg as unknown as Message);
-				});
-				this.ws.addEventListener("close", () => this.disconnect());
-				this.ws.addEventListener("error", () => this.disconnect());
-			}
-			resolve(true);
 		});
+		if (!conn) {
+			return false;
+		}
+		this.ws = conn;
+		if (!this.connected) {
+			this.connected = true;
+			this.ws.addEventListener("close", () => this.disconnect());
+			this.ws.addEventListener("error", () => this.disconnect());
+		}
 		this.username = "Unknown";
 		const me = await api.get("/api/user/me");
 		if (!me || !me.payload || me.status !== Status.success) {
@@ -56,10 +61,11 @@ export class ChatStruct {
 
 	async send(msg: string): Promise<void> {
 		if (!this.currentRoomId) return;
-		if (!this.ws) {
-			await this.connect();
-		}
-		this.ws?.send(JSON.stringify({ service: "chat", target: this.currentRoomId, content: msg }));
+
+		const roomId = this.currentRoomId;
+		this.connect().then(() => {
+			socket.send({ service: "chat", topic: "chat", source: "@" + this.username, target: roomId, content: msg });
+		});
 	}
 
 	reset(): void {
@@ -73,8 +79,7 @@ export class ChatStruct {
 		this.username = "";
 		this.currentRoomId = null;
 		this.lastMessage = 0;
-		socket.removeListener("chat");
-		this.setListeners = false;
+		this.connected = false;
 	}
 
 	async openRoom(username: string): Promise<string | null> {
@@ -104,7 +109,7 @@ export class ChatStruct {
 		this.messages.push(...res?.payload);
 	}
 
-	getRoomMessages(): Message[] {
+	getRoomMessages(): ChatMessage[] {
 		if (!this.currentRoomId) {
 			return [];
 		}
@@ -116,5 +121,49 @@ export class ChatStruct {
 		this.currentRoomId = null;
 		this.lastMessage = 0;
 		this.targetUsername = "";
+	}
+}
+
+class NotifyDaemon {
+	started: boolean = false;
+	restartInterval: number | null = null;
+
+	start(): void {
+		if (this.started) {
+			return;
+		}
+		this.started = true;
+		socket.addListener("chat", (m) => {
+			const chatMsg = m as unknown as ChatMessage;
+
+			if (loader.loaded != "chat") {
+				notify("New message from " + chatMsg.source.slice(1), "info", 1000);
+			}
+		});
+		socket.connect().then((success) => {
+			if (!success) {
+				return this.restart();
+			}
+			socket.conn!.addEventListener("close", () => this.restart());
+		});
+	}
+	stop(): void {
+		if (!this.started) {
+			return;
+		}
+		this.started = false;
+	}
+	restart(): void {
+		if (this.restartInterval != null) {
+			return;
+		}
+		this.stop();
+		this.restartInterval = setInterval(() => {
+			if (socket.isAlive()) {
+				this.start();
+				if (this.restartInterval) clearInterval(this.restartInterval);
+				this.restartInterval = null;
+			}
+		}, 500);
 	}
 }
