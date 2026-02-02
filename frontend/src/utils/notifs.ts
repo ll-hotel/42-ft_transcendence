@@ -1,22 +1,24 @@
-export function notify(message: string, type: "success" | "error" | "info") {
+const notifMaxCount: number = 3;
+
+export function notify(message: string, type: "success" | "error" | "info", duration: number = 3000) {
 	let container = document.getElementById("notif-container");
 	if (!container) {
 		container = document.createElement("div");
 		container.id = "notif-container";
-		container.className = "fixed top-4 right-4 z-50 space-y-2" //top right notifs
-		
+		container.className = "fixed top-4 right-4 z-50 space-y-2 text-right"; // top right notifs
+
 		document.body.appendChild(container);
 	}
-	const duration = 3000;
 
-	if (container.children.length >= 1) // notif limit before reset top notif
-		container.lastElementChild?.remove();
+	if (container.children.length >= notifMaxCount) {
+		container.firstElementChild?.remove();
+	}
 
 	const el = document.createElement("div");
 	el.style.position = "relative";
 	el.style.overflow = "hidden";
 	el.style.opacity = "0";
-	el.style.transform = "translateX(8px)";
+	el.style.transform = "translateY(8px)";
 	el.style.transition = "opacity 0.2s ease, transform 0.2s ease";
 
 	let color = "";
@@ -32,7 +34,7 @@ export function notify(message: string, type: "success" | "error" | "info") {
 			break;
 	}
 
-	el.className = `px-4 py-2 rounded text-white font-semibold drop-shadow-xl/80 ${color}`;
+	el.className = `px-4 py-2 rounded text-white w-fit ml-auto font-semibold drop-shadow-xl/80 ${color}`;
 	el.textContent = message;
 
 	const bar = document.createElement("div");
@@ -52,17 +54,14 @@ export function notify(message: string, type: "success" | "error" | "info") {
 	requestAnimationFrame(() => {
 		setTimeout(() => {
 			el.style.opacity = "1";
-			el.style.transform = "translateX(0)";
+			el.style.transform = "translateY(0)";
 			bar.style.transform = "scaleX(0)";
 		}, 10);
 	});
 
 	setTimeout(() => {
 		el.style.opacity = "0";
-		el.style.transform = "translateX(8px)";
+		el.style.transform = "translateY(8px)";
 		setTimeout(() => el.remove(), 200);
 	}, duration);
 }
-
-
-

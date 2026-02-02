@@ -19,19 +19,19 @@ export function splitRoomName(name: string): { user1: string, user2: string } {
 
 namespace Chat {
 	interface ErrorMessage {
-		topic: "error",
-		error: string,
+		topic: "error";
+		error: string;
 	}
 	interface UserMessage {
-		target?: string,
-		content?: string,
+		target?: string;
+		content?: string;
 	}
 	interface ChatMessage {
-		topic: "chat",
-		source: string,
-		target: string,
-		content: string,
-		system?: boolean,
+		topic: "chat";
+		source: string;
+		target: string;
+		content: string;
+		system?: boolean;
 	}
 	export type Message = ChatMessage | ErrorMessage;
 
@@ -141,13 +141,11 @@ namespace Chat {
 		connect(user: User) {
 			if (!this.users.has(user)) {
 				this.users.add(user);
-				this.send({ topic: "chat", source: user.id, target: this.id, content: "Joined room", system: true });
 				user.rooms.add(this.id);
 			}
 		}
 
 		disconnect(userId: string) {
-			this.send({ topic: "chat", source: userId, target: this.id, content: "Left Room", system: true });
 			for (const user of this.users) {
 				if (user.id === userId) {
 					this.users.delete(user);
@@ -273,8 +271,8 @@ namespace Chat {
 			if (content.length > 256) {
 				return sender.send({
 					topic: "error",
-					error: "Message too long (256 characters max)"
-				})
+					error: "Message too long (256 characters max)",
+				});
 			}
 			if (!this.rooms.has(target)) {
 				return;

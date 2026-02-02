@@ -3,65 +3,71 @@ import * as game from "./pong_client_side.js";
 import { notify } from "./utils/notifs.js";
 
 export interface BaseMessage {
-	service: string,
-	topic: string,
-};
+	service: string;
+	topic: string;
+}
 
 export interface ErrorMessage extends BaseMessage {
-	error: string,
+	error: string;
 }
 
 export interface MatchMessage extends BaseMessage {
-	source: string,
-	match: number,
-	opponent: string,
-};
+	source: string;
+	match: number;
+	opponent: string;
+}
 
 export interface VersusMessage extends BaseMessage {
-	source: string,
-	content: string,
-};
+	source: string;
+	content: string;
+}
+
+export interface ChatMessage extends BaseMessage {
+	source: string;
+	target: string;
+	content: string;
+}
 
 export interface StateMessage extends BaseMessage {
-	type: "state",
+	type: "state";
 	ball: {
 		x: number,
 		y: number,
 		speed: game.Vector2D,
-	},
+	};
 	paddles: {
 		p1_Y: number,
 		p1_input: { up: boolean, down: boolean },
 		p2_Y: number,
 		p2_input: { up: boolean, down: boolean },
-	},
-	score: { p1: number, p2: number },
-	status: game.PongStatus,
-	side: game.Side,
-};
+	};
+	score: { p1: number, p2: number };
+	status: game.PongStatus;
+	side: game.Side;
+}
 
 export interface InputMessage extends BaseMessage {
-	type: "input",
-	up: boolean,
-	down: boolean,
-};
+	type: "input";
+	up: boolean;
+	down: boolean;
+}
 
 export interface ScoreMessage extends BaseMessage {
-	type: "score",
-	p1_score: number,
-	p2_score: number,
-};
+	type: "score";
+	p1_score: number;
+	p2_score: number;
+}
 
 export interface LocalMessage extends BaseMessage {
-	type: "input",
-	p1_up: boolean,
-	p1_down: boolean,
-	p2_up: boolean,
-	p2_down: boolean,
-};
+	type: "input";
+	p1_up: boolean;
+	p1_down: boolean;
+	p2_up: boolean;
+	p2_down: boolean;
+}
 
 export type PongMessage = InputMessage | ScoreMessage | LocalMessage | StateMessage;
-export type Message = VersusMessage | BaseMessage | MatchMessage | PongMessage;
+export type Message = VersusMessage | BaseMessage | MatchMessage | PongMessage | ChatMessage;
 
 namespace Socket {
 	export let conn: WebSocket | null = null;
@@ -83,8 +89,10 @@ namespace Socket {
 			tmp.onerror = () => resolve(null);
 			tmp.addEventListener("open", () => {
 				if (reconnection) {
-					notify("Reconnected", "success");
+					notify("Reconnected", "success", 1000);
 					clearInterval(reconnection);
+				} else {
+					notify("Connected", "success", 1000);
 				}
 				reconnection = null;
 				tmp.onerror = null;
@@ -98,7 +106,7 @@ namespace Socket {
 		conn.addEventListener("close", (ev) => {
 			conn = null;
 			if (!reconnection && ev.code != 1005) {
-				notify("Disconnected. Reconnecting...", "info");
+				notify("Disconnected. Reconnecting...", "info", 500);
 				reconnection = setInterval(connect, 1000);
 			}
 		});
@@ -108,8 +116,7 @@ namespace Socket {
 				if (hooks.has(message.topic)) {
 					hooks.get(message.topic)!.forEach(hook => hook(message));
 				}
-			} catch (err) {
-			}
+			} catch {}
 		});
 		pingLoop();
 		addListener("error", (data) => {

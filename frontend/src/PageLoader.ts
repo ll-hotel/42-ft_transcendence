@@ -1,19 +1,19 @@
 import AppPage from "./pages/AppPage.js";
-import { editProfile } from "./pages/editProfile.js";
 import { ChatPage } from "./pages/chatPage.js";
+import { editProfile } from "./pages/editProfile.js";
 import { HomePage } from "./pages/HomePage.js";
 import { Login } from "./pages/login.js";
+import { MatchMaking } from "./pages/matchmaking.js";
+import { OtherProfilePage } from "./pages/otherProfile.js";
 import Play from "./pages/play.js";
 import PlayLocal from "./pages/play/local.js";
 import PlayMatch from "./pages/play/match.js";
-import { OtherProfilePage } from "./pages/otherProfile.js";
 import { ProfilePage } from "./pages/profile.js";
 import { RegisterPage } from "./pages/register.js";
 import { Tournament } from "./pages/tournament.js";
 import { Tournaments } from "./pages/tournaments.js";
-import { notify } from "./utils/notifs.js";
-import {MatchMaking} from "./pages/matchmaking.js";
 import socket from "./socket.js";
+import { notify } from "./utils/notifs.js";
 
 const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[] = [
 	{ name: "home", new: HomePage.new },
@@ -27,7 +27,7 @@ const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[
 	{ name: "play/match", new: PlayMatch.new },
 	{ name: "tournament", new: Tournament.new },
 	{ name: "tournaments", new: Tournaments.new },
-	{ name: "matchmaking", new: MatchMaking.new}
+	{ name: "matchmaking", new: MatchMaking.new },
 ];
 
 export function strToPageName(str: string): string | null {
@@ -99,7 +99,7 @@ export async function gotoUserPage(displayName: string) {
 	await gotoPage("profile/other", "?displayName=" + displayName);
 }
 
-const loader = new PageLoader(document.getElementById("content")!);
+export const loader = new PageLoader(document.getElementById("content")!);
 
 export async function gotoPage(name: string, search: string = "") {
 	let pageName = strToPageName(name);
@@ -112,7 +112,7 @@ export async function gotoPage(name: string, search: string = "") {
 
 async function loadPage(replaceState: boolean) {
 	const path = location.pathname.substring(1);
-	let pageName = strToPageName(path) || "home";	
+	let pageName = strToPageName(path) || "home";
 
 	if (!await socket.connect() && !(pageName === "register" || pageName === "login")) {
 		pageName = "login";
@@ -127,6 +127,6 @@ async function loadPage(replaceState: boolean) {
 
 (window as any).gotoPage = gotoPage;
 
-window.onpopstate = function () {
+window.onpopstate = function() {
 	loadPage(false);
 };

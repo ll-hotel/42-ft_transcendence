@@ -8,15 +8,24 @@ export class HomePage implements AppPage {
 	html: HTMLElement;
 	listContainer: HTMLElement;
 	inQueue: boolean;
+	discussButton: HTMLButtonElement;
+
+	static async new(html: HTMLElement): Promise<AppPage | null> {
+		const listContainer = html.querySelector("#friend-list-content");
+		const discussButton = html.querySelector("#chat-discuss");
+		if (!listContainer || !discussButton) {
+			return null;
+		}
+		return new HomePage(html);
+	}
 
 	constructor(html: HTMLElement) {
 		this.html = html;
 		this.inQueue = false;
 		this.listContainer = html.querySelector("#friend-list-content")!;
-	}
 
-	static async new(html: HTMLElement): Promise<AppPage> {
-		return new HomePage(html);
+		this.discussButton = html.querySelector<HTMLButtonElement>("#chat-discuss")!;
+		this.discussButton.addEventListener("click", () => gotoPage("chat"));
 	}
 
 	loadInto(container: HTMLElement): void {
@@ -48,12 +57,13 @@ export class HomePage implements AppPage {
 		buttonLocalVs.onclick = () => {
 			api.get("/api/game/current").then((res) => {
 				if (!res) return;
-				if (res.status == Status.not_found)
+				if (res.status == Status.not_found) {
 					gotoPage("play/local");
-				else
+				} else {
 					notify("You are already on a match", "info");
+				}
 			});
-		}
+		};
 
 		buttonOnlineVs.onclick = () => {
 			api.get("/api/game/current").then((res) => {
@@ -76,7 +86,6 @@ export class HomePage implements AppPage {
 
 		await this.loadFriends();
 	}
-
 
 	async loadFriends() {
 		this.listContainer.innerHTML = "<div>Searching friends...</div>";

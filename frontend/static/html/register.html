@@ -5,11 +5,16 @@
 		<form class="mb-4">
 			<div class="mb-4">
 				<label for="username" class="block text-md font-medium">Username</label>
+				<p class="text-sm italic">Must be shorter than 16 characters and contain only letters and '-'</p>
 				<input name="username" type="text"
 					class="mt-1 w-full border border-gray-300 rounded-md p-2 bg-neutral-500" />
 			</div>
 			<div class="mb-4">
 				<label for="username" class="block text-md font-medium">Password</label>
+				<p class="text-sm italic">
+					Must contain: 1 Uppercase, 1 Lowercase, 1 Digit, at least 8 characters (64 at most).
+					Valid special characters: #@
+				</p>
 				<input name="password" type="password"
 					class="mt-1 w-full border border-gray-300 rounded-md p-2 bg-neutral-500" />
 			</div>

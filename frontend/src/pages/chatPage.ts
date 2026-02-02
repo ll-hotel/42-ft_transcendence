@@ -1,10 +1,10 @@
 import { api, Status } from "../api.js";
+import { Chat } from "../chat.js";
 import { gotoUserPage } from "../PageLoader.js";
 import socket from "../socket.js";
 import { initSearchBar } from "../user_action.js";
 import { notify } from "../utils/notifs.js";
 import AppPage from "./AppPage.js";
-import { ChatStruct } from "../chat.js";
 
 export class ChatPage implements AppPage {
 	content: HTMLElement;
@@ -12,32 +12,32 @@ export class ChatPage implements AppPage {
 	chatContainer: HTMLElement;
 	selectedCard: HTMLElement | null;
 	renderInterval: number | null = null;
-	chat: ChatStruct;
 	searchBar: HTMLElement;
 	cardsDisplayNames: string[] = [];
 
-	constructor(content: HTMLElement, searchBar: HTMLElement) {
+	chat: Chat;
+
+	constructor(content: HTMLElement) {
 		this.content = content;
-		this.listContainer = content.querySelector("#friend-list-content")!;
-		this.chatContainer = content.querySelector("#chat")!;
-		initSearchBar(searchBar, (card) => this.userSelected(card));
-		this.searchBar = searchBar;
+		this.listContainer = content.querySelector<HTMLElement>("#friend-list-content")!;
+		this.chatContainer = content.querySelector<HTMLElement>("#chat")!;
 		this.selectedCard = null;
-		this.chat = new ChatStruct();
-		if (!this.listContainer || !this.chatContainer) {
-			return;
-		}
+
+		this.searchBar = content.querySelector<HTMLElement>("#search-user-action")!;
+		initSearchBar(this.searchBar, (card) => this.userSelected(card));
+
+		this.chat = new Chat();
 	}
 
 	static async new(content: HTMLElement): Promise<AppPage | null> {
-		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#chat")) {
+		const requiredIds = ["#friend-list-content", "#chat", "#search-user-action"];
+		const elements = requiredIds.map(id => [id, content.querySelector(id)]);
+		const missingElements = elements.filter(([id, elem]) => elem == null);
+		if (missingElements.length > 0) {
+			console.log(missingElements);
 			return null;
 		}
-		const searchBar = content.querySelector<HTMLElement>("#search-user-action");
-		if (!searchBar) {
-			return null;
-		}
-		return new ChatPage(content, searchBar);
+		return new ChatPage(content);
 	}
 
 	async userSelected(card: HTMLElement): Promise<void> {
@@ -121,7 +121,7 @@ export class ChatPage implements AppPage {
 					displayName: string,
 					avatar: string,
 					isOnline: boolean,
-					uuid : string,
+					uuid: string,
 				};
 				const card = ChatPage.createFriendCard(displayName, avatar, isOnline);
 				card.onclick = () => {
@@ -341,8 +341,7 @@ export class ChatPage implements AppPage {
 			if (status == "accepted") {
 				isFriendDiv.innerText = "Friend";
 				isFriendDiv.classList.add("bg-slate-600");
-			}
-			else {
+			} else {
 				isFriendDiv.innerText = "Not friend";
 				isFriendDiv.classList.add("bg-red-500");
 			}
