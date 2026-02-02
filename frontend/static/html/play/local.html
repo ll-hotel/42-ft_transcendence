@@ -1,13 +1,18 @@
 
 <div class="flex w-full h-screen items-center justify-center">
-	<div id="match-widget" class="w-4/5 h-full flex justify-center align-middle pt-26 sm:pt-18">
-		<div id="p2-part" class="size-2/3 flex flex-col justify-start align-middle bg-neutral-600 p-5 gap-6 rounded-lg">
+	<div id="match-widget" class="w-4/5 h-full flex justify-center align-middle items-center pt-26 sm:pt-18">
+		<div id="p2-part" class="size-2/3 flex flex-col justify-center align-middle items-center bg-neutral-600 p-5 gap-6 rounded-lg">
 			<div id="text-p2" class="text-white text-2xl flex align-middle justify-center">
-				Select player 2 !
+				Select an opponent!
 			</div>
-			<div id="select-p2" class="relative">
-				<input id="input-p2" class=" bg-white w-full px-2 py-1 border rounded" type="text" placeholder="Select your player..." />
-				<div id="results-p2" class="absolute left-0 right-0 top-full mt-1 max-h-50 overflow-y-auto bg-white rounded shadow z-50" ></div>
+			<div class="flex justify-around items-center w-2/3">
+				<div id="select-p2" class="relative">
+					<input id="input-p2" class=" bg-white w-full px-2 py-1 border rounded" type="text" placeholder="Select your player..." />
+					<div id="results-p2" class="absolute left-0 right-0 top-full mt-1 max-h-50 overflow-y-auto bg-white rounded shadow z-50" ></div>
+				</div>
+				<button id="guest-select" class="flex justify-center p-2 md:p-4 text-white font-bold bg-black rounded-md drop-shadow-xl/80 hover:bg-green-600 hover:cursor-pointer hover:scale-110  transition">
+					Play as Guest
+				</button>
 			</div>
 		</div>
 		<div id="match-part" class="h-full w-fit grid grid-rows-[10%_80%_10%] rounded-md">

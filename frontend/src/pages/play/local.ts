@@ -29,6 +29,7 @@ export default class PlayLocal implements AppPage {
 	matchCanvas: HTMLElement | null;
 	matchElement: HTMLElement | null;
 	p2Element: HTMLElement | null;
+	guestButton : HTMLButtonElement | null;
 
 	constructor(html: HTMLElement, ball: HTMLImageElement, paddle: HTMLImageElement) {
 		this.html = html;
@@ -37,6 +38,7 @@ export default class PlayLocal implements AppPage {
 		this.player2 = null;
 		this.matchElement = this.html.querySelector<HTMLElement>("#match-part");
 		this.p2Element = this.html.querySelector<HTMLElement>("#p2-part");
+		this.guestButton = this.html.querySelector<HTMLButtonElement>("#guest-select");
 		this.p1_DisplayName = this.html.querySelector<HTMLElement>("#player1-name");
 		this.p2_DisplayName = this.html.querySelector<HTMLElement>("#player2-name");
 		this.p1_Avatar = this.html.querySelector<HTMLImageElement>("#player1-picture");
@@ -50,7 +52,7 @@ export default class PlayLocal implements AppPage {
 
 		if (
 			!this.p1_DisplayName || !this.p2_DisplayName || !this.p1_Avatar || !this.p2_Avatar || !this.p1_Score ||
-			!this.p2_Score || !this.matchWindow || !this.matchCanvas || !this.p2Element
+			!this.p2_Score || !this.matchWindow || !this.matchCanvas || !this.p2Element || !this.guestButton
 		) {
 			return;
 		}
@@ -74,9 +76,10 @@ export default class PlayLocal implements AppPage {
 		container.innerHTML = "";
 		container.appendChild(this.html);
 
+		
 		this.html.querySelectorAll(".ended-match-mess").forEach(el => el.remove());
 		this.matchCanvas!.hidden = false;
-
+		
 		const resMe = await api.get("/api/user/me");
 		if (!resMe || resMe.status != Status.success) {
 			return gotoPage("home");
@@ -89,6 +92,7 @@ export default class PlayLocal implements AppPage {
 		if (!this.player2) {
 			this.matchElement!.hidden = true;
 			this.p2Element!.hidden = false;
+			this.guestButton!.onclick = () => this.useGuestP2(container);
 			this.initSearchBar(container);
 		} else {
 			this.setMatchInfo(container);
@@ -172,21 +176,31 @@ export default class PlayLocal implements AppPage {
 				result.innerText = `You won vs ${this.p2_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			} else {
-				result.innerText = `You won vs ${this.p2_DisplayName!.innerText}! Boo !`;
-				result.classList.add("loose");
+				result.innerText = `You lost vs ${this.p2_DisplayName!.innerText}! Boo !`;
+				result.classList.add("lose");
 			}
 		} else {
 			if (this.game!.score.p1 < this.game!.score.p2) {
-				result.innerText = `You won vs ${this.p1_DisplayName!.innerText}! Nice !`;
+				result.innerText = `You win vs ${this.p1_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			} else {
 				result.innerText = `You lost vs ${this.p1_DisplayName!.innerText}! Boo !`;
-				result.classList.add("loose");
+				result.classList.add("lose");
 			}
 		}
 
 		this.matchWindow!.appendChild(result);
 		notify(`Match is finished`, "success");
+	}
+
+	async useGuestP2(container : HTMLElement){
+		const resUser = await api.get("/api/user?username=Guest");
+		if (!resUser || resUser.status !== Status.success)
+			return;
+		this.player2 = resUser.payload.user;
+		this.p2Element!.hidden = true;
+		this.matchElement!.hidden = false;
+		this.setMatchInfo(container);
 	}
 
 	initSearchBar(container: HTMLElement) {

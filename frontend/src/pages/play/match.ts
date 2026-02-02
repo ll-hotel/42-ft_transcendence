@@ -128,7 +128,7 @@ export default class PlayMatch implements AppPage {
 			else
 			{
 				result.innerText =`You lost vs ${this.p2_DisplayName!.innerText}! Boo !`;
-				result.classList.add("loose");
+				result.classList.add("lose");
 			}
 		}
 		else {
@@ -140,7 +140,7 @@ export default class PlayMatch implements AppPage {
 			else
 			{
 				result.innerText =`You lost vs ${this.p1_DisplayName!.innerText}! Boo !`;
-				result.classList.add("loose");
+				result.classList.add("lose");
 			}
 		}
 
