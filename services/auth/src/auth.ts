@@ -173,26 +173,37 @@ class AuthService {
 		if (!code) {
 			return rep.code(STATUS.bad_request).send({ message: "Missing code " });
 		}
-
-		const tokenResponse = await fetch("https://api.intra.42.fr/oauth/token", {
-			method: "POST",
-			headers: { "Content-type": "application/json" },
-			body: JSON.stringify({
-				grant_type: "authorization_code",
-				client_id: oauthKeys.s42.clientId,
-				client_secret: oauthKeys.s42.clientSecret,
-				code,
-				redirect_uri: redirect42,
-			}),
-		});
-		const token = await tokenResponse.json();
-		if (!token.access_token) {
+		let token;
+		try {
+			const tokenResponse = await fetch("https://api.intra.42.fr/oauth/token", {
+				method: "POST",
+				headers: { "Content-type": "application/json" },
+				body: JSON.stringify({
+					grant_type: "authorization_code",
+					client_id: oauthKeys.s42.clientId,
+					client_secret: oauthKeys.s42.clientSecret,
+					code,
+					redirect_uri: redirect42,
+				}),
+			});
+			token = await tokenResponse.json();
+		} catch (error) {
 			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
 		}
-		const response = await fetch("https://api.intra.42.fr/v2/me", {
-			headers: { Authorization: "Bearer " + token.access_token },
-		});
-		const userData = await response.json();
+		if (!token?.access_token) {
+			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
+		}
+		
+		let userData;
+		try{
+			const response = await fetch("https://api.intra.42.fr/v2/me", {
+				headers: { Authorization: "Bearer " + token.access_token },
+			});
+			userData = await response.json();
+		}
+		catch (error){
+			return rep.code(STATUS.service_unavailable).send({ message: "Cannot get user data" });
+		}
 
 		const [userExists] = await db.select().from(users).where(eq(users.username, userData.login + "_42"));
 		let user;
@@ -255,26 +266,39 @@ class AuthService {
 			return rep.code(STATUS.bad_request).send({ message: "Missing code " });
 		}
 
-		const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-			method: "POST",
-			headers: { "Content-type": "application/json" },
-			body: JSON.stringify({
-				code,
-				client_id: oauthKeys.google.clientId,
-				client_secret: oauthKeys.google.clientSecret,
-				redirect_uri: redirectGoogle,
-				grant_type: "authorization_code",
-			}),
-		});
-
-		const token = await tokenResponse.json();
-		if (!token.access_token) {
+		let token;
+		try {
+			const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+				method: "POST",
+				headers: { "Content-type": "application/json" },
+				body: JSON.stringify({
+					code,
+					client_id: oauthKeys.google.clientId,
+					client_secret: oauthKeys.google.clientSecret,
+					redirect_uri: redirectGoogle,
+					grant_type: "authorization_code",
+				}),
+			});
+			token = await tokenResponse.json();
+		}
+		catch (error) {
 			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
 		}
-		const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
-			headers: { Authorization: `Bearer ${token.access_token}` },
-		});
-		const userData = await response.json();
+		if (!token?.access_token) {
+			return rep.code(STATUS.service_unavailable).send({ message: MESSAGE.oauth_service_is_unavailable });
+		}
+
+		let userData;
+		try {
+			const response = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+				headers: { Authorization: `Bearer ${token.access_token}` },
+			});
+			userData = await response.json();
+		}
+		catch (error) {
+			return rep.code(STATUS.service_unavailable).send({ message: "Cannot get user data "});
+		}
+
 		const [userExists] = await db.select().from(users).where(eq(users.username, userData.given_name + "_G"));
 		let user;
 		if (userExists) {
