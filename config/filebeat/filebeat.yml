@@ -21,6 +21,23 @@ filebeat.autodiscover:
 
 setup.kibana:
   host: 'https://kibana:5601'
+  username: ${KIBANA_USERNAME}
+  password: ${KIBANA_PASSWORD}
+  ssl:
+    enabled: true
+    certificate_authorities: ["/var/certs/certificate.pem"]
+    certificate: "/var/certs/certificate.pem"
+    key: "/var/certs/privatekey.pem"
+
+
 
 output.elasticsearch:
   hosts: 'https://elasticsearch:9200'
+  username: ${ELASTIC_USERNAME}
+  password: ${ELASTIC_PASSWORD}
+  ssl:
+    enabled: true
+    certificate_authorities: ["/var/certs/certificate.pem"]
+    certificate: "/var/certs/certificate.pem"
+    key: "/var/certs/privatekey.pem"
+
