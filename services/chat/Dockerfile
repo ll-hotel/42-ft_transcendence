@@ -1,4 +1,4 @@
-FROM oven/bun:alpine AS builder
+FROM oven/bun:1.3.8-alpine AS builder
 
 WORKDIR /srv/app
 RUN apk add typescript;

@@ -1,4 +1,4 @@
-FROM oven/bun:alpine AS builder
+FROM oven/bun:1.3.8-alpine AS builder
 
 WORKDIR /srv/app
 RUN apk add typescript;
@@ -11,7 +11,7 @@ COPY package.json .
 RUN bun install;
 RUN bunx tailwindcss -i src/input.css -o static/tailwind.css;
 
-FROM nginx:alpine
+FROM nginx:alpine3.23
 
 WORKDIR /srv/app
 COPY --from=builder /srv/app/js js/
