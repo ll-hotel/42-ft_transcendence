@@ -1,4 +1,4 @@
-const notifMaxCount: number = 3;
+const notifMaxCount: number = 1;
 
 export function notify(message: string, type: "success" | "error" | "info", duration: number = 3000) {
 	let container = document.getElementById("notif-container");
