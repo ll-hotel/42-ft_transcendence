@@ -460,9 +460,7 @@ class User {
 
 		const finalList = {
 			matchPlayed: matchesList.length,
-			victoryRate: matchesList.length
-				? ((nbMatchVictory / matchesList.length) * 100).toFixed(2)
-				: matchesList.length,
+			victoryRate: matchesList.length ? ((nbMatchVictory / matchesList.length) * 100).toFixed(0) : matchesList.length,
 			pointScored: matchesList.length ? (pointScored / matchesList.length).toFixed(2) : matchesList.length,
 			pointConceded: matchesList.length ? (pointConceded / matchesList.length).toFixed(2) : matchesList.length,
 			nbTournament: nbTournament,
