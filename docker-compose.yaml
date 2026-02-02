@@ -134,19 +134,19 @@ services:
       - /dev/disk/:/dev/disk:ro
   
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
+    build:
+      context: ./log-management/elasticsearch
+      args:
+        - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     container_name: elasticsearch
     restart: on-failure
     environment:
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms2g -Xmx2g
     ports:
       - 9200:9200
       - 9300:9300
     volumes:
-      - elasticsearch-config:/usr/share/elasticsearch/config
-      - elasticsearch-data:/usr/share/elasticsearch/data
       - certificate:/usr/share/elasticsearch/config/certs:ro
     env_file: .env
 
@@ -219,14 +219,6 @@ volumes:
     driver: local
     driver_opts:
       device: ./monitoring/prometheus/
-      type: none
-      o: bind
-
-  elasticsearch-data:
-  elasticsearch-config:
-    driver: local
-    driver_opts:
-      device: ./log-management/elasticsearch
       type: none
       o: bind
   kibana-config:
