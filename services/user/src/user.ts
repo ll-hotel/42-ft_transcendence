@@ -423,34 +423,33 @@ class User {
 				[1, "quarter-final"],
 				[2, "semi-final"],
 				[3, "final"],
+				[4, "winner"],
 			],
 		);
+
+		let tempRank = 0;
 
 		for (const key of participatedTournament.keys()) {
 			let t = participatedTournament.get(key)!;
 			if (t.winnerId && t.winnerId === usr.id) {
 				nbTournamentVictory++;
+				tempRank = 4;
 			}
-
-			let tempRank = 0;
-			switch (t.round) {
-				case (1):
-					if (t.size == 4) {
-						tempRank = 2;
-					} else if (t.size == 8) {
-						tempRank = 1;
-					}
-					break;
-				case (2):
-					if (t.size == 4) {
+			else
+			{
+				switch (t.round) {
+					case (0):
+						if (t.size == 4) tempRank = 2;
+						else if (t.size == 8) tempRank = 1;
+						break;
+					case (1):
+						if (t.size == 4) tempRank = 3;
+						else if (t.size == 8) tempRank = 2;
+						break;
+					case (2):
 						tempRank = 3;
-					} else if (t.size == 8) {
-						tempRank = 2;
-					}
-					break;
-				case (3):
-					tempRank = 3;
-					break;
+						break;
+				}
 			}
 			if (bestRank < tempRank) {
 				bestRank = tempRank;
@@ -558,34 +557,33 @@ class User {
 				[1, "quarter-final"],
 				[2, "semi-final"],
 				[3, "final"],
+				[4, "winner"],
 			],
 		);
+
+		let tempRank = 0;
 
 		for (const key of participatedTournament.keys()) {
 			let t = participatedTournament.get(key)!;
 			if (t.winnerId && t.winnerId === usr.id) {
 				nbTournamentVictory++;
+				tempRank = 4;
 			}
-
-			let tempRank = 0;
-			switch (t.round) {
-				case (0):
-					if (t.size == 4) {
-						tempRank = 2;
-					} else if (t.size == 8) {
-						tempRank = 1;
-					}
-					break;
-				case (1):
-					if (t.size == 4) {
+			else
+			{
+				switch (t.round) {
+					case (0):
+						if (t.size == 4) tempRank = 2;
+						else if (t.size == 8) tempRank = 1;
+						break;
+					case (1):
+						if (t.size == 4) tempRank = 3;
+						else if (t.size == 8) tempRank = 2;
+						break;
+					case (2):
 						tempRank = 3;
-					} else if (t.size == 8) {
-						tempRank = 2;
-					}
-					break;
-				case (2):
-					tempRank = 3;
-					break;
+						break;
+				}
 			}
 			if (bestRank < tempRank) {
 				bestRank = tempRank;
@@ -596,7 +594,7 @@ class User {
 
 		const finalList = {
 			matchPlayed: matchesList.length,
-			victoryRate: matchesList.length ? ((nbMatchVictory / matchesList.length) * 100).toFixed(2) : matchesList.length,
+			victoryRate: matchesList.length ? ((nbMatchVictory / matchesList.length) * 100).toFixed(0) : matchesList.length,
 			pointScored: matchesList.length ? (pointScored / matchesList.length).toFixed(2) : matchesList.length,
 			pointConceded: matchesList.length ? (pointConceded / matchesList.length).toFixed(2) : matchesList.length,
 			nbTournament: nbTournament,
