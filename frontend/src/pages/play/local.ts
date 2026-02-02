@@ -112,13 +112,11 @@ export default class PlayLocal implements AppPage {
 		const resLocal = await api.post("/api/game/launch/local");
 		if (!resLocal || resLocal.status !== Status.success) {
 			if (resLocal) notify(resLocal.payload.message, "error");
-			console.log("No:", resLocal?.payload.message, this.matchId);
 			this.matchId = null;
 			return gotoPage("home");
 		}
 
 		this.matchId = resLocal.payload.matchId as number;
-		console.log("matchId:", this.matchId);
 
 		this.game = new Game(this.html, this.ballSprite, this.paddleSprite, Mode.local, this.matchId);
 		this.game.onScore = () => {
@@ -143,7 +141,6 @@ export default class PlayLocal implements AppPage {
 		this.player1 = null;
 		this.player2 = null;
 
-		console.log("UNLOAD: matchId:", this.matchId);
 		if (this.matchId == null) {
 			return;
 		}
@@ -190,9 +187,6 @@ export default class PlayLocal implements AppPage {
 
 		this.matchWindow!.appendChild(result);
 		notify(`Match is finished`, "success");
-		// setTimeout( () => {
-		// 	gotoPage("home");
-		// }, 4000);
 	}
 
 	initSearchBar(container: HTMLElement) {
@@ -267,7 +261,7 @@ async function fetchImage(url: string): Promise<HTMLImageElement | null> {
 		img.onerror = reject;
 		img.src = url;
 	}).catch(function(reason) {
-		console.log(reason);
+		notify(reason, "info");
 		return null;
 	}) as Promise<HTMLImageElement | null>;
 }

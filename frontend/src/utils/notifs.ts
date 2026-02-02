@@ -3,7 +3,6 @@ export function notify(message: string, type: "success" | "error" | "info") {
 	if (!container) {
 		container = document.createElement("div");
 		container.id = "notif-container";
-		//container.className = "fixed bottom-4 right-4 z-50 flex flex-col-reverse space-y-reverse space-y-2"; // bot right notifs
 		container.className = "fixed top-4 right-4 z-50 space-y-2" //top right notifs
 		
 		document.body.appendChild(container);

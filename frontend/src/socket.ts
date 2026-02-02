@@ -82,7 +82,6 @@ namespace Socket {
 			const tmp = new WebSocket("/api/websocket");
 			tmp.onerror = () => resolve(null);
 			tmp.addEventListener("open", () => {
-				console.log("[socket]", "Connected.");
 				if (reconnection) {
 					notify("Reconnected", "success");
 					clearInterval(reconnection);
@@ -97,9 +96,7 @@ namespace Socket {
 			return false;
 		}
 		conn.addEventListener("close", (ev) => {
-			console.log("[socket]", "Disconnected.", ev.code);
 			conn = null;
-			// 1005 means server properly closed connection, and wanted us to be disconnected.
 			if (!reconnection && ev.code != 1005) {
 				notify("Disconnected. Reconnecting...", "info");
 				reconnection = setInterval(connect, 1000);
@@ -108,12 +105,10 @@ namespace Socket {
 		conn.addEventListener("message", (event) => {
 			try {
 				const message = JSON.parse(event.data) as Message;
-				// console.log("[socket]", message);
 				if (hooks.has(message.topic)) {
 					hooks.get(message.topic)!.forEach(hook => hook(message));
 				}
 			} catch (err) {
-				console.log(err);
 			}
 		});
 		pingLoop();
