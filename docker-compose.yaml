@@ -153,7 +153,7 @@ services:
   elk-setup:
     build:
       context: ./log-management/setup
-    container_name: elk-config
+    container_name: elk-setup
     restart: on-failure
     volumes:
       - certificate:/var/certs:ro
