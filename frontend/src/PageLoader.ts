@@ -23,7 +23,6 @@ const pages: { name: string, new: (e: HTMLElement) => Promise<AppPage | null> }[
 	{ name: "profile/other", new: OtherProfilePage.new },
 	{ name: "profile/edit", new: editProfile.new },
 	{ name: "chat", new: ChatPage.new },
-	{ name: "play", new: Play.new },
 	{ name: "play/local", new: PlayLocal.new },
 	{ name: "play/match", new: PlayMatch.new },
 	{ name: "tournament", new: Tournament.new },
