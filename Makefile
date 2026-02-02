@@ -1,6 +1,6 @@
 COMPOSE := docker compose
 COMPOSE_FILE := docker-compose.yaml
-# COMPOSE_PROJECT_NAME := ft_transcendence
+COMPOSE_PROJECT_NAME := ft_transcendence
 export COMPOSE COMPOSE_FILE COMPOSE_PROJECT_NAME
 
 SERVICES := $(shell docker compose config --services | sed 's/^/DNS:/' | paste -sd ',' -)
