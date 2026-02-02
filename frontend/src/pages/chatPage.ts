@@ -25,18 +25,16 @@ export class ChatPage implements AppPage {
 		this.selectedCard = null;
 		this.chat = new ChatStruct();
 		if (!this.listContainer || !this.chatContainer) {
-			console.log("Error in html");
+			return;
 		}
 	}
 
 	static async new(content: HTMLElement): Promise<AppPage | null> {
 		if (!content || !content.querySelector("#friend-list-content") || !content.querySelector("#chat")) {
-			console.log("Missing Friendlist or chat in html");
 			return null;
 		}
 		const searchBar = content.querySelector<HTMLElement>("#search-user-action");
 		if (!searchBar) {
-			console.log("Chat page: missing search bar");
 			return null;
 		}
 		return new ChatPage(content, searchBar);
@@ -196,7 +194,7 @@ export class ChatPage implements AppPage {
 				card.remove();
 				this.loadRooms();
 			} else {
-				console.error("AcceptRes didn't work");
+				notify(`Accept request from ${request.requestFrom} didn't work`, "success");
 			}
 		};
 
@@ -211,7 +209,7 @@ export class ChatPage implements AppPage {
 				notify(`You declined friend request from ${request.requestFrom}`, "info");
 				card.remove();
 			} else {
-				console.error("declineRes didn't work");
+				notify(`Decline ${request.requestFrom} request didn't work`, "info");
 			}
 		};
 
@@ -246,7 +244,6 @@ export class ChatPage implements AppPage {
 		const chatList = this.chatContainer.querySelector<HTMLDivElement>("#chat-content")!;
 
 		if (!chatName || !chatList) {
-			console.log("Missing chatName or chatList in html");
 			return;
 		}
 
