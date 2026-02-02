@@ -140,41 +140,6 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
   
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
-  #   container_name: elasticsearch
-  #   environment:
-  #     - discovery.type=single-node
-  #     - ES_JAVA_OPTS=-Xms1g -Xmx1g
-  #     - xpack.security.enabled=false
-  #   ports:
-  #     - 9200:9200
-  #     - 9300:9300
-  #
-  # filebeat:
-  #   image: docker.elastic.co/beats/filebeat:9.2.4
-  #   container_name: filebeat
-  #   restart: on-failure
-  #   privileged: true
-  #   user: root
-  #   volumes:
-  #     - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
-  #     - /var/lib/docker/containers:/var/lib/docker/containers
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   depends_on:
-  #     - elasticsearch
-  #
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:9.2.4
-  #   container_name: kibana
-  #   restart: on-failure
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-  #   ports:
-  #     - 5601:5601
-  #   depends_on:
-  #     - elasticsearch
-
 volumes:
   backend-db:
     driver: local
