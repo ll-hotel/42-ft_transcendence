@@ -57,6 +57,7 @@ export default class PlayLocal implements AppPage {
 			return;
 		}
 	}
+
 	static async new(html: HTMLElement): Promise<AppPage | null> {
 		const ballPromise = fetchImage("/pong_ball.png");
 		const paddlePromise = fetchImage("/pong_paddle.png");
@@ -76,7 +77,6 @@ export default class PlayLocal implements AppPage {
 		container.innerHTML = "";
 		container.appendChild(this.html);
 
-		
 		this.html.querySelectorAll(".ended-match-mess").forEach(el => el.remove());
 		this.matchCanvas!.hidden = false;
 		
@@ -181,7 +181,7 @@ export default class PlayLocal implements AppPage {
 			}
 		} else {
 			if (this.game!.score.p1 < this.game!.score.p2) {
-				result.innerText = `You win vs ${this.p1_DisplayName!.innerText}! Nice !`;
+				result.innerText = `You won vs ${this.p1_DisplayName!.innerText}! Nice !`;
 				result.classList.add("win");
 			} else {
 				result.innerText = `You lost vs ${this.p1_DisplayName!.innerText}! Boo !`;
