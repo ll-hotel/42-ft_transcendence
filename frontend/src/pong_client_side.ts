@@ -65,7 +65,7 @@ export class Game {
 		} else {
 			this.sendInputs = () => this.send_remote_input();
 		}
-		this.move_offset = this.canvas.height * 0.05;
+		this.move_offset = this.canvas.height * 0.025;
 	}
 
 	pong_event_listener(msg: PongMessage): void {
@@ -397,7 +397,7 @@ interface Size {
 
 const server_width = 500;
 const server_height = server_width * (1 / 2);
-const server_tickrate = 30;
+const server_tickrate = 60;
 
 export enum Mode {
 	local = "local",
