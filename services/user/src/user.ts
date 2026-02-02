@@ -106,7 +106,6 @@ class User {
 		}
 		rep.code(STATUS.success).send({
 			displayName: req.user.displayName,
-			// id: req.user.id,
 			username: req.user.username,
 			avatar: req.user.avatar,
 			uuid: req.user.uuid,
@@ -419,11 +418,13 @@ class User {
 		});
 
 		const rankingPlacement = new Map<number, string>(
-			[[0, "nothing"],
-			[1, "quarter-final"],
-			[2, "semi-final"],
-			[3, "final"],
-			[4, "winner"],],
+			[
+				[0, "nothing"],
+				[1, "quarter-final"],
+				[2, "semi-final"],
+				[3, "final"],
+				[4, "winner"],
+			],
 		);
 
 		let tempRank = 0;
@@ -439,7 +440,7 @@ class User {
 				switch (t.round) {
 					case (0):
 						if (t.size == 4) tempRank = 2;
-						else tempRank = 1;
+						else if (t.size == 8) tempRank = 1;
 						break;
 					case (1):
 						if (t.size == 4) tempRank = 3;
@@ -450,14 +451,16 @@ class User {
 						break;
 				}
 			}
-			if (bestRank < tempRank) bestRank = tempRank;
+			if (bestRank < tempRank) {
+				bestRank = tempRank;
+			}
 		}
 
 		nbTournament = participatedTournament.size;
 
 		const finalList = {
 			matchPlayed: matchesList.length,
-			victoryRate: matchesList.length ? ((nbMatchVictory / matchesList.length) * 100).toFixed(0): matchesList.length,
+			victoryRate: matchesList.length ? ((nbMatchVictory / matchesList.length) * 100).toFixed(0) : matchesList.length,
 			pointScored: matchesList.length ? (pointScored / matchesList.length).toFixed(2) : matchesList.length,
 			pointConceded: matchesList.length ? (pointConceded / matchesList.length).toFixed(2) : matchesList.length,
 			nbTournament: nbTournament,
@@ -552,7 +555,7 @@ class User {
 				[1, "quarter-final"],
 				[2, "semi-final"],
 				[3, "final"],
-				[4, "winner"]
+				[4, "winner"],
 			],
 		);
 
@@ -568,11 +571,8 @@ class User {
 			{
 				switch (t.round) {
 					case (0):
-						if (t.size == 4) {
-							tempRank = 2;
-						} else if (t.size == 8) {
-							tempRank = 1;
-						}
+						if (t.size == 4) tempRank = 2;
+						else if (t.size == 8) tempRank = 1;
 						break;
 					case (1):
 						if (t.size == 4) tempRank = 3;
@@ -583,7 +583,9 @@ class User {
 						break;
 				}
 			}
-			if (bestRank < tempRank) bestRank = tempRank;
+			if (bestRank < tempRank) {
+				bestRank = tempRank;
+			}
 		}
 
 		nbTournament = participatedTournament.size;

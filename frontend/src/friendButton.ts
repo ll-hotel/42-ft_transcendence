@@ -56,7 +56,7 @@ export class FriendButton {
 		}
 		catch(e)
 		{
-			console.error("Friend status didn't work", e);
+			notify("Friend status didn't work", "info");
 		}
 		this.render();
 	}
